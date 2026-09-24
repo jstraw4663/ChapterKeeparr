@@ -116,6 +116,17 @@ class PwaTests(unittest.TestCase):
             self.assertEqual(sw.headers['service-worker-allowed'], '/')
             self.assertEqual(client.get('/api/health').headers['cache-control'], 'no-store')
 
+    def test_static_serves_frontend_types_only_inside_static(self):
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ, {'ENABLE_WORKERS':'0'}):
+            client = TestClient(create_app(Store(Path(folder)/'jobs.db')))
+            for name, kind in (('tokens.css', 'text/css'), ('js/main.js', 'text/javascript')):
+                response = client.get('/static/' + name)
+                self.assertEqual(response.status_code, 200, name)
+                self.assertIn(kind, response.headers['content-type'])
+            for name in ('../api.py', 'js/../../api.py', '%2e%2e/api.py', 'index.html',
+                         'manifest.webmanifest', 'missing.js', '.hidden.js'):
+                self.assertEqual(client.get('/static/' + name).status_code, 404, name)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -370,13 +370,18 @@ def create_app(store: Store | None = None) -> FastAPI:
         def index():
             return FileResponse(static / "index.html")
 
-        @app.get("/static/{filename}")
-        def static_file(filename: str):
-            if filename not in ("app.js", "styles.css", "favicon.svg", "icon-192.png", "icon-512.png", "icon-180.png"):
+        static_root = static.resolve()
+        static_types = {".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2",
+                        ".png": "image/png", ".svg": "image/svg+xml"}
+
+        @app.get("/static/{name:path}")
+        def static_file(name: str):
+            # Frontend assets only: known types, no dotfiles, never outside app/static.
+            target = (static_root / name).resolve()
+            media_type = static_types.get(target.suffix.casefold())
+            if (media_type is None or static_root not in target.parents or
+                    any(part.startswith(".") for part in Path(name).parts) or not target.is_file()):
                 raise HTTPException(404, "File not found")
-            target = static / filename
-            if not target.is_file():
-                raise HTTPException(404, "File not found")
-            return FileResponse(target)
+            return FileResponse(target, media_type=media_type, headers={"Cache-Control": "no-cache"})
 
     return app
