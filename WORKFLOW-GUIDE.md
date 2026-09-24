@@ -72,3 +72,9 @@ flowchart TD
 ```
 
 A runtime or timing warning is evidence to investigate, not proof that audio is missing. Likewise, an unlocated published section is not proof that it is absent from the recording.
+
+## 0.4.1 automatic wider marker retry
+
+After the initial marker scan, unresolved markers receive one automatic retry using 8 seconds of pre-roll and 28 seconds after the marker, clipped to the recording. The original 2.1 seconds before / 8 seconds after heading acceptance window remains unchanged. Supported markers are not rescanned. First-pass conflicts and duplicates cannot be cleared by the retry; duplicate detection runs again. First-pass evidence is retained in `initial_attempt`; the displayed transcript and excerpt come from the retry. Reports checkpoint before retry inference, and disk/memory/excerpt bounds apply. A wider PCM excerpt gets a distinct transcript cache key; identical wider excerpts may be reused on subsequent runs. Draft publication remains disabled.
+
+This does not add sentence-internal heading parsing. MLX versus Linux speech recognition differences still require real server validation.

@@ -54,3 +54,9 @@ The Codex project list was empty. There is no callable project-creation tool, an
 
 Run `python -m unittest discover -s tests -v` using Python 3.12 with requirements-dev.txt installed. A pre-existing working environment is `/Users/jeremystraw/Documents/Codex/2026-09-22/referenced-chatgpt-conversation-this-is-an/chapterkeeper/.venv/bin/python`.
 Use `node --check app/static/app.js`. Preview with ENABLE_WORKERS=0 and a temporary CONFIG_DIR. The regression suite generates its own audio; real media writes require the user's intended processing workflow.
+
+## 0.4.1 automatic wider marker retry
+
+After the initial marker scan, unresolved markers receive one automatic retry using 8 seconds of pre-roll and 28 seconds after the marker, clipped to the recording. The original 2.1 seconds before / 8 seconds after heading acceptance window remains unchanged. Supported markers are not rescanned. First-pass conflicts and duplicates cannot be cleared by the retry; duplicate detection runs again. First-pass evidence is retained in `initial_attempt`; the displayed transcript and excerpt come from the retry. Reports checkpoint before retry inference, and disk/memory/excerpt bounds apply. A wider PCM excerpt gets a distinct transcript cache key; identical wider excerpts may be reused on subsequent runs. Draft publication remains disabled.
+
+This does not add sentence-internal heading parsing. MLX versus Linux speech recognition differences still require real server validation.

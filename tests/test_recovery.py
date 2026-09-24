@@ -137,3 +137,41 @@ class LocalMarkerTests(unittest.TestCase):
         self.assertEqual(marker['title'],'Epigraph')
         evidence['entries'].append({'title':'Other section','opening':opening})
         self.assertEqual(recovery.identify_marker(self.transcript(opening),0,-2,remote,evidence)['status'],'unresolved')
+
+class WiderRetryTests(unittest.TestCase):
+    def run_scan(self, transcripts):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
+        folder=Path(temp.name);source=folder/'book.m4b';source.write_bytes(b'original')
+        speech=Mock();speech.transcribe.side_effect=transcripts
+        report={'status':'starting','audio_source_sha256':'hash'}
+        data={'format':{'duration':'200'},'chapters':[{'start_time':'0'},{'start_time':'100'}]}
+        remote=[{'start':0,'end':100,'title':'Chapter 1'},{'start':100,'end':200,'title':'Chapter 2'}]
+        with patch.object(engine,'run') as run:
+            draft=recovery.scan_markers(source,data,remote,speech,SimpleNamespace(ffmpeg='ffmpeg'),report,folder)
+        self.assertEqual(source.read_bytes(),b'original')
+        self.assertFalse(draft['publication_allowed'])
+        return draft,run,speech
+    def text(self,text,start=2):
+        return {'text':text,'segments':[{'text':text,'start':start,'avg_logprob':-.2,'no_speech_prob':.01}]}
+    def test_only_unresolved_gets_one_wider_retry(self):
+        draft,run,speech=self.run_scan([self.text('Chapter 1.'),self.text('Some prose.'),self.text('Chapter 2.',8)])
+        self.assertEqual(speech.transcribe.call_count,3)
+        self.assertNotIn('retry',draft['markers'][0])
+        marker=draft['markers'][1]
+        self.assertEqual(marker['status'],'supported')
+        self.assertEqual(marker['initial_attempt']['status'],'unresolved')
+        self.assertEqual(marker['retry']['clip_start_seconds'],92)
+        self.assertEqual(marker['retry']['clip_end_seconds'],128)
+        self.assertTrue(marker['audio_excerpt'].endswith('-retry.wav'))
+        self.assertEqual(marker['new_seconds'],100)
+    def test_retry_does_not_expand_heading_acceptance_or_loop(self):
+        draft,_,speech=self.run_scan([self.text('Chapter 1.'),self.text('Prose.'),self.text('Chapter 2.',0)])
+        self.assertEqual(speech.transcribe.call_count,3)
+        self.assertEqual(draft['markers'][1]['status'],'unresolved')
+    def test_conflicting_first_pass_cannot_be_erased(self):
+        bad=self.text('Chapter 1.');bad['segments']+=self.text('Chapter 2.')['segments']
+        draft,_,_=self.run_scan([self.text('Chapter 1.'),bad,self.text('Chapter 2.',8)])
+        self.assertEqual(draft['markers'][1]['status'],'unresolved')
+        self.assertEqual(draft['markers'][1]['confidence'],'ambiguous')

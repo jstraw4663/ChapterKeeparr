@@ -47,3 +47,7 @@ Not validated here: Linux/amd64 Docker build, Unraid CPU speech performance, the
 - Saved real-book diagnostics re-evaluated with new coverage checks: Bedlam Bride no warnings; Parade of Horribles suspected gap (62.6s shortfall plus internal offset changes). This does not prove missing audio.
 - Model inference unchanged; Mac speech timing from 0.3.0 does not establish Linux/Unraid performance. Docker execution and live server deployment were not performed.
 - Conservative gap heuristics can increase reviews for legitimate edits; incompleteness can escape detection without numbering/reference evidence. Draft editing, new-boundary reconstruction and draft publication are not implemented.
+
+## 0.4.1 wider retry
+
+52 tests pass, including selective retry, bounded attempts, preserved initial evidence and timestamp, unchanged audio, narrow heading acceptance, and first-pass conflict retention. JavaScript syntax and diff whitespace checks pass. Recognition efficacy on the server's speech backend was not benchmarked; this release changes excerpt context, not the model or publication rules.

@@ -9,7 +9,7 @@ import shutil
 import resource
 import sys
 
-ALGORITHM_VERSION = 'alignment-recovery-3'
+ALGORITHM_VERSION = 'alignment-recovery-4'
 
 
 def digest(value):
@@ -99,7 +99,7 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
                 return dict(title=matches[0]['title'],reference_start=matches[0]['start'],status='supported',
                             confidence='distinctive opening',source='EPUB and local speech',
                             reason='A unique matching EPUB opening supports this existing marker; draft only.')
-    return dict(title=None, reference_start=None, status='unresolved', confidence='unconfirmed',
+    return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous' if observed else 'unconfirmed',
                 source='local speech', reason='Missing, conflicting or repeated chapter heading; no title assigned.')
 
 
@@ -153,6 +153,37 @@ def scan_markers(source, data, remote, speech, args, report, folder, evidence=No
                       new_seconds=boundary, transcript=transcript.get('text',''),
                       audio_excerpt=str(wav.relative_to(folder)))
         draft['markers'].append(marker)
+        finalize_draft(draft,remote)
+        engine.write_report(folder,report)
+    # One wider pass only. Keep the first-pass evidence durable before inference.
+    for index, marker in enumerate(draft['markers']):
+        if marker['status'] != 'unresolved': continue
+        engine.log('Retrying unresolved marker {}/{} with a wider excerpt'.format(index+1,len(starts)))
+        if shutil.disk_usage(folder).free < 64 * 1024**2:
+            raise engine.NeedsReview('Recovery retry paused: insufficient disk space; partial draft retained.')
+        rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        if (rss if sys.platform == 'darwin' else rss*1024) > float(os.getenv('RECOVERY_MAX_RSS_MB','3000'))*1024**2:
+            raise engine.NeedsReview('Recovery retry paused at the memory limit; partial draft retained.')
+        if (len(starts)*24+(index+1)*36)*32000 > max(1,float(os.getenv('CACHE_MAX_GB','10')))*1024**3:
+            raise engine.NeedsReview('Recovery retry excerpt budget reached; partial draft retained.')
+        boundary = starts[index]
+        clip_start = max(0,boundary-8)
+        clip_end = min(seconds,boundary+28)
+        marker['initial_attempt'] = dict(marker)
+        marker['retry'] = {'status':'running','clip_start_seconds':clip_start,'clip_end_seconds':clip_end}
+        engine.write_report(folder,report)
+        wav = clips / ('marker-%04d-retry.wav' % index)
+        engine.run([args.ffmpeg,'-nostdin','-v','error','-y','-ss',clip_start,'-i',source,
+                    '-t',clip_end-clip_start,'-map','0:a:0','-vn','-ar','16000','-ac','1','-c:a','pcm_s16le',wav])
+        transcript = speech.transcribe(wav)
+        engine.write_json(wav.with_suffix('.json'),transcript)
+        result = identify_marker(transcript,boundary,clip_start,remote,evidence)
+        # A different window must not erase contradictory/duplicate first-pass evidence.
+        if marker.get('confidence') == 'ambiguous' or marker.get('reference_start') is not None:
+            result.update(status='unresolved',confidence='ambiguous',
+                          reason='First-pass conflicting or duplicate evidence still requires review.')
+        marker.update(result,transcript=transcript.get('text',''),audio_excerpt=str(wav.relative_to(folder)))
+        marker['retry']['status'] = 'complete'
         finalize_draft(draft,remote)
         engine.write_report(folder,report)
     draft['complete'] = True
