@@ -91,6 +91,23 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(answered.status_code, 200)
         self.assertEqual(answered.json()["review_answer"]["asin"], "B123456789")
 
+    def test_gate_projection_and_resume_without_identity_changes(self):
+        from app import flow
+        store=self.app.state.store
+        job,_=store.enqueue(self.book)
+        store.claim('test-worker')
+        report={};flow.require_review(report,'source_inventory','Missing track 2','inspect')
+        store.finish(job['id'],'awaiting_review',{'report':report},worker='test-worker')
+        saved=self.client.get(f"/api/jobs/{job['id']}",headers=self.headers).json()
+        self.assertEqual(saved['workflow']['review_category'],'source_inventory')
+        self.assertEqual(saved['workflow']['gates'][0]['state'],'review')
+        result=self.client.post(f"/api/jobs/{job['id']}/review",json={'action':'resume'},headers=self.headers)
+        self.assertEqual(result.status_code,200)
+        self.assertEqual(result.json()['status'],'queued')
+        saved=self.client.get(f"/api/jobs/{job['id']}",headers=self.headers).json()
+        self.assertTrue(all(g['state']=='waiting' for g in saved['workflow']['gates']))
+        self.assertNotIn('action',saved['review_answer'])
+
     def test_discovery_and_selective_batch_submission(self):
         books = [self.root / f"Book-{i}.m4b" for i in range(4)]
         for book in books:

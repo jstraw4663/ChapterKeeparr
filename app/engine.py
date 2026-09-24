@@ -82,6 +82,10 @@ class NeedsReview(Exception):
     pass
 
 
+class MetadataServiceError(NeedsReview):
+    """Transport/service failure, not evidence against a recording."""
+
+
 class MetadataNotFound(NeedsReview):
     """Keep a provider 404 distinct from an empty successful search."""
 
@@ -112,9 +116,9 @@ def get_json(url):
             message = ('Metadata search returned HTTP 404. The search service did not supply results; this does not establish that the book or ASIN is missing. Retry search or enter an exact audiobook ASIN.' if search else
                        'Metadata provider has no entry for this ID/region or chapter timeline (HTTP 404). This does not prove the ASIN is invalid. Try a different region or audiobook ASIN.')
             raise MetadataNotFound(message + ' URL: ' + url) from ex
-        raise NeedsReview('Metadata service returned HTTP {}. Retry later or choose another edition. URL: {}'.format(ex.code, url)) from ex
+        raise MetadataServiceError('Metadata service returned HTTP {}. Retry later or choose another edition. URL: {}'.format(ex.code, url)) from ex
     except (urllib.error.URLError, TimeoutError) as ex:
-        raise NeedsReview('Metadata service could not be reached: {}. Retry when the connection is available.'.format(ex)) from ex
+        raise MetadataServiceError('Metadata service could not be reached: {}. Retry when the connection is available.'.format(ex)) from ex
 
 
 def search_books(query, region='us', author=None, limit=20):
@@ -885,6 +889,14 @@ def write_report(folder, report):
              'Input: ' + report.get('input', ''), '']
     for key in ('reason', 'pending_question', 'output', 'backup', 'selection_basis'):
         if report.get(key): lines += ['{}: {}'.format(key.replace('_', ' ').capitalize(), report[key]), '']
+    if report.get('gates'):
+        lines += ['## Workflow gates', '']
+        for item in report['gates'].values():
+            lines += ['- {}: {} — {}'.format(item['label'],item['state'],item['detail'])]
+        lines += ['', '## Evidence assessment', '']
+        for key,item in report.get('assessment',{}).items():
+            lines += ['- {}: {} — {}'.format(key,item['level'],item['detail'])]
+        lines += ['', 'Evidence labels are not probabilities of complete content.', '']
     for choice in report.get('choices', []): lines += ['- ' + choice]
     if report.get('edition'):
         e = report['edition']; lines += ['', 'Edition: {} / {} / {}'.format(e['title'], e['narrators'], e['asin']), '']
@@ -998,6 +1010,10 @@ def research_edition(title, author, narrator, seconds, region, asin, data, quest
             report['selection_basis'] = 'Metadata and timing compatible; speech verification is still required'
             report['viable_asins'] = [identifier]
             return e, published, outcome['plan'], outcome['alignment']
+        except MetadataServiceError as ex:
+            record['reason'] = str(ex)
+            record['service_error'] = True
+            raise
         except (NeedsReview, ValueError, KeyError, TypeError) as ex:
             record['reason'] = str(ex)
             report.setdefault('rejected_editions', []).append({'asin': identifier, 'region': region, 'reason': str(ex)})
@@ -1103,7 +1119,10 @@ def commit_result(staged, destination, original_snapshot, original_hash, backup_
 
 
 def workflow(args, interactive=True):
+    from . import flow, inspection, recovery
     report = {'status': 'starting', 'input': str(args.target), 'checks': [], 'answers': [], 'mp3s_deleted': 0}
+    flow.initialize(report)
+    report['verification_scope'] = 'all_numbered' if args.verify_all else 'sampled'
     questions = Questions(interactive, report)
     if args.target is None:
         args.target = Path(questions.text('Enter one audiobook folder or an M4B file (q to stop):').strip('"\''))
@@ -1127,6 +1146,8 @@ def workflow(args, interactive=True):
     try:
         try: fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError: raise NeedsReview('Another workflow is using this folder')
+        flow.gate(report,'inspect','working','Checking source files, ordering and inventory')
+        write_report(folder,report)
         for tool in (args.ffmpeg, args.ffprobe):
             if not shutil.which(tool): raise ConversionError('Missing executable: ' + tool)
         if target.is_file():
@@ -1147,6 +1168,14 @@ def workflow(args, interactive=True):
         if not existing and len(mp3s) < 2:
             report.update(status='skipped', reason='No M4B and fewer than two MP3 files.')
             write_report(folder, report); log(report['reason']); return 0
+        inventory = inspection.manifest([existing] if existing else mp3s, root, args.ffprobe, getattr(args,'check_cancel',lambda:None))
+        report['source_manifest'] = inventory
+        warnings = inspection.sequence_warnings(inventory)
+        if warnings:
+            report['coverage_warnings'] = warnings
+            flow.assess(report,'coverage','suspected_gap','; '.join(warnings))
+            flow.require_review(report,'source_inventory','Possible missing or misordered tracks: '+ '; '.join(warnings),'inspect')
+            raise NeedsReview(report['review_reason']['detail'])
         dependency = 'mlx_whisper' if args.backend == 'mlx' else 'faster_whisper'
         if importlib.util.find_spec(dependency) is None:
             raise ConversionError('Activate your speech virtual environment and install ' + ('requirements-mac.txt' if args.backend == 'mlx' else 'requirements-cpu.txt'))
@@ -1161,8 +1190,11 @@ def workflow(args, interactive=True):
             else:
                 source = tmp / 'converted.m4b'
                 report['status'] = 'converting'; write_report(folder, report)
-                if not convert(root, True, args.bitrate, args.ffmpeg, args.ffprobe, output_path=source, already_locked=True):
+                if not inspection.prepared_conversion(root, source, inventory, args, getattr(args,'prepared_cache',None), convert):
                     raise ConversionError('No convertible MP3s')
+            flow.gate(report,'inspect','passed','Source inventory captured; audio ready for matching')
+            flow.gate(report,'match','working','Reading recording identity and catalog candidates')
+            write_report(folder,report)
             source_hash = file_hash(source)
             report['audio_source_sha256'] = source_hash
             data, title, author, narrator, asin, evidence = inspect_identity(source, root, args, questions, report)
@@ -1179,9 +1211,23 @@ def workflow(args, interactive=True):
             while True:
                 attempt += 1
                 try:
-                    report['status'] = 'researching'; write_report(folder, report)
+                    report['status'] = 'researching'
+                    flow.gate(report,'match','working','Checking compatible recording editions')
+                    write_report(folder, report)
                     selected, published, plan, alignment = research_edition(title, author, narrator, seconds, args.region, asin, data, questions, report, folder, cache_dir=getattr(args, 'recovery_cache', None), force=args.force or getattr(args, 'recovery_force', False))
                     report.update(edition=selected, alignment=alignment)
+                    report['selected_recording'] = {'asin': selected['asin'], 'region': args.region}
+                    flow.gate(report,'match','passed','Recording metadata passed compatibility checks')
+                    flow.assess(report,'recording','compatible','Available title/author/narrator, language, format and runtime checks passed')
+                    flow.gate(report,'align','working','Checking the proposed timeline and content coverage')
+                    diagnostic = next((a['diagnostics'] for a in report.get('alignment_attempts',[]) if a.get('asin') == selected['asin'] and a.get('timing_passed')), {})
+                    coverage = flow.check_coverage(report,diagnostic)
+                    if coverage:
+                        flow.require_review(report,'chapters','Possible missing content or an edited recording: '+ '; '.join(coverage),'align')
+                        raise NeedsReview(report['review_reason']['detail'])
+                    flow.gate(report,'align','passed','Timeline passed offset, coverage and ordering checks')
+                    flow.assess(report,'alignment','compatible','Published timeline and local markers pass the timing rules')
+                    flow.gate(report,'verify','working','Checking local speech against proposed chapters')
                     write_json(folder / 'published-chapters.json', published)
                     plan_data = {'expected_duration_seconds': seconds, 'source_sha256': source_hash,
                                  'asin': selected['asin'], 'chapters': plan}
@@ -1202,12 +1248,21 @@ def workflow(args, interactive=True):
                     break
                 except UserStopped: raise
                 except NeedsReview as ex:
+                    if isinstance(ex,MetadataServiceError):
+                        flow.require_review(report,'service',str(ex))
+                        raise
+                    if report.get('review_reason',{}).get('category') == 'chapters' and report.get('coverage_warnings'):
+                        raise
                     if asin and not searched_alternatives:
                         report.setdefault('lookup_failures', []).append({'asin': asin, 'reason': str(ex)})
                         asin = None
                         searched_alternatives = True
                         log('Current ID could not be confirmed; searching alternate editions…', 'WARNING')
                         continue
+                    if recovery.automatic_review(source,data,evidence,args,report,folder):
+                        return 2
+                    if not report.get('review_reason'):
+                        flow.require_review(report,'chapters' if report.get('edition_attempts') or report.get('active_gate')!='match' else 'identity',str(ex))
                     report.update(status='needs_details', reason=str(ex)); write_report(folder, report)
                     if not interactive: raise
                     print('\n' + str(ex) + '\nReport: ' + str(folder / 'report.md'))
@@ -1226,6 +1281,8 @@ def workflow(args, interactive=True):
                     searched_alternatives = False
                     report.pop('reason', None)
             report.pop('reason', None)
+            report.pop('review_reason',None)
+            flow.assess(report,'speech',report['verification_scope'],f"{len(report['checks'])} required speech checks passed; named/credit sections are not all independently checked")
             plan_data['verification'] = {'checks_passed': len(report['checks']), 'verify_all': args.verify_all}
             write_json(folder / 'verified.chapters.json', plan_data)
             if file_hash(source) != source_hash: raise NeedsReview('Audio changed during analysis')
@@ -1234,6 +1291,13 @@ def workflow(args, interactive=True):
             retag(source, staged, folder / 'verified.chapters.json', args.ffmpeg, args.ffprobe, asin=selected['asin'])
             if mp3s and (media_files(root, '.mp3') != mp3s or any(fingerprint(p) != snapshots[p] for p in mp3s)):
                 raise NeedsReview('MP3 sources changed during analysis; all MP3s retained')
+            if not inspection.unchanged(inventory,root,getattr(args,'check_cancel',lambda:None)):
+                flow.require_review(report,'source_changed','Source inventory changed before publication','verify')
+                raise NeedsReview('Source inventory changed before publication; originals retained')
+            flow.assess(report,'integrity','passed','Output decoded and audio payload/chapter metadata validated')
+            flow.gate(report,'verify','passed','Required speech and output integrity checks passed')
+            flow.assert_publishable(report)
+            flow.gate(report,'save','working','Creating backup and committing validated output')
             report['status'] = 'committing'; write_report(folder, report)
             backup = commit_result(staged, destination, original_snapshot, original_hash, folder, receipt)
             committed = True
@@ -1244,6 +1308,7 @@ def workflow(args, interactive=True):
                     if fingerprint(path) != snapshots[path]: raise ConversionError('MP3 changed during cleanup; remaining MP3s retained')
                     path.unlink()
                     report['mp3s_deleted'] += 1
+            flow.gate(report,'save','passed','Validated output committed; required source cleanup completed')
             report['status'] = 'complete'; report['output_sha256'] = file_hash(destination)
             write_report(folder, report)
         log('Complete: ' + str(destination)); log('Report: ' + str(folder / 'report.md'))
@@ -1253,6 +1318,9 @@ def workflow(args, interactive=True):
         if receipt.get('backup'): report['backup'] = receipt['backup']
         report['status'] = 'cleanup_incomplete' if committed else ('needs_review' if isinstance(ex, NeedsReview) else 'error')
         report['reason'] = str(ex) or 'Interrupted; original files retained'
+        if not report.get('review_reason'):
+            category = 'operational' if not isinstance(ex,NeedsReview) else 'chapters' if report.get('active_gate') in ('align','verify') else 'identity'
+            flow.require_review(report,category,report['reason'])
         write_report(folder, report)
         log(report['reason'], 'WARNING' if isinstance(ex, NeedsReview) else 'ERROR')
         log('Report: ' + str(folder / 'report.md'))

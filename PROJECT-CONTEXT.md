@@ -18,6 +18,20 @@ The user asked to start the alignment recovery build, investigate the Bedlam Bri
 - Draft marker evidence, transcripts, excerpt playback, old/proposed times, support status, and unresolved published sections in the UI and report. Drafts retain existing timestamps, including unresolved markers. Duplicate/ambiguous headings remain unresolved. Original source fingerprint checked before and after.
 - One heavy local-recovery job at a time, per-marker checkpoints, existing transcript-cache reuse, cancellation checks, bounded excerpts and basic disk/RSS checks.
 
+## Implemented in 0.4.0 alpha — gated workflow
+
+- Inspect → Match → Align → Verify → Save persisted gates, API projection, top-of-book timeline and separate recording/coverage/alignment/speech/integrity evidence grades. No fabricated probability. Legacy receipts do not inherit current policy claims.
+- SHA-256 source inventory before conversion; track/disc gaps, duplicates, inconsistent totals and tag/file ordering conflict stop for review. Sources are rehashed before commit. Unknown missing content can still evade these heuristics.
+- Coverage stops for a published-runtime shortfall over 2 seconds or nearby boundary offsets varying over 2 seconds. These intentionally cautious heuristics are not calibrated probabilities and can flag harmless edits. Missing diagnostics cannot authorize publication.
+- After timing failure and bounded edition search, a unique metadata-compatible timeline (or the requested compatible ASIN) automatically gets existing-marker speech/EPUB review. This is always a non-publishable draft. Coverage warnings after a successful timing fit stop directly for review.
+- Explicit publication gate requires inspection, matching, alignment, speech, output integrity and no unresolved coverage. Any recovery draft blocks publication. Existing backup and audio-payload/decode checks remain.
+- Fingerprinted intermediate conversions survive review retries. Source/artwork/version/options changes or corrupted intermediates invalidate reuse. Source mutations during conversion prevent caching. Retained conversions and transcripts share CACHE_MAX_GB; reports/excerpts are retained separately. Successful jobs remove retained conversions; paused/cancelled caches remain bounded and can be reused.
+- Metadata transport/service errors are distinct from identity problems. Non-identity review screens have Resume checks and optional Change recording details. Manual local-marker route remains draft-only for compatibility.
+- Heavy processing serialized across workers with a reentrant process lock. Cache reuse does not skip matching/speech/publication checks.
+- WORKFLOW-GUIDE.md describes the implemented paths. A GPT-6 Luna documentation agent drafted and revised it; the primary agent verified paths against source.
+
+49 tests pass, including generated-media save and missing-track/automatic-draft worker regressions; responsive UI checks pass at 390/1440 pixels. New coverage policy evaluated on saved real-book diagnostics: Bedlam has no warning; Parade has shortfall/internal-change warnings. No new real-book write or speech benchmark was performed. Unraid/Docker deployment remains unvalidated.
+
 ## Real-book findings (2026-09-24)
 
 The Eye of the Bedlam Bride: the exact previously failing libexdb title/author URL returned HTTP 200. ASIN B0CDXWSS5D; catalog runtime 1,606 minutes; file about 1,607.2 minutes. All 77 nonzero boundaries pass the existing timing test; local/published audio-duration difference is about 0.025 seconds. The earlier 404's underlying service cause is not established. Speech verification is still needed before publishing.

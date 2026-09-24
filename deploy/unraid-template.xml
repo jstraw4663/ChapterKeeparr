@@ -33,6 +33,6 @@
   <Config Name="Concurrent book workers" Target="WORKERS" Default="1" Description="Concurrent book job subprocesses; use 1–8" Type="Variable" Display="advanced" Required="true" Mask="false">1</Config>
   <Config Name="Enable job worker" Target="ENABLE_WORKERS" Default="1" Description="Run the background job processor" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
   <Config Name="CPU threads" Target="CPU_THREADS" Default="4" Description="faster-whisper threads per job" Type="Variable" Display="advanced" Required="true" Mask="false">4</Config>
-  <Config Name="Transcript cache limit (GB)" Target="CACHE_MAX_GB" Default="10" Description="Cache size budget under /config" Type="Variable" Display="advanced" Required="true" Mask="false">10</Config>
+  <Config Name="Reusable media cache limit (GB)" Target="CACHE_MAX_GB" Default="10" Description="Retained conversion and transcript cache budget under /config; reports are retained separately" Type="Variable" Display="advanced" Required="true" Mask="false">10</Config>
   <Config Name="API token" Target="CHAPTERKEEPER_API_TOKEN" Default="" Description="Optional bearer token; set before exposing the API beyond localhost" Type="Variable" Display="always" Required="false" Mask="true"></Config>
 </Container>

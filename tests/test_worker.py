@@ -59,6 +59,34 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(saved['status'],'awaiting_review')
         self.assertFalse(saved['result']['report']['recovery_draft']['publication_allowed'])
         self.assertEqual(source.read_bytes(),b'original audio')
+    def test_automatic_recovery_pipeline_never_publishes(self):
+        source=self.library/'Book.m4b';source.write_bytes(b'original audio')
+        job=self.claim(source,{'force':True,'asin':'B000000001'})
+        data={'format':{'duration':'100'},'streams':[{'codec_type':'audio','codec_name':'aac'}]}
+        def research(*a,**kw):
+            report=a[8]
+            report['alignment_attempts']=[{'asin':'B000000001','region':'us','edition':{'asin':'B000000001','title':'Book','narrators':'Reader'},'identity_compatible':True,'timing_passed':False,'timeline_hash':'one','diagnostics':{'reference_chapters':[{'start':0,'end':100,'title':'Chapter 1'}],'local_duration_seconds':100,'reference_duration_seconds':100}}]
+            raise engine.NeedsReview('Timing cannot be aligned')
+        def scan(*a):
+            a[5]['recovery_draft']={'supported_count':1,'unresolved_count':0,'total_markers':1,'missing_sections':[]}
+        with patch.object(engine,'probe',return_value=data),patch.object(engine.importlib.util,'find_spec',return_value=object()),patch.object(engine,'inspect_identity',return_value=(data,'Book','Author','Reader','B000000001',None)),patch.object(engine,'research_edition',side_effect=research),patch('app.recovery.scan_markers',side_effect=scan),patch.object(engine,'retag') as retag,patch.object(engine,'commit_result') as commit:
+            worker.execute(self.store,job,'test')
+            retag.assert_not_called();commit.assert_not_called()
+        saved=self.store.get_job(job['id'])
+        self.assertEqual(saved['status'],'awaiting_review',saved.get('error'))
+        self.assertTrue(saved['result']['report']['automatic_recovery_attempted'])
+        self.assertEqual(saved['result']['report']['review_reason']['category'],'chapters')
+        self.assertEqual(source.read_bytes(),b'original audio')
+    def test_missing_track_stops_before_conversion(self):
+        book=self.library/'Book';book.mkdir()
+        for name in ('01.mp3','03.mp3'):(book/name).write_bytes(b'audio')
+        job=self.claim(book)
+        with patch.object(engine,'probe',return_value={'format':{'duration':'100'}}),patch.object(engine,'convert') as convert:
+            worker.execute(self.store,job,'test');convert.assert_not_called()
+        saved=self.store.get_job(job['id'])
+        self.assertEqual(saved['status'],'awaiting_review')
+        self.assertEqual(saved['result']['report']['review_reason']['category'],'source_inventory')
+        self.assertEqual(len(list(book.glob('*.mp3'))),2)
     @unittest.skipUnless(shutil.which('ffmpeg'),'ffmpeg required')
     def test_real_conversion_and_repair_via_worker(self):
         book=self.library/'Book';book.mkdir()
@@ -69,6 +97,7 @@ class WorkerTests(unittest.TestCase):
         sidecar=book/'book.nfo';sidecar.write_bytes(b'unchanged')
         job=self.claim(book,{'keep_mp3s':False})
         def research(title,author,narrator,seconds,region,asin,data,questions,report,folder,**kwargs):
+            report['alignment_attempts']=[{'asin':'123456789X','timing_passed':True,'diagnostics':{'local_duration_seconds':seconds,'reference_duration_seconds':seconds}}]
             plan=[{'start_seconds':float(c['start_time']),'title':'Chapter '+str(i)} for i,c in enumerate(data['chapters'],1)]
             return {'asin':'123456789X','title':'Book','narrators':'Reader','publisher':'Test'}, {}, plan, {'matching_boundaries':7,'offset_seconds':0}
         def speech(source,plan,evidence,args,report,folder,model,attempt):

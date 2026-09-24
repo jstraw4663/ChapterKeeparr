@@ -37,3 +37,13 @@ JavaScript syntax and focused headless Chrome checks passed for all four dashboa
 - JavaScript syntax passes. Dependencies and container base/model are unchanged.
 
 Not validated here: Linux/amd64 Docker build, Unraid CPU speech performance, the full roadmap's deeper scanning/drift fitting/edit-and-publish UI. A Mac MLX benchmark cannot establish the container's 4 GB memory behavior. Recovery drafts intentionally cannot authorize publication.
+
+## 0.4.0 gated workflow — 2026-09-24
+
+- 49 unittest cases pass. New cases cover mandatory publication gates, missing coverage data, suspected internal gaps, legacy/queued presentation, missing/duplicate/out-of-order tracks and discs, automatic draft-only recovery, conversion-cache reuse/invalidation/corruption, input mutation during conversion, service-error classification, API safe resume, and worker-level early gap/recovery paths.
+- Generated FFmpeg fixture performs real conversion, validated retag/commit and configured MP3 cleanup; metadata/speech are mocked in this fixture. Real book files remain unchanged.
+- `node --check app/static/app.js`, `node --check app/static/sw.js`, and `git diff --check` pass.
+- Headless Chrome on a worker-disabled local preview passes at 390px and 1440px: five gates and expanded detail, evidence labels, targeted review, preserved current-file runtime/search, safe resume payload, no page overflow/errors. New-state display uses a projected fixture over a saved real-book job, not a live repair. Screenshots visually inspected.
+- Saved real-book diagnostics re-evaluated with new coverage checks: Bedlam Bride no warnings; Parade of Horribles suspected gap (62.6s shortfall plus internal offset changes). This does not prove missing audio.
+- Model inference unchanged; Mac speech timing from 0.3.0 does not establish Linux/Unraid performance. Docker execution and live server deployment were not performed.
+- Conservative gap heuristics can increase reviews for legitimate edits; incompleteness can escape detection without numbering/reference evidence. Draft editing, new-boundary reconstruction and draft publication are not implemented.

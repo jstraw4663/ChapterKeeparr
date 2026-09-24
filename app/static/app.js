@@ -230,6 +230,16 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (error) { alert(error.message); }
   }
+  function workflowMarkup(job) {
+    const w = job.workflow;
+    if (!w) return '';
+    return `<section class="surface workflow-card" aria-label="Book process"><h2>${safe(w.overall)}</h2><ol class="workflow-timeline">${w.gates.map((g,i)=>`<li class="gate-${safe(g.state)}"><details><summary><span class="gate-number">${i+1}</span><strong>${safe(g.label)}</strong><small>${safe(g.state)}</small></summary><p>${safe(g.detail)}</p></details></li>`).join('')}</ol><p class="subtle">Open a step to see its checks. Evidence grades describe checks performed; they are not probabilities of completeness.</p>${Object.keys(w.assessment).length ? `<dl class="assessment-grid">${Object.entries(w.assessment).map(([key,value])=>`<div><dt>${safe(key)}</dt><dd><strong>${safe(value.level.replaceAll('_',' '))}</strong><p>${safe(value.detail)}</p></dd></div>`).join('')}</dl>` : ''}</section>`;
+  }
+  function targetedReview(job, report, identity) {
+    const w = job.workflow;
+    if (!w || w.review_category === 'identity') return reviewForm(job,report,identity);
+    return `<section class="surface detail-card"><h2>${safe(w.next_action)}</h2><p>${safe(report.review_reason?.detail || report.reason || job.error)}</p><p class="subtle">Resume reruns the required checks. A recovery draft cannot be saved to the audiobook.</p><button type="button" class="button button-primary" data-resume-checks>Resume checks</button><details class="alignment-attempt"><summary>Change recording details</summary>${reviewForm(job,report,identity)}</details></section>`;
+  }
   function renderDetail(job, force = false) {
     if (state.selected !== job.id) return;
     if (!force && REVIEW_FORM.has(job.status) && $('#review-form')?.dataset.jobId === job.id) return;
@@ -244,9 +254,10 @@
     const progress = percent(job.progress);
     $('#detail-updated').textContent = `Updated ${when(job.updated_at || job.created_at)}`;
     $('#detail-content').innerHTML = `<div class="detail-heading"><div><div class="eyebrow">JOB ${safe(String(job.id).slice(0, 8).toUpperCase())}</div>${coverMarkup(job)}<h1 id="detail-title">${safe(shortPath(job.path))}</h1><p class="break-path">${safe(job.path)}</p><div class="detail-status">${badge(job.status)}<span>${safe(job.stage ? statusName(job.stage) : '')}</span></div></div><div class="detail-actions">${canCancel ? '<button class="button button-quiet" type="button" data-action="cancel">Cancel job</button>' : ''}${canRetry ? '<button class="button button-secondary" type="button" data-action="retry">Retry job</button>' : ''}</div></div>
+      ${workflowMarkup(job)}
       ${isActive ? `<div class="surface detail-progress"><div><strong>${safe(statusName(job.stage || job.status))}</strong><span>${progress}%</span></div><div class="progress-track"><span style="width:${progress}%"></span></div></div>` : ''}
       ${(job.error || report.reason || report.pending_question) ? `<div class="alert ${isReview ? 'warning' : ''}" role="status"><strong>${isReview ? 'Review needed' : 'Job note'}</strong><p>${safe(job.error || report.reason || report.pending_question)}</p></div>` : ''}
-      ${isReview ? `<div class="review-card">${reviewForm(job, report, identity)}</div>` : ''}
+      ${isReview ? `<div class="review-card">${targetedReview(job, report, identity)}</div>` : ''}
       <div class="detail-grid"><div class="detail-main">
       ${['complete', 'skipped'].includes(job.status) ? detailSection('Chapter Details', '<div id="chapter-list">Loading saved chapters…</div><p id="chapter-message" class="subtle" role="status"></p>') : ''}
       ${detailSection('Verification evidence', checks.length ? `<div class="check-summary"><strong>${checks.filter(c => c.passed === true).length} of ${checks.length}</strong> checks passed</div><div class="checks-list">${checks.map((check, i) => checkMarkup(job, check, i)).join('')}</div>` : '', 'Audio checks will appear here when a chapter plan is ready.')}
@@ -257,7 +268,7 @@
       ${logs.length ? detailSection('Activity log', `<pre class="log-block">${safe(logs.map(x => typeof x === 'string' ? x : x.message || JSON.stringify(x)).join('\n'))}</pre>`) : ''}
       </div><aside class="detail-aside">
       ${detailSection('Book details', `<dl class="detail-list">${keyValue('Title', identity.title || report.edition?.title)}${keyValue('Author', identity.author || report.edition?.author)}${keyValue('Narrator', identity.narrator || report.edition?.narrator)}${keyValue('ASIN', report.edition?.asin || identity.asin)}${keyValue('Output', report.output)}${keyValue('MP3s deleted', report.mp3s_deleted)}</dl>`)}
-      ${detailSection('Job details', `<dl class="detail-list">${keyValue('Created', when(job.created_at))}${keyValue('Started', when(job.started_at))}${keyValue('Finished', when(job.finished_at))}${keyValue('Attempts', job.attempts)}${keyValue('Source MP3s', job.options?.keep_mp3s ? 'Keep' : 'Remove after success')}${keyValue('Chapter checks', job.options?.verify_all ? 'Every chapter' : 'Spot checks')}</dl><button type="button" class="button button-secondary" data-download-report>Download report</button>`)}
+      ${detailSection('Job details', `<dl class="detail-list">${keyValue('Created', when(job.created_at))}${keyValue('Started', when(job.started_at))}${keyValue('Finished', when(job.finished_at))}${keyValue('Attempts', job.attempts)}${keyValue('Source MP3s', job.options?.keep_mp3s ? 'Keep' : 'Remove after success')}${keyValue('Chapter checks', job.options?.verify_all ? 'All numbered chapters' : 'Spot checks')}</dl><button type="button" class="button button-secondary" data-download-report>Download report</button>`)}
       </aside></div>`;
     if (isReview) loadSourceDuration(job);
     if (state.editionResults.length && isReview) renderEditions();
@@ -267,6 +278,7 @@
     updateOfflineUI();
   }
   function reviewForm(job, report, identity) {
+    identity = {...identity, asin: report.selected_recording?.asin || identity.asin};
     const answer = job.review_answer || job.review || {};
     const field = (name, label, value, hint = '') => `<label class="field-label" for="review-${name}">${label}</label><input id="review-${name}" name="${name}" type="text" value="${safe(answer[name] || value || '')}" ${hint ? `placeholder="${safe(hint)}"` : ''} autocomplete="off">`;
     return detailSection('Correct book details', `<p class="subtle form-intro">Search by title or ASIN to inspect possible editions. Select a match to fill the fields, then submit the details to resume verification.</p><p class="source-duration">Current file: <strong id="source-duration">${safe(sourceMinutes(job))}</strong></p><form id="edition-search-form" role="search"><label class="field-label" for="edition-query">Find an edition</label><div class="edition-search-row"><input id="edition-query" type="search" name="query" value="${safe(state.editionQuery)}" placeholder="Title or ASIN" autocomplete="off"><button class="button button-secondary" type="submit">Search</button></div><button type="button" class="button button-quiet filename-fill" data-file-title="${safe(shortPath(job.path).replace(/\.(m4b|m4a|mp3)$/i, ''))}">Use filename</button><p class="field-help">Results are candidates. A selection is checked against your audio after you submit.</p></form><div id="edition-message" class="form-message hidden" role="status"></div><div id="edition-results" class="edition-results" aria-live="polite"></div><form id="review-form" data-job-id="${safe(job.id)}"><div class="review-divider"><span>Selected or manual details</span></div>${field('asin', 'ASIN', identity.asin, '10-character ASIN')}${field('title', 'Title', identity.title)}${field('author', 'Author', identity.author)}${field('narrator', 'Narrator', identity.narrator)}<label class="field-label" for="review-region">Region</label><select name="region" id="review-region">${['us', 'uk', 'ca', 'au', 'de', 'fr', 'jp', 'in', 'es', 'it'].map(x => `<option value="${x}" ${String(answer.region || report.region || 'us').toLowerCase() === x ? 'selected' : ''}>${x.toUpperCase()}</option>`).join('')}</select><div id="review-message" class="form-message hidden" role="status"></div><button class="button button-primary submit-button" type="submit">Submit details &amp; resume</button><button class="button button-secondary submit-button" type="submit" name="recovery" value="local_markers">Review markers from audio</button><p class="field-help">Listen near each existing marker and save a draft. Select a matching ASIN first. This scan does not change your audiobook.</p></form>`);
@@ -483,6 +495,13 @@
       const folder = event.target.closest('[data-browse-path]'); if (folder) browse(folder.dataset.browsePath);
     });
     $('#detail-content').addEventListener('click', openAudio);
+    $('#detail-content').addEventListener('click', async event => {
+      const button = event.target.closest('[data-resume-checks]');
+      if (!button) return;
+      button.disabled = true;
+      try { await api(`/api/jobs/${encodeURIComponent(state.selected)}/review`, {method:'POST',body:JSON.stringify({action:'resume'})}); await refresh(); await loadDetail(state.selected); }
+      catch(error) { alert(error.message); button.disabled = false; }
+    });
     $('#detail-content').addEventListener('submit', event => { if (event.target.id === 'review-form') submitReview(event); if (event.target.id === 'edition-search-form') searchEditions(event); });
     $('#detail-content').addEventListener('click', event => { const card = event.target.closest('[data-edition-index]'); if (card) selectEdition(Number(card.dataset.editionIndex)); });
     $('#detail-content').addEventListener('click', event => { if (event.target.id === 'detail-retry') loadDetail(state.selected); });

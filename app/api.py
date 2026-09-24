@@ -27,6 +27,7 @@ class JobSubmission(BaseModel):
 
 
 class ReviewAnswer(BaseModel):
+    action: str | None = None
     asin: str | None = None
     title: str | None = None
     author: str | None = None
@@ -120,7 +121,9 @@ def create_app(store: Store | None = None) -> FastAPI:
 
     @app.get("/api/jobs", dependencies=[Depends(auth)])
     def list_jobs(limit: int = 100) -> dict[str, Any]:
-        return {"jobs": store.list_jobs(limit)}
+        from .flow import present
+        jobs = store.list_jobs(limit)
+        return {"jobs": [{**job, "workflow": present(job)} for job in jobs]}
 
     @app.post("/api/discover", dependencies=[Depends(auth)])
     def discover(payload: JobSubmission):
@@ -174,7 +177,8 @@ def create_app(store: Store | None = None) -> FastAPI:
         job = store.get_job(job_id)
         if job is None:
             raise HTTPException(404, "Job not found")
-        return job
+        from .flow import present
+        return {**job, "workflow": present(job)}
 
     @app.post("/api/jobs/{job_id}/cancel", dependencies=[Depends(auth)])
     def cancel_job(job_id: str) -> dict[str, Any]:
@@ -199,6 +203,8 @@ def create_app(store: Store | None = None) -> FastAPI:
         answer = {key: value.strip() for key, value in answer.items() if value.strip()}
         if not answer:
             raise HTTPException(422, "Supply at least one review field")
+        if answer.pop('action', 'resume') != 'resume':
+            raise HTTPException(422, 'Unsupported review action')
         if answer.get('recovery', 'verify') not in ('verify', 'local_markers'):
             raise HTTPException(422, 'Unsupported recovery method')
         if answer.get('recovery') == 'local_markers' and not answer.get('asin'):

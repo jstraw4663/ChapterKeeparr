@@ -21,3 +21,21 @@
 .alignment-plot {margin: 1rem 0; color: #74ddd0;}
 .alignment-plot svg {width: 100%; height: auto;}
 .alignment-plot figcaption {font-size: .8rem;}
+
+/* Explicit workflow gates remain readable without relying on colour. */
+.workflow-card {padding:24px;margin:0 0 24px}
+.workflow-card h2 {margin-top:0}
+.workflow-timeline {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;list-style:none;padding:0}
+.workflow-timeline li {border:1px solid #405365;border-radius:12px;padding:12px;min-width:0}
+.workflow-timeline summary {cursor:pointer;display:flex;flex-direction:column;gap:7px}
+.workflow-timeline p {font-size:.85rem;overflow-wrap:anywhere}
+.gate-number {font-weight:700;opacity:.7}
+.workflow-timeline .gate-passed {border-color:#65d6c8}
+.workflow-timeline .gate-working {border-color:#8cbcff;background:#16283b}
+.workflow-timeline .gate-review,.workflow-timeline .gate-blocked {border-color:#e5b86a;background:#302b25}
+.workflow-timeline small {text-transform:capitalize}
+.assessment-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.assessment-grid dt {text-transform:capitalize;font-weight:700;margin-bottom:8px}
+.assessment-grid dd {margin:0;font-size:.85rem}
+.assessment-grid dd p {opacity:.75}
+@media(max-width:650px) {.workflow-card{padding:16px}.workflow-timeline{display:flex;overflow-x:auto;padding-bottom:12px}.workflow-timeline li{flex:0 0 135px}}

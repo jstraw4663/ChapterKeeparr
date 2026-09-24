@@ -161,7 +161,8 @@ def scan_markers(source, data, remote, speech, args, report, folder, evidence=No
 
 
 def run_local_review(args, report, folder):
-    from . import engine
+    from . import engine, flow
+    flow.gate(report,'inspect','working','Inspecting existing audio for a draft-only scan')
     source = args.target
     if not source.is_file() or source.suffix.lower() != '.m4b':
         raise engine.NeedsReview('Choose an existing M4B for local-marker review.')
@@ -172,6 +173,8 @@ def run_local_review(args, report, folder):
     source_hash = engine.file_hash(source)
     report.update(status='researching', input=str(source), source_duration_seconds=seconds,
                   audio_source_sha256=source_hash, algorithm_version=ALGORITHM_VERSION)
+    flow.gate(report,'inspect','passed','Existing audio inspected and fingerprinted')
+    flow.gate(report,'match','working','Checking the selected recording metadata')
     book = engine.get_json('https://api.audnex.us/books/'+args.asin+'?region='+args.region)
     if book.get('asin') != args.asin or not engine.eligible_book(book,args.title,args.author,args.narrator,seconds):
         raise engine.NeedsReview('Selected recording metadata does not match this file. Correct the identity before recovery.')
@@ -180,6 +183,10 @@ def run_local_review(args, report, folder):
         raise engine.NeedsReview('Selected recording has no verified published timeline.')
     remote = engine.remote_timeline(published)
     report['edition'] = engine.summaries(book)
+    report['selected_recording'] = {'asin':args.asin,'region':args.region}
+    flow.gate(report,'match','passed','Selected recording metadata is compatible')
+    flow.assess(report,'recording','compatible','Available recording metadata passed compatibility checks')
+    flow.gate(report,'align','working','Scanning existing markers; draft cannot publish')
     evidence = []
     for path in sorted(source.parent.glob('*.epub'))[:10]:
         if path.is_symlink(): continue
@@ -197,5 +204,53 @@ def run_local_review(args, report, folder):
         draft.update(complete=False, invalidated=True)
         raise engine.NeedsReview('Source changed during recovery. Draft is invalid; scan the current file again.')
     report.update(status='needs_review',reason='Local-marker draft saved: {} supported, {} unresolved markers and {} unresolved published sections. No audio was changed. Review is required.'.format(draft['supported_count'],draft['unresolved_count'],len(draft['missing_sections'])))
+    flow.assess(report,'alignment','partial',f"{draft['supported_count']} supported existing markers; draft cannot publish")
+    flow.assess(report,'coverage','unresolved','Existing marker review cannot establish complete content')
+    flow.assess(report,'speech','local_markers','Existing markers scanned; missing/new boundaries are not verified')
+    flow.require_review(report,'chapters',report['reason'],'align')
     engine.write_report(folder,report)
     return 2
+
+
+def automatic_candidate(report):
+    """Escalate only one unambiguous metadata-compatible timeline; never a service error."""
+    candidates = [a for a in report.get('alignment_attempts',[]) if a.get('identity_compatible') is True
+                  and a.get('diagnostics',{}).get('reference_chapters') and not a.get('timing_passed')]
+    requested = report.get('identity',{}).get('asin')
+    if requested:
+        selected = [a for a in candidates if a['asin']==requested]
+        if selected: return selected[0]
+    hashes = {a.get('timeline_hash') for a in candidates}
+    return candidates[0] if len(hashes)==1 and candidates else None
+
+
+def automatic_review(source,data,evidence,args,report,folder):
+    from . import engine, flow
+    import contextlib
+    candidate = automatic_candidate(report)
+    if not candidate or report.get('automatic_recovery_attempted'): return False
+    report['automatic_recovery_attempted'] = True
+    report['edition'] = candidate['edition']
+    report['selected_recording'] = {'asin':candidate['asin'],'region':candidate['region']}
+    flow.gate(report,'match','passed','Recording metadata is compatible; timing needs recovery')
+    flow.assess(report,'recording','compatible','Title/author/narrator and edition filters passed; not a probability')
+    flow.check_coverage(report,candidate['diagnostics'])
+    flow.gate(report,'align','working','Checking existing markers against local speech and matching EPUB evidence')
+    engine.write_report(folder,report)
+    with getattr(args,'recovery_slot',contextlib.nullcontext)():
+        speech=engine.LocalSpeech(args.backend,args.model or ('mlx-community/whisper-small.en-mlx' if args.backend=='mlx' else 'small.en'),args.model_cache)
+        scan_markers(source,data,candidate['diagnostics']['reference_chapters'],speech,args,report,folder,evidence)
+    draft=report['recovery_draft']
+    if engine.file_hash(source)!=report['audio_source_sha256']:
+        draft['invalidated']=True
+        flow.require_review(report,'source_changed','Source changed during recovery','align')
+        raise engine.NeedsReview('Source changed during recovery; draft invalidated')
+    flow.assess(report,'alignment','partial',f"{draft['supported_count']} of {draft['total_markers']} existing markers supported; draft cannot publish")
+    flow.assess(report,'speech','local_markers','All existing markers scanned; new/missing boundaries are not verified')
+    if draft['missing_sections'] and report['assessment']['coverage']['level']!='suspected_gap':
+        flow.assess(report,'coverage','unresolved',f"{len(draft['missing_sections'])} published sections remain unlocated; this does not prove missing audio")
+    detail=f"Automatic recovery saved a draft: {draft['supported_count']} supported markers, {draft['unresolved_count']} unresolved markers and {len(draft['missing_sections'])} unlocated published sections. Review the evidence; original audio is unchanged."
+    flow.require_review(report,'chapters',detail,'align')
+    report.update(status='needs_review',reason=detail)
+    engine.write_report(folder,report)
+    return True

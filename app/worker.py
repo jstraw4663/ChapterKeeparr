@@ -9,9 +9,10 @@ import os
 import re
 from pathlib import Path
 import signal
+import shutil
 import sys
 import threading
-from . import engine
+from . import engine, flow
 from .db import Store
 
 STAGES = {'starting': .02, 'converting': .15, 'researching': .35,
@@ -29,6 +30,7 @@ def prune_transcripts(folder):
             items.append((stat.st_mtime_ns, stat.st_size, path))
         except FileNotFoundError: pass
     total = sum(size for _, size, _ in items)
+    total += sum(p.stat().st_size for p in (folder.parent/'jobs').glob('*/prepared/prepared.m4b'))
     for _, size, path in sorted(items):
         if total <= limit: break
         try:
@@ -61,6 +63,7 @@ def execute(store: Store, job: dict, owner: str):
     folder = config / 'jobs' / job['id'] / ('attempt-%03d' % job['attempts'])
     folder.mkdir(parents=True, exist_ok=True)
     args = arguments(job)
+    args.prepared_cache = config / 'jobs' / job['id'] / 'prepared'
     args.recovery_cache = config / 'alignment-cache'
     args.recovery_force = job['attempts'] > 1
     current = {'report': {}, 'report_path': None, 'log_path': str(folder / 'worker.log')}
@@ -111,8 +114,13 @@ def execute(store: Store, job: dict, owner: str):
             progress = .5 + .24 * (int(match[1])-1) / int(match[2])
         store.update_job(job['id'], result=current, progress=progress, worker=owner)
 
+    heavy_depth = 0
     @contextlib.contextmanager
     def heavy_slot():
+        nonlocal heavy_depth
+        if heavy_depth:
+            yield
+            return
         with (config / 'media.lock').open('a+b') as handle:
             while True:
                 check_cancel()
@@ -121,8 +129,14 @@ def execute(store: Store, job: dict, owner: str):
                     break
                 except BlockingIOError:
                     threading.Event().wait(.5)
+            heavy_depth += 1
             try: yield
-            finally: fcntl.flock(handle, fcntl.LOCK_UN)
+            finally:
+                heavy_depth -= 1
+                fcntl.flock(handle, fcntl.LOCK_UN)
+
+    args.check_cancel = check_cancel
+    args.recovery_slot = heavy_slot
 
     def convert(*a, **kw):
         with heavy_slot(): return original_convert(*a, **kw)
@@ -203,12 +217,17 @@ def execute(store: Store, job: dict, owner: str):
             with heavy_slot():
                 code = run_local_review(args, report, folder)
         else:
-            code = engine.workflow(args, interactive=False)
+            with heavy_slot():
+                code = engine.workflow(args, interactive=False)
         report = current['report']
         state = ('complete' if code == 0 else 'awaiting_review' if code == 2 else 'failed')
         if report.get('status') == 'skipped': state = 'skipped'
         review = {'question': report.get('pending_question') or report.get('reason'),
                   'identity': report.get('identity'), 'choices': report.get('choices', [])}
+        if state == 'complete':
+            try: shutil.rmtree(args.prepared_cache)
+            except FileNotFoundError: pass
+            except OSError: pass  # Reconstructible cache cleanup cannot invalidate a committed book.
         store.finish(job['id'], state, current, error=report.get('reason'),
                      review=review if state == 'awaiting_review' else None, worker=owner)
     except KeyboardInterrupt as ex:
@@ -218,7 +237,9 @@ def execute(store: Store, job: dict, owner: str):
         store.finish(job['id'], 'cancelled' if cancelled else 'failed', current, error=str(ex), worker=owner)
     except Exception as ex:
         state = 'awaiting_review' if isinstance(ex, engine.NeedsReview) else 'failed'
-        if args.recovery == 'local_markers' and current['report']:
+        if not current['report'].get('review_reason'):
+            flow.require_review(current['report'], 'service' if isinstance(ex,engine.MetadataServiceError) else 'operational', str(ex))
+        if current['report']:
             current['report'].update(status='needs_review' if state == 'awaiting_review' else 'error', reason=str(ex))
             engine.write_json(folder / 'report.json', current['report'])
         store.finish(job['id'], state, current, error=str(ex),

@@ -1,4 +1,4 @@
-# ChapterKeeparr 0.3.0 (alpha)
+# ChapterKeeparr 0.4.0 (alpha)
 
 This release starts the alignment-recovery plan: persisted timing diagnostics, bounded search recovery, file minutes during matching, and an on-demand local-marker audio/EPUB draft. Use **Review markers from audio** after selecting an ASIN. Drafts do not publish or change your audiobook; unresolved sections remain visible. See `PROJECT-CONTEXT.md` for implementation status and real-book findings.
 
@@ -96,3 +96,9 @@ No new runtime dependencies are needed. This release does not add BookOrbit inte
 ## 0.2.1 UI update
 
 All four dashboard count cards open the corresponding Jobs filter and clear any old text search. Completed shows successful completions only; Finished remains available for all terminal states. Review search has a **Use filename** button that removes the audio extension and lets you edit before searching. Chapter-alignment recovery is proposed in `ALIGNMENT-RECOVERY-PLAN.md`; the processing thresholds and recovery engine are unchanged in this release.
+
+## Gated workflow (0.4.0)
+
+Each book now shows Inspect → Match → Align → Verify → Save, evidence grades, and a targeted review action. See [WORKFLOW-GUIDE.md](WORKFLOW-GUIDE.md) for the process and decision tree. MP3 track/disc gaps block early; content warnings and recovery drafts cannot publish. Timing failure can trigger automatic local-marker review for one unambiguous compatible timeline. Fingerprinted conversions are retained for retries within the cache budget; all publication checks still run.
+
+The coverage heuristics are conservative and can flag harmless edits; no grade proves every passage is present. Editable/reconstructed draft publication remains unimplemented. CACHE_MAX_GB bounds retained conversions plus transcript cache; diagnostic reports/excerpts are retained separately. The worker serializes heavy processing across jobs.
