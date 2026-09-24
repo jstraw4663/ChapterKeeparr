@@ -2,7 +2,7 @@
 
 ## Canonical source
 
-This folder is the development project: `/Users/jeremystraw/Documents/Codex/ChapterKeeparr`.
+This folder is the development Git project (main branch, committed initial build): `/Users/jeremystraw/Documents/Codex/ChapterKeeparr`.
 It was copied from the previous task's `chapterkeeper` 0.2.1 source; that source and its release ZIPs remain unchanged. The recovery design is in `ALIGNMENT-RECOVERY-PLAN.md`.
 
 The user asked to start the alignment recovery build, investigate the Bedlam Bride provider 404, and show current-file runtime in minutes during edition search. Test books are on the Tower SMB share at `/Volumes/Media/chapterkeeparr-test`. Development has read those books, not modified them.
