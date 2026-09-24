@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ChapterKeeparr — Library</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.ck{--bg:#FAFAF8;--surface:#FFFFFF;--raised:#F2F2EF;--ink:#121211;--muted:#62625D;--line:#E5E5E0;--hover:#EFEFEB;--track:#E3E3DE;--field:#FBFBF9;--primary:#121211;--primary-ink:#FFFFFF;--warn:#8F5E00;--warn-bg:#F7EACB;--warn-line:#EAD3A0;--ok:#2B6A39;--ok-bg:#E2EFE4;--bad:#B23A1C;--bad-bg:#FBE4DC;--shadow:0 16px 40px rgba(0,0,0,.14);--bar:rgba(250,250,248,.88);--ease:cubic-bezier(.32,.72,0,1);font-family:'Figtree',ui-sans-serif,system-ui,-apple-system,sans-serif;transition:background-color .45s ease,color .45s ease}
+.ck.dark{--bg:#0F0F0E;--surface:#171716;--raised:#1F1F1D;--ink:#F4F4F1;--muted:#9D9D97;--line:#292927;--hover:#222220;--track:#2C2C2A;--field:#141413;--primary:#F4F4F1;--primary-ink:#0F0F0E;--warn:#E9B34E;--warn-bg:#2E2513;--warn-line:#4A3A18;--ok:#7FC98C;--ok-bg:#16291B;--bad:#F08A6C;--bad-bg:#33180F;--shadow:0 20px 50px rgba(0,0,0,.6);--bar:rgba(15,15,14,.86)}
+.ck *{transition:background-color .45s ease,border-color .45s ease,color .45s ease}
+.ck button{font-family:inherit;cursor:pointer}
+.ck .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.ck .rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes slidein{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.ck .stack{animation:slidein .6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes pushin{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+.ck .pushin{animation:pushin .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.ck .fill{transform-origin:left center;animation:grow 1.4s cubic-bezier(.2,.7,.2,1) .5s both}
+@keyframes sweep{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+.ck .live{position:relative;overflow:hidden}
+.ck .live::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sweep 2s ease-in-out 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ck .pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(0)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.ck .tick{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes open{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.ck .opened{animation:open .35s cubic-bezier(.2,.7,.2,1) both}
+@keyframes eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.ck .eq span{display:block;width:3px;height:14px;border-radius:2px;background:currentColor;transform-origin:bottom;animation:eq .9s ease-in-out infinite}
+
+/* sidebar */
+.ck .rail{position:relative;z-index:2;width:248px;flex-shrink:0;box-sizing:border-box;padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:28px;overflow:hidden;transition:width .55s var(--ease),background-color .45s ease,border-color .45s ease}
+.ck.collapsed .rail{width:76px}
+.ck .lbl{white-space:nowrap;opacity:1;transition:opacity .25s ease .2s}
+.ck.collapsed .lbl{opacity:0;transition-delay:0s}
+.ck .side{position:relative;display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;border:0;background:transparent;font-size:15px;font-weight:600;color:var(--muted);text-decoration:none;text-align:left;flex-shrink:0}
+.ck .side svg{flex-shrink:0}
+.ck .side:hover{background:var(--hover);color:var(--ink)}
+.ck .side.on{background:var(--raised);color:var(--ink)}
+.ck .side:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.ck .flip{transition:transform .55s var(--ease)}
+.ck.collapsed .flip{transform:rotate(180deg)}
+.ck .badge{position:absolute;right:12px;top:11px;min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:999px;background:var(--raised);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:12px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;transition:right .55s var(--ease),top .55s var(--ease),min-width .4s ease,height .4s ease,padding .4s ease,font-size .3s ease,background-color .45s ease,color .45s ease}
+.ck .badge.amber{background:var(--warn-bg);color:var(--warn);box-shadow:none}
+.ck.collapsed .badge{right:2px;top:4px;min-width:18px;height:18px;padding:0 5px;font-size:11px;background:var(--ink);color:var(--bg);box-shadow:none}
+.ck.collapsed .badge.amber{background:var(--warn);color:var(--bg)}
+@keyframes bumpA{0%{transform:scale(1)}35%{transform:scale(1.7)}65%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes bumpB{0%{transform:scale(1)}35%{transform:scale(1.7)}65%{transform:scale(.9)}100%{transform:scale(1)}}
+.ck .bumpA{animation:bumpA .55s cubic-bezier(.3,1.4,.5,1)}
+.ck .bumpB{animation:bumpB .55s cubic-bezier(.3,1.4,.5,1)}
+@keyframes haloA{0%{opacity:.6;transform:scale(.6)}100%{opacity:0;transform:scale(2.2)}}
+@keyframes haloB{0%{opacity:.6;transform:scale(.6)}100%{opacity:0;transform:scale(2.2)}}
+.ck .halo{position:absolute;inset:0;border-radius:999px;background:currentColor;opacity:0;pointer-events:none}
+.ck .halo.bumpA{animation:haloA .7s ease-out}
+.ck .halo.bumpB{animation:haloB .7s ease-out}
+.ck .qring{position:absolute;left:5px;top:5px;opacity:0;transition:opacity .4s ease}
+.ck.collapsed .qring.live{opacity:1;transition-delay:.35s}
+
+/* activity card */
+.ck .act{position:absolute;z-index:5;left:16px;bottom:84px;width:216px;box-sizing:border-box;padding:14px;border-radius:14px;background:var(--raised);text-decoration:none;color:var(--ink);opacity:1;transform:none;transform-origin:center;transition:transform .6s var(--ease),opacity .45s ease,background-color .45s ease}
+.ck.collapsed .act{transform:translate(-86px,var(--ady)) scale(.08);opacity:0;pointer-events:none}
+.ck .act:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* notifications */
+@keyframes toastIn{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes flyOut{0%{transform:none;opacity:1}25%{transform:scale(.94);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.05);opacity:.2;border-radius:120px}}
+.ck .toast{position:absolute;z-index:10;left:100px;bottom:24px;width:400px;box-sizing:border-box;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.ck .toast.in,.ck .ptoast.in{animation:toastIn .55s cubic-bezier(.2,.8,.2,1) both}
+.ck .toast.out,.ck .ptoast.out,.ck .snote.out{animation:flyOut .72s cubic-bezier(.55,0,.25,1) forwards;pointer-events:none}
+.ck .snote{position:absolute;z-index:6;left:16px;top:392px;width:216px;box-sizing:border-box;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.14);overflow:hidden}
+@keyframes snoteIn{from{opacity:0;transform:translateY(-16px) scale(.97);clip-path:inset(0 0 100% 0 round 14px)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0 round 14px)}}
+.ck .snote.in{animation:snoteIn .6s cubic-bezier(.2,.8,.2,1) both}
+.ck .ptoast{position:absolute;z-index:10;left:12px;right:12px;box-sizing:border-box;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+@keyframes hold{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.ck .holdbar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ink);opacity:.35;transform-origin:left center;animation:hold 3.6s linear .55s both}
+.ck .tbtn{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;font-weight:650;text-decoration:none;display:inline-flex;align-items:center;flex-shrink:0}
+.ck .tbtn:hover{background:var(--hover)}
+.ck .tclose{width:44px;height:44px;margin:-6px -8px -6px 0;border-radius:999px;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ck .tclose:hover{background:var(--hover);color:var(--ink)}
+
+/* controls */
+.ck .primary{height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--primary);color:var(--primary-ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;flex-shrink:0;transition:transform .2s ease,opacity .2s ease}
+.ck .primary:hover{opacity:.88;color:var(--primary-ink)}
+.ck .primary:active{transform:scale(.97)}
+.ck .ghost{height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;flex-shrink:0}
+.ck .ghost:hover{background:var(--hover)}
+.ck .icb{width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ck .icb:hover{background:var(--hover)}
+.ck .icb:disabled{opacity:.35;cursor:default}
+.ck .search{height:44px;width:360px;box-sizing:border-box;padding:0 16px 0 44px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:15px}
+.ck .search::placeholder{color:var(--muted)}
+.ck .search:focus{outline:2px solid var(--ink);outline-offset:1px}
+.ck .tab{height:40px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-size:15px;font-weight:600;flex-shrink:0;white-space:nowrap;transition:color .25s ease,border-color .35s ease}
+.ck .tab:hover{color:var(--ink)}
+.ck .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.ck .segctl{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:var(--raised)}
+.ck .sgb{height:36px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:14px;font-weight:600;white-space:nowrap;transition:background-color .3s ease,color .3s ease,box-shadow .3s ease}
+.ck .sgb:hover{color:var(--ink)}
+.ck .sgb.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.ck .switch{position:relative;width:48px;height:28px;flex-shrink:0;border-radius:999px;border:0;padding:0;background:var(--track);transition:background-color .3s ease}
+.ck .switch::after{content:"";position:absolute;inset:-8px}
+.ck .switch .knob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .35s var(--ease),background-color .3s ease}
+.ck .switch.on{background:var(--ink)}
+.ck .switch.on .knob{transform:translateX(20px);background:var(--bg)}
+.ck .switch:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ck .fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ck .fld label{font-size:13px;font-weight:600;color:var(--muted)}
+.ck .fld input,.ck .fld select{height:46px;width:100%;box-sizing:border-box;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--ink);font-family:inherit;font-size:15px}
+.ck .fld input::placeholder{color:var(--muted)}
+.ck .fld input:focus,.ck .fld select:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:transparent}
+.ck .minichip{height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;font-weight:600}
+.ck .minichip:hover{border-color:var(--ink)}
+.ck .warnbtn{height:40px;padding:0 15px;border-radius:999px;border:1px solid var(--warn-line);background:transparent;color:var(--ink);font-size:14px;font-weight:600}
+.ck .warnbtn:hover{background:rgba(128,128,128,.08)}
+.ck details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--warn);list-style:none}
+.ck details summary::-webkit-details-marker{display:none}
+.ck .card{text-decoration:none;color:inherit;display:flex;flex-direction:column;border-radius:14px}
+.ck .card .cover{transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s ease}
+.ck .card:hover .cover{transform:translateY(-5px) scale(1.03);box-shadow:var(--shadow)}
+.ck .card:focus-visible{outline:2px solid var(--ink);outline-offset:6px}
+.ck .pillswap{transition:background-color .4s ease,color .4s ease}
+.ck .panel{border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.ck .h2{margin:0;font-size:20px;font-weight:750;letter-spacing:-0.015em}
+.ck .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* step tracker */
+.ck .steps{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.ck .steps .track{position:absolute;left:5px;right:calc(25% - 5px);top:5px;height:2px;border-radius:2px;background:var(--track)}
+.ck .steps .trackfill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;transform-origin:left center;animation:grow 1.1s cubic-bezier(.2,.7,.2,1) .3s both}
+.ck .st{position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ck .st-dot{width:12px;height:12px;box-sizing:border-box;border-radius:999px;border:2px solid var(--track);background:var(--surface)}
+.ck .st-dot.done{background:var(--ink);border-color:var(--ink)}
+.ck .st-dot.cur{border-color:var(--ink);box-shadow:0 0 0 4px rgba(128,128,128,.18);animation:pulse 1.6s ease-in-out infinite}
+.ck .st-dot.paused{background:var(--warn);border-color:var(--warn);box-shadow:0 0 0 4px rgba(233,179,78,.2)}
+.ck .st-lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.ck .st-lbl.on{color:var(--ink);font-weight:650}
+
+/* lists */
+.ck .qrow{display:grid;grid-template-columns:56px minmax(0,1fr) 300px 90px auto;align-items:center;gap:22px;padding:14px 16px;border-radius:14px;text-decoration:none;color:inherit;transition:background-color .2s ease}
+.ck .qrow:hover{background:var(--hover)}
+.ck .irow{width:100%;display:flex;align-items:center;gap:14px;padding:12px;border:0;border-radius:14px;background:transparent;color:var(--ink);text-align:left;transition:background-color .25s ease,box-shadow .25s ease}
+.ck .irow:hover{background:var(--hover)}
+.ck .irow.on{background:var(--surface);box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.08)}
+.ck .irow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ck .crow{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) 96px 88px;align-items:center;gap:14px;padding:14px 4px;border:0;background:transparent;color:var(--ink);text-align:left;font-size:15px;border-radius:10px}
+.ck .crow:hover{background:var(--hover)}
+.ck .playbtn{width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:transform .2s ease,background-color .2s ease}
+.ck .playbtn:hover{background:var(--hover)}
+.ck .playbtn:active{transform:scale(.92)}
+.ck .playbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ck .srow{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;border-top:1px solid var(--line)}
+.ck .srow:first-of-type{border-top:0}
+.ck .snav{display:flex;align-items:center;height:40px;padding:0 12px;border-radius:10px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none}
+.ck .snav:hover{background:var(--hover);color:var(--ink)}
+.ck .snav.on{color:var(--ink);background:var(--raised)}
+
+/* mobile */
+.ck .stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--raised)}
+.ck .phone{position:relative;width:390px;height:844px;border-radius:44px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--line),0 40px 90px rgba(0,0,0,.35)}
+.ck .stage.bare{background:var(--bg)}
+.ck .stage.bare .phone{border-radius:0;box-shadow:none}
+.ck .pscroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.ck .pscroll::-webkit-scrollbar,.ck .hscroll::-webkit-scrollbar{display:none}
+.ck .hscroll{scrollbar-width:none}
+.ck .ptab{flex:1 1 0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);text-decoration:none}
+.ck .ptab.on{color:var(--ink)}
+.ck .picon{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;text-decoration:none}
+.ck .picon:active{background:var(--hover);transform:scale(.92)}
+.ck .pbadge{position:absolute;right:-10px;top:-5px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.ck .pbadge.amber{background:var(--warn);color:var(--bg)}
+.ck .pring{position:absolute;left:-5px;top:-5px;opacity:0;transition:opacity .4s ease}
+.ck .pring.live{opacity:1}
+.ck .pcard .cover{transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.ck .pcard:active .cover{transform:scale(.96)}
+.ck .mrow{display:flex;align-items:center;gap:14px;min-height:72px;padding:10px 0;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;text-decoration:none;width:100%}
+.ck .pbar{position:absolute;left:0;right:0;bottom:88px;box-sizing:border-box;padding:12px 16px;display:flex;gap:10px;background:var(--bar);border-top:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.ck .up{animation:up .55s cubic-bezier(.2,.8,.2,1) .2s both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.ck .scrim{position:absolute;inset:0;z-index:20;border:0;padding:0;background:rgba(0,0,0,.45);animation:fadein .3s ease both;cursor:default}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+.ck .sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;box-sizing:border-box;padding:10px 20px 40px;border-radius:26px 26px 0 0;background:var(--surface);box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:sheetUp .5s cubic-bezier(.2,.9,.2,1) both}
+.ck .sheetrow{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-top:1px solid var(--line)}
+
+/* search: desktop */
+.ck .sbox{position:relative;display:flex;align-items:center}
+.ck .sdrop{position:absolute;z-index:30;top:54px;left:0;width:540px;box-sizing:border-box;padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+@keyframes dropin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+.ck .sdrop,.ck .mres{animation:dropin .28s cubic-bezier(.2,.8,.2,1) both;transform-origin:top left}
+.ck .sres{display:flex;align-items:center;gap:14px;min-height:56px;padding:8px 10px;border-radius:12px;text-decoration:none;color:var(--ink)}
+.ck .sres:hover,.ck .sres:focus-visible{background:var(--hover);outline:none}
+.ck .sres .t{font-size:15px;font-weight:500;color:var(--muted)}
+.ck .sres .t b{font-weight:750;color:var(--ink)}
+.ck .shead{padding:10px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ck .kbd{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:6px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--line);font-size:11px;font-weight:700;color:var(--muted)}
+
+/* search: mobile header */
+.ck .mh{position:absolute;left:0;right:0;top:0;z-index:12;height:60px;box-sizing:border-box;padding:0 12px 0 20px;display:flex;align-items:center;gap:8px;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.ck .mh-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);flex-shrink:0}
+.ck .mh-logo{display:flex;transition:transform .45s var(--ease)}
+.ck .mh.searching .mh-logo{transform:scale(.8)}
+.ck .mh-word{font-size:17px;font-weight:750;letter-spacing:-0.015em;white-space:nowrap;max-width:160px;overflow:hidden;opacity:1;transition:max-width .45s var(--ease),opacity .25s ease .1s}
+.ck .mh.searching .mh-word{max-width:0;opacity:0;transition:max-width .45s var(--ease),opacity .15s ease}
+.ck .mh-search{margin-left:auto;height:44px;width:44px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;overflow:hidden;transition:width .45s var(--ease),background-color .3s ease}
+.ck .mh.searching .mh-search{width:242px;background:var(--raised)}
+.ck .mh-sbtn{width:44px;height:44px;flex-shrink:0;border:0;border-radius:999px;background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
+.ck .mh-search input{flex:1 1 auto;min-width:0;height:44px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-size:16px;outline:none;padding:0 12px 0 0;opacity:0;transition:opacity .2s ease}
+.ck .mh-search input::placeholder{color:var(--muted)}
+.ck .mh.searching .mh-search input{opacity:1;transition-delay:.2s}
+.ck .mh-gear{transition:width .35s var(--ease),opacity .2s ease}
+.ck .mh.searching .mh-gear{width:0;opacity:0;overflow:hidden;pointer-events:none}
+.ck .mh-cancel{height:44px;max-width:0;padding:0;border:0;background:transparent;color:var(--ink);font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;opacity:0;transition:max-width .45s var(--ease),opacity .25s ease}
+.ck .mh.searching .mh-cancel{max-width:70px;opacity:1}
+.ck .mres{position:absolute;left:0;right:0;top:60px;bottom:0;z-index:11;box-sizing:border-box;padding:4px 12px 120px;overflow-y:auto;background:var(--bg)}
+
+/* floating new-job button (mobile) */
+.ck .fab{position:absolute;right:16px;bottom:104px;z-index:9;width:58px;height:58px;border-radius:999px;background:var(--primary);color:var(--primary-ink);display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.3);transition:transform .25s var(--ease),opacity .25s ease}
+@keyframes fabin{from{opacity:0;transform:scale(.4) rotate(-90deg)}to{opacity:1;transform:none}}
+.ck .fab{animation:fabin .6s cubic-bezier(.3,1.3,.5,1) .35s both}
+.ck .fab:active{transform:scale(.92)}
+.ck .fab.hide{opacity:0;transform:scale(.6);pointer-events:none}
+
+/* book */
+.ck .chrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:0 6px;min-height:56px;border-top:1px solid var(--line);border-radius:0;transition:background-color .2s ease}
+.ck .chrow:hover{background:var(--hover)}
+.ck .chrow.on{background:var(--raised)}
+.ck .chplay{width:44px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
+.ck .chplay:hover{background:var(--surface)}
+.ck .disc{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:0;border:0;background:transparent;color:var(--ink);text-align:left;font-size:15px;font-weight:650}
+.ck .disc .chev{display:inline-flex;color:var(--muted);transition:transform .35s var(--ease)}
+.ck .disc[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.ck .kv{display:grid;grid-template-columns:120px minmax(0,1fr);row-gap:12px;column-gap:14px;margin:0;font-size:14px}
+.ck .kv dt{color:var(--muted)}
+.ck .kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+@keyframes playerIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.ck .player{animation:playerIn .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes prog{from{width:0}to{width:100%}}
+.ck .progline{animation:prog 30s linear both}
+
+/* suggestions */
+.ck .sgrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:16px;padding:14px 4px;border-top:1px solid var(--line)}
+@keyframes rowout{to{opacity:0;transform:translateX(24px)}}
+.ck .sgrow.leaving{animation:rowout .35s ease forwards}
+.ck .done-chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;background:var(--ok-bg);color:var(--ok);font-size:13px;font-weight:700;animation:dropin .3s ease both}
+
+.ck .sres.on{background:var(--hover)}
+.ck .offline{position:absolute;z-index:25;top:14px;left:calc(50% + 124px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:14px;white-space:nowrap;animation:dropin .35s ease both;transition:left .55s var(--ease)}
+.ck.collapsed .offline{left:calc(50% + 38px)}
+.ck .moffline{position:absolute;z-index:11;left:12px;right:12px;top:64px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;animation:dropin .35s ease both}
+.ck .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.ck .modal-scrim{position:absolute;inset:0;z-index:40;border:0;padding:0;background:rgba(0,0,0,.5);animation:fadein .3s ease both;cursor:default}
+@keyframes modalIn{from{opacity:0;transform:translate(-50%,-46%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%)}}
+.ck .modal{position:absolute;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);width:620px;max-height:86%;overflow-y:auto;box-sizing:border-box;padding:28px;border-radius:24px;background:var(--surface);box-shadow:0 30px 80px rgba(0,0,0,.45);animation:modalIn .4s cubic-bezier(.2,.8,.2,1) both}
+.ck .msheet{position:absolute;left:0;right:0;bottom:0;z-index:41;max-height:92%;overflow-y:auto;box-sizing:border-box;padding:10px 20px 36px;border-radius:26px 26px 0 0;background:var(--surface);box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:sheetUp .5s cubic-bezier(.2,.9,.2,1) both}
+.ck .grab{width:40px;height:5px;margin:0 auto 12px;border-radius:999px;background:var(--track)}
+.ck .actrow{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:0 4px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;font-weight:600;text-align:left;text-decoration:none}
+.ck .actrow:first-of-type{border-top:0}
+.ck .actrow.danger{color:var(--bad)}
+.ck .sel{height:40px;box-sizing:border-box;padding:0 34px 0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 17px) 17px,calc(100% - 12px) 17px;background-size:5px 5px;background-repeat:no-repeat}
+.ck .sel:focus{outline:2px solid var(--ink);outline-offset:1px}
+.ck .gh{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0;border:0;background:transparent;color:var(--ink);text-align:left}
+.ck .gh .chev{display:inline-flex;color:var(--muted);transition:transform .35s var(--ease)}
+.ck .gh[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.ck .lrow{display:grid;grid-template-columns:48px minmax(0,1fr) 220px 150px 24px;align-items:center;gap:18px;padding:10px 12px;border-radius:12px;text-decoration:none;color:inherit;transition:background-color .2s ease}
+.ck .lrow:hover{background:var(--hover)}
+.ck .logrow{display:grid;grid-template-columns:72px 28px minmax(0,1fr);align-items:start;gap:12px;padding:12px 4px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.ck .logrow:hover{background:var(--hover)}
+.ck .ldot{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.ck .fbrow{display:flex;align-items:center;gap:14px;width:100%;min-height:58px;padding:8px 12px;border:0;border-radius:12px;background:transparent;color:var(--ink);text-align:left}
+.ck .fbrow:hover{background:var(--hover)}
+.ck .fbrow.on{background:var(--raised);box-shadow:inset 0 0 0 2px var(--ink)}
+.ck .fbrow:disabled{opacity:.5;cursor:default}
+.ck .crumb{border:0;background:transparent;color:var(--muted);font-size:14px;font-weight:600;padding:6px 4px;border-radius:8px}
+.ck .crumb:hover{color:var(--ink)}
+.ck .crumb.on{color:var(--ink)}
+.ck .chk{display:flex;align-items:center;gap:12px;min-height:40px;font-size:14px}
+.ck .chk .b{width:22px;height:22px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.ck .chk .b.y{background:var(--ok);color:var(--bg)}
+.ck .chk .b.n{box-shadow:inset 0 0 0 2px var(--track)}
+@keyframes countdown{from{stroke-dashoffset:0}to{stroke-dashoffset:100.5}}
+.ck .cd{animation:countdown 15s linear both}
+</style>
+</helmet>
+<div class="ck {{themeCls}}" style="position: relative; width: 1440px; height: 2200px; box-sizing: border-box; background: var(--bg); color: var(--ink); overflow: hidden; --ady: -1846px">
+<sc-if value="{{isDesktop}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; width: 1440px; height: 2200px; display: flex">
+<aside class="rail" aria-label="Sidebar">
+<a href="Home-Combined.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 7px; text-decoration: none; color: var(--ink); flex-shrink: 0"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" style="flex-shrink: 0"><rect width="30" height="30" rx="8" style="fill: var(--ink)"></rect><path d="M9.5 8.5h7.5a3 3 0 0 1 3 3v10h-7.5a3 3 0 0 1-3-3z" style="fill: none; stroke: var(--bg); stroke-width: 1.8"></path><path d="M13.5 12.8h3.2M13.5 16.3h3.2" style="stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round"></path></svg><span class="lbl" style="font-size: 18px; font-weight: 750; letter-spacing: -0.015em">ChapterKeeparr</span></a>
+<nav aria-label="Primary" style="display: flex; flex-direction: column; gap: 4px">
+<a class="side on" href="Home-Combined.dc.html" aria-current="page" aria-label="Library"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span class="lbl">Library</span></a>
+<a class="side" href="Suggestions.dc.html" aria-label="Suggestions"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"></path></svg><span class="lbl">Suggestions</span><span class="badge">{{suggCount}}</span></a>
+<a class="side" href="Queue.dc.html" aria-label="{{queueLabel}}"><svg class="{{qringCls}}" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" style="fill: none; stroke: var(--track); stroke-width: 2"></circle><circle cx="17" cy="17" r="15" transform="rotate(-90 17 17)" style="fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 94.2; stroke-dashoffset: 36"></circle></svg><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span class="lbl">Queue</span><span class="{{qBadgeCls}}"><span class="{{qHaloCls}}"></span>{{activeCount}}</span></a>
+<a class="side" href="Review.dc.html" aria-label="{{reviewLabel}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.6 6h10.8L20 13.5V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M4 13.5h4.5l1.2 2.2h4.6l1.2-2.2H20"></path></svg><span class="lbl">Needs review</span><span class="{{rBadgeCls}}"><span class="{{rHaloCls}}"></span>{{reviewCount}}</span></a>
+<a class="side" href="NewJob.dc.html" aria-label="New job"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span class="lbl">New job</span></a>
+<a class="side" href="Settings.dc.html" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg><span class="lbl">Settings</span></a>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<button class="side" onClick="{{toggleRail}}" aria-expanded="{{railOpen}}" aria-label="{{railLabel}}"><svg class="flip" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M9 4.5v15M15.5 10l-2 2 2 2"></path></svg><span class="lbl">Collapse sidebar</span></button>
+</div>
+</aside>
+
+<a class="act" href="Queue.dc.html" aria-label="{{actLabel}}">
+<span class="eyebrow" style="display: block; margin-bottom: 12px">Activity</span>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 7px; background: {{act.color}}; transition: background-color .5s ease"></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{act.title}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap"><sc-if value="{{act.live}}" hint-placeholder-val="{{ true }}"><span class="pulse" style="width: 6px; height: 6px; border-radius: 999px; background: var(--ink); flex-shrink: 0"></span></sc-if>{{act.sub}}</span>
+</div>
+</div>
+<div style="height: 4px; margin-top: 12px; border-radius: 999px; background: var(--track); overflow: hidden"><div class="fill" style="width: {{act.pct}}; height: 100%; border-radius: 999px; background: var(--ink); transition: width .8s var(--ease)"></div></div>
+</a>
+<main style="flex-grow: 1; min-width: 0; height: 100%; overflow-y: auto; box-sizing: border-box; padding: 24px 48px 48px; display: flex; flex-direction: column; gap: 28px"><div style="position: relative; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 24px"><div class="sbox">
+<label for="top-search" class="sr">Search library</label>
+<span style="position: absolute; left: 16px; color: var(--muted); display: inline-flex; pointer-events: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span>
+<input id="top-search" class="search" type="search" placeholder="Search title, series, or ASIN" value="{{q}}" onChange="{{onQuery}}" onFocus="{{openSearch}}" onBlur="{{blurSearch}}" onKeyDown="{{searchKey}}" autoComplete="off" aria-expanded="{{dOpenStr}}" aria-controls="top-results">
+<span class="kbd" style="position: absolute; right: 14px; pointer-events: none">/</span>
+<sc-if value="{{dOpen}}" hint-placeholder-val="{{ false }}">
+<div class="sdrop" id="top-results" role="listbox">
+<sc-if value="{{hasSearchHead}}" hint-placeholder-val="{{ true }}"><div class="shead">{{searchHead}}</div></sc-if>
+<sc-for list="{{searchList}}" as="r" hint-placeholder-count="3">
+<a class="{{r.cls}}" id="{{r.id}}" href="{{r.href}}" role="option" aria-selected="{{r.sel}}">
+<span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; background: {{r.color}}; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; box-sizing: border-box; font-size: 15px; font-weight: 900; line-height: 0.8; color: rgba(255,255,255,0.4)">{{r.badge}}</span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span class="t" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.pre}}<b>{{r.mid}}</b>{{r.post}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted)"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{r.dot}}"></span>{{r.sub}}</span>
+</span>
+</a>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}"><p style="margin: 14px 10px; font-size: 14px; color: var(--muted)">No books match “{{q}}”. Try a series or ASIN.</p></sc-if>
+<div style="display: flex; gap: 14px; padding: 10px 10px 4px; margin-top: 6px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted)"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">↑</span><span class="kbd">↓</span>move</span><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">Enter</span>open</span><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">Esc</span>close</span></div>
+</div>
+</sc-if>
+</div><a class="primary" href="NewJob.dc.html" style="padding: 0 20px 0 16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New job</a></div><sc-if value="{{hasReview}}" hint-placeholder-val="{{ true }}"><section class="rise panel" style="display: flex; align-items: center; gap: 26px; padding: 20px 24px">
+<div style="display: flex; flex-shrink: 0">
+<sc-for list="{{stack}}" as="m" hint-placeholder-count="4">
+<span class="stack" style="width: 54px; height: 54px; border-radius: 10px; background: {{m.color}}; margin-left: {{m.ml}}; border: 3px solid var(--surface); animation-delay: {{m.delay}}; display: flex; align-items: flex-end; justify-content: flex-end; padding: 5px; box-sizing: border-box; font-size: 18px; font-weight: 900; line-height: 0.8; color: rgba(255,255,255,0.4)">{{m.mark}}</span>
+</sc-for>
+</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="display: inline-flex; align-items: center; gap: 9px; font-size: 19px; font-weight: 750; letter-spacing: -0.01em"><span class="pulse" style="width: 8px; height: 8px; border-radius: 999px; background: var(--warn)"></span>{{bannerTitle}}</span>
+<span style="font-size: 15px; color: var(--muted)">Each paused because its edition couldn’t be confirmed. Nothing is saved until you decide.</span>
+</div>
+<a class="primary" href="Review.dc.html">Start reviewing<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+</section></sc-if>
+<section class="rise" style="animation-delay: 0.12s; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line)">
+<div role="group" aria-label="Filter library" style="display: flex; align-items: center; gap: 28px"><sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}">{{c.label}} <span style="color: var(--muted); font-weight: 500">{{c.n}}</span></button></sc-for></div>
+<div style="display: flex; align-items: center; gap: 8px; padding-bottom: 8px">
+<label for="lib-group" class="sr">Group by</label><select id="lib-group" class="sel" value="{{group}}" onChange="{{onGroup}}"><option value="none">No grouping</option><option value="series">Group: Series</option><option value="author">Group: Author</option><option value="status">Group: Status</option></select>
+<label for="lib-sort" class="sr">Sort by</label><select id="lib-sort" class="sel" value="{{sort}}" onChange="{{onSort}}"><option value="series">Sort: Series order</option><option value="recent">Sort: Recently updated</option><option value="title">Sort: Title</option><option value="author">Sort: Author</option></select>
+<div class="segctl" role="group" aria-label="View"><sc-for list="{{viewOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}" aria-label="{{o.label}}" style="width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center"><sc-if value="{{o.isLarge}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg></sc-if><sc-if value="{{o.isGrid}}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="4.5" height="4.5" rx="1"></rect><rect x="9.8" y="3.5" width="4.5" height="4.5" rx="1"></rect><rect x="16" y="3.5" width="4.5" height="4.5" rx="1"></rect><rect x="3.5" y="9.8" width="4.5" height="4.5" rx="1"></rect><rect x="9.8" y="9.8" width="4.5" height="4.5" rx="1"></rect><rect x="16" y="9.8" width="4.5" height="4.5" rx="1"></rect><rect x="3.5" y="16" width="4.5" height="4.5" rx="1"></rect><rect x="9.8" y="16" width="4.5" height="4.5" rx="1"></rect><rect x="16" y="16" width="4.5" height="4.5" rx="1"></rect></svg></sc-if><sc-if value="{{o.isList}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><circle cx="4.5" cy="6" r="1" style="fill: currentColor"></circle><circle cx="4.5" cy="12" r="1" style="fill: currentColor"></circle><circle cx="4.5" cy="18" r="1" style="fill: currentColor"></circle></svg></sc-if></button></sc-for></div>
+</div>
+</div>
+<span style="font-size: 13px; color: var(--muted)">{{countLine}}</span>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column">
+<sc-if value="{{g.hasHead}}" hint-placeholder-val="{{ true }}">
+<button class="gh" onClick="{{g.toggle}}" aria-expanded="{{g.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 18px; font-weight: 750">{{g.title}}</span><span style="font-size: 14px; color: var(--muted); font-weight: 600">{{g.count}}</span><span style="margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{g.sub}}</span></button>
+</sc-if>
+<sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}"><div class="opened"><sc-if value="{{g.isLarge}}" hint-placeholder-val="{{ false }}"><div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 30px 24px; padding: 8px 0 12px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="4"><a class="card rise" href="{{b.href}}" style="animation-delay: {{b.delay}}">
+<div class="cover" style="position: relative; aspect-ratio: 1 / 1; border-radius: 14px; background: {{b.color}}; display: flex; flex-direction: column; justify-content: space-between; padding: 16px; box-sizing: border-box; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; min-height: 10px"><span class="pillswap" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; background: {{b.pillBg}}; color: {{b.pillFg}}; font-size: 12px; font-weight: 700; white-space: nowrap"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{b.pillDot}}"></span>{{b.label}}</span><span style="margin-left: auto; font-size: 88px; font-weight: 850; line-height: 0.78; color: rgba(255,255,255,0.15)">{{b.mark}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: rgba(255,255,255,0.72)">{{b.eyebrow}}</span><span style="font-size: 21px; font-weight: 800; line-height: 1.08; color: #FFFFFF; letter-spacing: -0.01em; text-wrap: balance">{{b.title}}</span></div>
+
+<sc-if value="{{b.isConverting}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.35)"><span class="fill" style="display: block; width: 62%; height: 100%; background: #FFFFFF"></span></span></sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; padding: 14px 1px 0; min-width: 0">
+<span style="font-size: 16px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{b.title}}</span>
+<span style="font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.sub}}</span>
+</div>
+</a></sc-for></div></sc-if>
+<sc-if value="{{g.isGrid}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 24px 20px; padding: 8px 0 12px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="6"><a class="card rise" href="{{b.href}}" style="animation-delay: {{b.delay}}">
+<div class="cover" style="position: relative; aspect-ratio: 1 / 1; border-radius: 12px; background: {{b.color}}; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; box-sizing: border-box; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; min-height: 10px"><span class="pillswap" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: {{b.pillBg}}; color: {{b.pillFg}}; font-size: 11px; font-weight: 700; white-space: nowrap"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{b.pillDot}}"></span>{{b.label}}</span><span style="margin-left: auto; font-size: 56px; font-weight: 850; line-height: 0.78; color: rgba(255,255,255,0.15)">{{b.mark}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 800; line-height: 1.08; color: #FFFFFF; letter-spacing: -0.01em; text-wrap: balance">{{b.title}}</span></div>
+
+<sc-if value="{{b.isConverting}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.35)"><span class="fill" style="display: block; width: 62%; height: 100%; background: #FFFFFF"></span></span></sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; padding: 10px 1px 0; min-width: 0">
+<span style="font-size: 14px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{b.title}}</span>
+<span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.sub}}</span>
+</div>
+</a></sc-for></div></sc-if>
+<sc-if value="{{g.isList}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; padding: 4px 0 8px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="6"><a class="lrow rise" href="{{b.href}}" style="animation-delay: {{b.delay}}">
+<div style="width: 48px; height: 48px; border-radius: 8px; background: {{b.color}}; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; box-sizing: border-box; font-size: 17px; font-weight: 900; line-height: 0.8; color: rgba(255,255,255,0.35)">{{b.mark}}</div>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.title}}</span><span style="font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.author}} · {{b.sub}}</span></div>
+<span style="font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.seriesLabel}}</span>
+<span style="justify-self: start"><span class="pillswap" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: {{b.pillBg}}; color: {{b.pillFg}}; font-size: 12px; font-weight: 700; white-space: nowrap"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{b.pillDot}}"></span>{{b.label}}</span></span>
+<span style="color: var(--muted); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span>
+</a></sc-for></div></sc-if></div></sc-if>
+</section>
+</sc-for>
+</div>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div style="padding: 48px; border-radius: 20px; border: 1.5px dashed var(--line); text-align: center; color: var(--muted)">No books match this filter.</div></sc-if>
+</section>
+</main>
+<sc-if value="{{cornerShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{toastCls}}" role="status" aria-live="polite" style="--dx: {{cornerDx}}; --dy: {{cornerDy}}">
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 16px 14px 14px">
+<div style="position: relative; width: 48px; height: 48px; flex-shrink: 0; border-radius: 9px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.title}}</span>
+<span style="font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.body}}</span>
+</div>
+<sc-if value="{{toast.hasAction}}" hint-placeholder-val="{{ true }}"><a class="tbtn" href="{{toast.href}}">{{toast.action}}</a></sc-if>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<sc-if value="{{sideShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{snoteCls}}" role="status" aria-live="polite" style="--dx: {{sideDx}}; --dy: {{sideDy}}">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{toast.title}}</span>
+</div>
+<p style="margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted)">{{toast.body}}</p>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px">
+<sc-if value="{{toast.hasAction}}" hint-placeholder-val="{{ true }}"><a class="tbtn" href="{{toast.href}}">{{toast.action}}</a></sc-if>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification" style="margin: 0 -10px 0 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div class="offline" role="alert"><span class="pulse" style="width: 8px; height: 8px; border-radius: 999px; background: var(--bad)"></span><span><strong>Can’t reach the server.</strong> Showing the last known state.</span><button class="tbtn" onClick="{{retryNow}}">Retry now</button></div></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{isMobile}}" hint-placeholder-val="{{ false }}">
+<div class="stage ">
+<div class="phone">
+<div class="pscroll">
+<div style="box-sizing: border-box; padding: 72px 0 200px; display: flex; flex-direction: column; gap: 20px"><div class="rise" style="padding: 0 20px"><h1 style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.03em">Library</h1><p style="margin: 4px 0 0; font-size: 14px; color: var(--muted)">{{countLine}}</p></div><sc-if value="{{hasReview}}" hint-placeholder-val="{{ true }}">
+<a class="rise" href="Review-Mobile.dc.html" style="margin: 0 16px; display: flex; align-items: center; gap: 14px; padding: 14px 12px 14px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; color: var(--ink)">
+<div style="display: flex; flex-shrink: 0">
+<sc-for list="{{stack}}" as="m" hint-placeholder-count="4">
+<span class="stack" style="width: 40px; height: 40px; border-radius: 8px; background: {{m.color}}; margin-left: {{m.mlSm}}; border: 2px solid var(--surface); animation-delay: {{m.delay}}"></span>
+</sc-for>
+</div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="display: inline-flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 750"><span class="pulse" style="width: 7px; height: 7px; border-radius: 999px; background: var(--warn)"></span>{{bannerShort}}</span>
+<span style="font-size: 13px; color: var(--muted)">Tap to start reviewing</span>
+</div>
+<span style="flex-shrink: 0; color: var(--muted); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span>
+</a>
+</sc-if>
+<div class="rise" style="animation-delay: 0.1s; margin: 0 16px; display: flex; align-items: flex-end; gap: 6px">
+<div class="hscroll" role="group" aria-label="Filter library" style="display: flex; gap: 22px; overflow-x: auto; border-bottom: 1px solid var(--line); flex-grow: 1; min-width: 0"><sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><button class="{{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="height: 44px; font-size: 14px">{{c.label}} <span style="color: var(--muted); font-weight: 500">{{c.n}}</span></button></sc-for></div>
+<button class="picon" onClick="{{openLibSheet}}" aria-label="Sort, group and view" aria-haspopup="dialog" style="flex-shrink: 0; margin-bottom: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></button>
+</div>
+<div style="margin: 0 16px; display: flex; flex-direction: column">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column">
+<sc-if value="{{g.hasHead}}" hint-placeholder-val="{{ true }}">
+<button class="gh" onClick="{{g.toggle}}" aria-expanded="{{g.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 16px; font-weight: 750">{{g.title}}</span><span style="font-size: 14px; color: var(--muted); font-weight: 600">{{g.count}}</span><span style="margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{g.sub}}</span></button>
+</sc-if>
+<sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}"><div class="opened"><sc-if value="{{g.isLarge}}" hint-placeholder-val="{{ false }}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; padding: 6px 0 14px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="4"><a class="card pcard rise" href="{{b.hrefM}}" style="animation-delay: {{b.delay}}">
+<div class="cover" style="position: relative; aspect-ratio: 1 / 1; border-radius: 12px; background: {{b.color}}; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; box-sizing: border-box; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; min-height: 10px"><span class="pillswap" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: {{b.pillBg}}; color: {{b.pillFg}}; font-size: 10px; font-weight: 700; white-space: nowrap"><span style="width: 7px; height: 7px; border-radius: 999px; background: {{b.pillDot}}"></span>{{b.label}}</span><span style="margin-left: auto; font-size: 44px; font-weight: 850; line-height: 0.78; color: rgba(255,255,255,0.15)">{{b.mark}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 800; line-height: 1.08; color: #FFFFFF; letter-spacing: -0.01em; text-wrap: balance">{{b.title}}</span></div>
+
+<sc-if value="{{b.isConverting}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.35)"><span class="fill" style="display: block; width: 62%; height: 100%; background: #FFFFFF"></span></span></sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; padding: 10px 1px 0; min-width: 0">
+<span style="font-size: 14px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{b.title}}</span>
+<span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.sub}}</span>
+</div>
+</a></sc-for></div></sc-if>
+<sc-if value="{{g.isGrid}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 10px; padding: 6px 0 14px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="6"><a class="card pcard rise" href="{{b.hrefM}}" style="animation-delay: {{b.delay}}">
+<div class="cover" style="position: relative; aspect-ratio: 1 / 1; border-radius: 10px; background: {{b.color}}; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; box-sizing: border-box; overflow: hidden">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; min-height: 10px"><span style="margin-left: auto; font-size: 32px; font-weight: 850; line-height: 0.78; color: rgba(255,255,255,0.15)">{{b.mark}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 800; line-height: 1.08; color: #FFFFFF; letter-spacing: -0.01em; text-wrap: balance">{{b.title}}</span></div>
+<span style="position: absolute; top: 7px; left: 7px; width: 9px; height: 9px; border-radius: 999px; background: {{b.pillDot}}; box-shadow: 0 0 0 2px rgba(0,0,0,0.3)"></span>
+<sc-if value="{{b.isConverting}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.35)"><span class="fill" style="display: block; width: 62%; height: 100%; background: #FFFFFF"></span></span></sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; padding: 7px 1px 0; min-width: 0">
+<span style="font-size: 12px; font-weight: 650; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{b.title}}</span>
+<span style="font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.sub}}</span>
+</div>
+</a></sc-for></div></sc-if>
+<sc-if value="{{g.isList}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; padding-bottom: 8px"><sc-for list="{{g.items}}" as="b" hint-placeholder-count="6"><a class="mrow" href="{{b.hrefM}}" style="min-height: 64px">
+<div style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 8px; background: {{b.color}}"></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.title}}</span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden"><span style="width: 7px; height: 7px; flex-shrink: 0; border-radius: 999px; background: {{b.pillDot}}"></span>{{b.label}} · {{b.author}}</span></div>
+<span style="color: var(--muted); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span>
+</a></sc-for></div></sc-if></div></sc-if>
+</section>
+</sc-for>
+</div>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div style="margin: 0 16px; padding: 32px; border-radius: 16px; border: 1.5px dashed var(--line); text-align: center; color: var(--muted)">No books match this filter.</div></sc-if>
+</div>
+</div>
+<sc-if value="{{showBar}}" hint-placeholder-val="{{ true }}">
+<div class="{{mhCls}}">
+<a class="mh-brand" href="Home-Mobile.dc.html" aria-label="ChapterKeeparr home"><span class="mh-logo"><svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true" style="flex-shrink: 0"><rect width="28" height="28" rx="8" style="fill: var(--ink)"></rect><path d="M9.5 8.5h7.5a3 3 0 0 1 3 3v10h-7.5a3 3 0 0 1-3-3z" style="fill: none; stroke: var(--bg); stroke-width: 1.8"></path><path d="M13.5 12.8h3.2M13.5 16.3h3.2" style="stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round"></path></svg></span><span class="mh-word">ChapterKeeparr</span></a>
+<div class="mh-search">
+<button class="mh-sbtn" onClick="{{openMSearch}}" aria-label="Search"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button>
+<label for="m-q" class="sr">Search your library</label>
+<input id="m-q" type="search" placeholder="Search your library" value="{{q}}" onChange="{{onQuery}}" tabIndex="{{mqTab}}" autoComplete="off">
+</div>
+<button class="picon mh-gear" onClick="{{openSheet}}" aria-label="Settings" aria-haspopup="dialog"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+<button class="mh-cancel" onClick="{{closeMSearch}}">Cancel</button>
+</div>
+</sc-if>
+<sc-if value="{{msearch}}" hint-placeholder-val="{{ false }}">
+<div class="mres" role="listbox" aria-label="Search results">
+<sc-if value="{{hasSearchHead}}" hint-placeholder-val="{{ true }}"><div class="shead">{{searchHead}}</div></sc-if>
+<sc-for list="{{searchList}}" as="r" hint-placeholder-count="3">
+<a class="{{r.cls}}" id="{{r.id}}" href="{{r.href}}" role="option" aria-selected="{{r.sel}}">
+<span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; background: {{r.color}}; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; box-sizing: border-box; font-size: 15px; font-weight: 900; line-height: 0.8; color: rgba(255,255,255,0.4)">{{r.badge}}</span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span class="t" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.pre}}<b>{{r.mid}}</b>{{r.post}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted)"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{r.dot}}"></span>{{r.sub}}</span>
+</span>
+</a>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}"><p style="margin: 24px 10px; font-size: 15px; color: var(--muted)">No books match “{{q}}”.</p></sc-if>
+<sc-if value="{{showJump}}" hint-placeholder-val="{{ true }}">
+<div class="shead" style="margin-top: 10px">Jump to</div>
+<a class="sres" href="Review-Mobile.dc.html"><span style="width: 44px; height: 44px; border-radius: 12px; background: var(--warn-bg); color: var(--warn); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.6 6h10.8L20 13.5V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M4 13.5h4.5l1.2 2.2h4.6l1.2-2.2H20"></path></svg></span><span style="font-size: 15px; font-weight: 650">Needs review</span></a>
+<a class="sres" href="Suggestions-Mobile.dc.html"><span style="width: 44px; height: 44px; border-radius: 12px; background: var(--raised); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"></path></svg></span><span style="font-size: 15px; font-weight: 650">Suggestions</span></a>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div class="moffline" role="alert"><span class="pulse" style="width: 7px; height: 7px; border-radius: 999px; background: var(--bad); flex-shrink: 0"></span><span style="flex-grow: 1">Can’t reach the server · last known state</span><button class="tbtn" onClick="{{retryNow}}" style="height: 32px">Retry</button></div></sc-if>
+<sc-if value="{{libSheet}}" hint-placeholder-val="{{ false }}">
+<button class="scrim" onClick="{{closeLibSheet}}" aria-label="Close options"></button>
+<div class="sheet" role="dialog" aria-label="Sort, group and view">
+<div class="grab"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px"><span style="font-size: 20px; font-weight: 800">Library view</span><button class="tclose" onClick="{{closeLibSheet}}" aria-label="Close" style="margin: 0 -10px 0 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px 0"><span style="font-size: 14px; font-weight: 650">Group by</span><div class="segctl" role="group" aria-label="Group by" style="display: flex"><sc-for list="{{groupOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" style="flex: 1 1 0; padding: 0 6px" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px 0"><span style="font-size: 14px; font-weight: 650">Sort</span><div class="segctl" role="group" aria-label="Sort" style="display: flex"><sc-for list="{{sortOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" style="flex: 1 1 0; padding: 0 6px" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 10px 0 4px"><span style="font-size: 14px; font-weight: 650">View</span><div class="segctl" role="group" aria-label="View" style="display: flex"><sc-for list="{{viewOptsM}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" style="flex: 1 1 0" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for></div></div>
+</div>
+</sc-if>
+<a class="{{fabCls}}" href="NewJob-Mobile.dc.html" aria-label="New job"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<sc-if value="{{phoneShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{ptoastCls}}" role="status" aria-live="polite" style="bottom: 174px; --dx: {{phoneDx}}; --dy: {{phoneDy}}">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 12px">
+<div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.title}}</span>
+<span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.body}}</span>
+</div>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification" style="margin: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<nav aria-label="Primary" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; box-sizing: border-box; padding: 6px 8px 30px; display: flex; background: var(--bar); border-top: 1px solid var(--line); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px)">
+<a class="ptab" href="Suggestions-Mobile.dc.html"><span style="position: relative; display: inline-flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"></path></svg><span class="pbadge" style="background: var(--raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line)">{{suggCount}}</span></span>Suggestions</a>
+<a class="ptab on" href="Home-Mobile.dc.html" aria-current="page"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg>Library</a>
+<a class="ptab" href="Queue-Mobile.dc.html"><span style="position: relative; display: inline-flex"><svg class="{{pringCls}}" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" transform="rotate(-90 17 17)" style="fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 94.2; stroke-dashoffset: 36; opacity: 0.6"></circle></svg><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span class="{{pqBadgeCls}}">{{activeCount}}</span></span>Queue</a>
+<a class="ptab" href="Review-Mobile.dc.html"><span style="position: relative; display: inline-flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.6 6h10.8L20 13.5V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M4 13.5h4.5l1.2 2.2h4.6l1.2-2.2H20"></path></svg><span class="{{prBadgeCls}}">{{reviewCount}}</span></span>Needs review</a>
+</nav>
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+<button class="scrim" onClick="{{closeSheet}}" aria-label="Close settings"></button>
+<div class="sheet" role="dialog" aria-label="Settings">
+<div style="width: 40px; height: 5px; margin: 0 auto 10px; border-radius: 999px; background: var(--track)"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+<span style="font-size: 20px; font-weight: 800">Settings</span>
+<button class="tclose" onClick="{{closeSheet}}" aria-label="Close settings" style="margin: 0 -10px 0 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 8px 0 16px">
+<span style="font-size: 14px; font-weight: 650">Appearance</span>
+<div class="segctl" role="group" aria-label="Appearance" style="display: flex">
+<sc-for list="{{themeOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="flex: 1 1 0; height: 40px">{{o.label}}</button></sc-for>
+</div>
+</div>
+<div class="sheetrow">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Status notifications</span><span style="font-size: 13px; color: var(--muted)">Pop up briefly, then tuck into a tab</span></div>
+<button class="{{notifSw.cls}}" role="switch" aria-checked="{{notifSw.on}}" onClick="{{notifSw.toggle}}" aria-label="Status notifications"><span class="knob"></span></button>
+</div>
+<a class="sheetrow" href="Settings-Mobile.dc.html" style="text-decoration: none; color: var(--ink); font-size: 15px; font-weight: 600">All settings<span style="color: var(--muted); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span></a>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"collapsed":{"editor":"boolean","default":false},"mobile":{"editor":"boolean","default":false},"autoplay":{"editor":"boolean","default":false},"offline":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2200}}'>
+
+const C = { 1: '#3E4A61', 2: '#7A3B2E', 3: '#56613C', 4: '#5B3F6B', 5: '#8A5A2B', 6: '#6B2F45', 7: '#35505E', 8: '#9A4A1F', 9: '#4B2E3F', 10: '#3C4A5C', 11: '#5A4632', 12: '#6A4B5E', 13: '#445A48', 14: '#6B5238', 15: '#2F3D57', 16: '#51402F', 17: '#3A4A3A', 18: '#27465A', 19: '#6B4A2A', 20: '#4F2F2F' };
+const DCC = 'Dungeon Crawler Carl';
+const BASE = [
+{ n: 1, title: 'Dungeon Crawler Carl', author: 'Matt Dinniman', series: DCC, sn: 1, asin: '', epub: true, mp3: false, rank: 10 },
+{ n: 2, title: 'Carl’s Doomsday Scenario', author: 'Matt Dinniman', series: DCC, sn: 2, asin: '', epub: true, mp3: true, rank: 5 },
+{ n: 3, title: 'The Dungeon Anarchist’s Cookbook', author: 'Matt Dinniman', series: DCC, sn: 3, asin: '', epub: true, mp3: false, rank: 9 },
+{ n: 4, title: 'The Gate of the Feral Gods', author: 'Matt Dinniman', series: DCC, sn: 4, asin: '', epub: true, mp3: true, rank: 1 },
+{ n: 5, title: 'The Butcher’s Masquerade', author: 'Matt Dinniman', series: DCC, sn: 5, asin: 'B09ZJ82C7Y', epub: true, mp3: true, rank: 4 },
+{ n: 6, title: 'The Eye of the Bedlam Bride', author: 'Matt Dinniman', series: DCC, sn: 6, asin: 'B0CDXWSS5D', epub: true, mp3: true, rank: 2 },
+{ n: 7, title: 'This Inevitable Ruin', author: 'Matt Dinniman', series: DCC, sn: 7, asin: '', epub: true, mp3: true, rank: 0 },
+{ n: 8, title: 'A Parade of Horribles', author: 'Matt Dinniman', series: DCC, sn: 8, asin: '', epub: true, mp3: true, rank: 3 },
+{ n: 9, title: 'Dracula', author: 'Bram Stoker', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 14 },
+{ n: 10, title: 'The Invisible Man', author: 'H. G. Wells', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 15 },
+{ n: 11, title: 'The Island of Doctor Moreau', author: 'H. G. Wells', series: '', sn: 0, asin: '', epub: true, mp3: true, rank: 6 },
+{ n: 12, title: 'Emma', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: true, mp3: true, rank: 7 },
+{ n: 13, title: 'Persuasion', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 16 },
+{ n: 14, title: 'Sense and Sensibility', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: false, mp3: false, rank: 11 },
+{ n: 15, title: 'A Study in Scarlet', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 1, asin: '', epub: true, mp3: false, rank: 17 },
+{ n: 16, title: 'The Sign of the Four', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 2, asin: '', epub: true, mp3: false, rank: 18 },
+{ n: 17, title: 'The Hound of the Baskervilles', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 5, asin: '', epub: false, mp3: false, rank: 8 },
+{ n: 18, title: 'Twenty Thousand Leagues Under the Seas', author: 'Jules Verne', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 19 },
+{ n: 19, title: 'Around the World in Eighty Days', author: 'Jules Verne', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 12 },
+{ n: 20, title: 'The Three Musketeers', author: 'Alexandre Dumas', series: 'The d’Artagnan Romances', sn: 1, asin: '', epub: true, mp3: false, rank: 13 }
+];
+const SUGG = [
+{ id: 'lostworld', kind: 'convert', title: 'The Lost World', author: 'Arthur Conan Doyle', detail: '24 MP3 files, no M4B', path: '/library/incoming/The Lost World (Arthur Conan Doyle)/', color: '#4A3B52', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'timemachine', kind: 'convert', title: 'The Time Machine', author: 'H. G. Wells', detail: '12 MP3 files, no M4B', path: '/library/incoming/The Time Machine/', color: '#3F5566', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'pride', kind: 'convert', title: 'Pride and Prejudice', author: 'Jane Austen', detail: '61 MP3 files, no M4B', path: '/library/incoming/Pride and Prejudice/', color: '#6B5140', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'montecristo', kind: 'chapters', title: 'The Count of Monte Cristo', author: 'Alexandre Dumas', detail: 'Only 1 chapter marker in the M4B', path: '/library/Alexandre Dumas/The Count of Monte Cristo/', color: '#34495E', action: 'Re-process', doneLabel: 'Queued' },
+{ id: 'mobydick', kind: 'chapters', title: 'Moby-Dick', author: 'Herman Melville', detail: 'Chapter times don’t match the edition', path: '/library/Herman Melville/Moby-Dick/', color: '#2F4A55', action: 'Re-process', doneLabel: 'Queued' },
+{ id: 'sense', kind: 'pair', title: 'Sense and Sensibility', author: 'Jane Austen', detail: 'M4B with no EPUB', path: '/library/Jane Austen/Sense and Sensibility/', color: '#6B5238', action: 'Find EPUB in BookOrbit', doneLabel: 'Requested' },
+{ id: 'hound', kind: 'pair', title: 'The Hound of the Baskervilles', author: 'Arthur Conan Doyle', detail: 'EPUB is in a different folder', path: '/library/ebooks/The Hound of the Baskervilles.epub', color: '#3A4A3A', action: 'Pair files', doneLabel: 'Paired' },
+{ id: 'frankenstein', kind: 'epub', title: 'Frankenstein', author: 'Mary Shelley', detail: 'EPUB with no audiobook', path: '/library/Mary Shelley/Frankenstein/', color: '#3D4F3A', action: 'Request in BookOrbit', doneLabel: 'Requested' },
+{ id: 'waroftheworlds', kind: 'epub', title: 'The War of the Worlds', author: 'H. G. Wells', detail: 'EPUB with no audiobook', path: '/library/H. G. Wells/The War of the Worlds/', color: '#5A3A36', action: 'Request in BookOrbit', doneLabel: 'Requested' }
+];
+const P = '/library/Matt Dinniman/';
+const PATH = { 1: P + '01. Dungeon Crawler Carl/Dungeon Crawler Carl.m4b', 2: P + '02. Carl’s Doomsday Scenario/Carl’s Doomsday Scenario.m4b', 3: P + '03. The Dungeon Anarchist’s Cookbook/The Dungeon Anarchist’s Cookbook.m4b', 4: P + '04. Dungeon Crawler Carl 4_ The Gate of the Feral Gods/The Gate of the Feral Gods.m4b', 5: P + '05. Dungeon Crawler Carl 5_ The Butcher’s Masquerade/The Butcher’s Masquerade.m4b', 6: P + '06. The Eye of the Bedlam Bride/The Eye of the Bedlam Bride.m4b', 7: P + '07. This Inevitable Ruin/This Inevitable Ruin.m4b', 8: P + '08. A Parade of Horribles (2026)/A Parade of Horribles (2026).m4b', 11: '/library/H. G. Wells/The Island of Doctor Moreau/The Island of Doctor Moreau.m4b' };
+const TIME = { 2: '5:15 PM', 4: '8:30 PM', 6: '8:27 PM', 8: '8:18 PM', 7: 'Just now', 11: '4:02 PM' };
+const REASON = { 6: 'Edition not found · 1 of 6 checks passed' };
+
+const HREF = {"home": "Home-Combined.dc.html", "queue": "Queue.dc.html", "review": "Review.dc.html", "book": "Book.dc.html", "mhome": "Home-Mobile.dc.html", "mqueue": "Queue-Mobile.dc.html", "mreview": "Review-Mobile.dc.html", "mbook": "Book-Mobile.dc.html"};
+
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = Object.assign({
+theme: null, collapsed: null, sheet: false, notif: true,
+status: { 1: 'optimized', 2: 'review', 3: 'optimized', 4: 'review', 5: 'done', 6: 'review', 7: 'converting', 8: 'review', 9: 'optimized', 10: 'optimized', 11: 'failed', 12: 'done', 13: 'optimized', 14: 'done', 15: 'optimized', 16: 'optimized', 17: 'done', 18: 'optimized', 19: 'optimized', 20: 'optimized' },
+phase: 'hidden', toast: null, bumpQ: 0, bumpR: 0, step: 0, q: '', qOpen: false, msearch: false, sIdx: -1, sugg: {}, log: []
+}, { filter: 'all', group: 'series', sort: 'series', view: 'grid', closedGroups: {}, libSheet: false });
+this.timers = [];
+this.tid = 0;
+}
+componentDidMount() { this.schedule(1800, () => this.fire()); }
+componentDidUpdate(pp, ps) {
+if (this.state.msearch && !(ps && ps.msearch)) this.schedule(380, () => { const el = typeof document !== 'undefined' && document.getElementById('m-q'); if (el) el.focus(); });
+}
+componentWillUnmount() { this.timers.forEach(t => clearTimeout(t)); this.timers = []; }
+schedule(ms, fn) { this.timers.push(setTimeout(fn, ms)); }
+events() {
+return [
+{ changes: { 7: 'done' }, kind: 'ok', n: 7, title: 'This Inevitable Ruin is verified', body: 'All chapter checks passed · saved to library', action: 'Open', href: HREF.book },
+{ changes: { 8: 'converting' }, kind: 'info', n: 8, title: 'A Parade of Horribles resumed', body: 'Re-checking chapter audio with your fix', action: 'Watch', href: HREF.queue },
+{ changes: { 8: 'review', 7: 'converting' }, kind: 'warn', n: 8, title: 'A Parade of Horribles needs review', body: 'Edition still not confirmed', action: 'Review', href: HREF.review }
+];
+}
+fire() {
+if (!(this.props.autoplay ?? false)) return;
+const evs = this.events();
+const e = { ...evs[this.state.step % evs.length], chain: true };
+this.setState({ status: { ...this.state.status, ...e.changes }, step: this.state.step + 1 });
+this.notify(e);
+}
+notify(e) {
+const entry = { time: 'Just now', n: e.n || 0, text: e.title, kind: e.kind === 'plain' ? 'you' : e.kind, detail: e.body };
+this.setState({ log: [entry, ...(this.state.log || [])] });
+if (!this.state.notif) { if (e.chain) this.schedule(6000, () => this.fire()); return; }
+const id = ++this.tid;
+this.setState({ toast: e, phase: 'in' });
+this.schedule(4150, () => this.minimize(id));
+}
+minimize(id) {
+if (id !== this.tid || this.state.phase !== 'in') return;
+const t = this.state.toast;
+this.setState({ phase: 'out' });
+this.schedule(740, () => {
+if (id !== this.tid) return;
+const next = { phase: 'hidden' };
+if (t && t.kind !== 'plain') { const k = t.kind === 'warn' ? 'bumpR' : 'bumpQ'; next[k] = this.state[k] + 1; }
+this.setState(next);
+if (t && t.chain) this.schedule(3600, () => this.fire());
+});
+}
+shellVals() {
+const s = this.state || {};
+const propDark = this.props.dark ?? true;
+const theme = s.theme || 'system';
+const dark = theme === 'dark' ? true : theme === 'light' ? false : propDark;
+const collapsed = s.collapsed ?? !!this.props.collapsed;
+const mobile = false ? true : !!this.props.mobile;
+const offline = !!this.props.offline;
+const st = s.status || {};
+const books = BASE.map(b => ({ ...b, status: st[b.n] || 'done', color: C[b.n] }));
+const count = k => books.filter(b => b.status === k).length;
+const reviewCount = count('review');
+const convCount = count('converting');
+const failedCount = count('failed');
+const activeCount = reviewCount + convCount + failedCount;
+const activeBook = books.find(b => b.status === 'converting');
+const act = activeBook
+? { title: activeBook.title, sub: 'Checking chapter audio · 62%', pct: '62%', color: C[activeBook.n], live: true }
+: { title: 'Queue is idle', sub: 'Nothing converting', pct: '0%', color: 'var(--track)', live: false };
+const sfx = n => n ? (n % 2 ? ' bumpA' : ' bumpB') : '';
+const t = s.toast;
+const plain = !!(t && t.kind === 'plain');
+const toR = !!(t && t.kind === 'warn');
+const kinds = { ok: 'var(--ok)', warn: 'var(--warn)', info: 'var(--ink)', plain: 'var(--ok)' };
+const toast = t ? { ...t, iconBg: kinds[t.kind], color: t.n ? C[t.n] : 'var(--track)', hasAction: t.kind !== 'plain' && !!t.href && t.href !== '#', isOk: t.kind === 'ok' || t.kind === 'plain', isWarn: t.kind === 'warn', isInfo: t.kind === 'info' } : { hasAction: false, title: '', body: '', action: '', href: '#', iconBg: 'transparent', color: 'transparent', isOk: false, isWarn: false, isInfo: false };
+const shown = s.phase === 'in' || s.phase === 'out';
+const pc = s.phase === 'out' ? 'out' : 'in';
+const themeOpts = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, label]) => ({ k, label, on: theme === k ? 'true' : 'false', cls: theme === k ? 'sgb on' : 'sgb', pick: () => this.setState({ theme: k }) }));
+// ---- search: title, author, series, ASIN; arrow keys move, Enter opens
+const q = s.q || '';
+const ql = q.trim().toLowerCase();
+const SL = { review: ['Needs review', 'var(--warn)'], converting: ['Converting', 'var(--ink)'], failed: ['Failed', 'var(--bad)'], cancelled: ['Cancelled', 'var(--muted)'], done: ['Verified', 'var(--ok)'], optimized: ['Optimized', 'var(--ok)'] };
+const bookHref = b => (b.status === 'review' ? (mobile ? HREF.mreview : HREF.review) : (b.status === 'converting' || b.status === 'failed') ? (mobile ? HREF.mqueue : HREF.queue) : (mobile ? HREF.mbook : HREF.book));
+const row = (b, why) => { const at = ql ? b.title.toLowerCase().indexOf(ql) : -1; return { color: b.color, badge: b.sn || '', pre: at >= 0 ? b.title.slice(0, at) : b.title, mid: at >= 0 ? b.title.slice(at, at + ql.length) : '', post: at >= 0 ? b.title.slice(at + ql.length) : '', sub: (why || b.author) + ' · ' + SL[b.status][0], dot: SL[b.status][1], href: bookHref(b) }; };
+let list = [];
+let searchHead = '';
+if (ql) {
+const hits = [];
+books.forEach(b => {
+if (b.title.toLowerCase().includes(ql)) hits.push(row(b));
+else if (b.asin && b.asin.toLowerCase().includes(ql)) hits.push(row(b, 'ASIN ' + b.asin));
+else if (b.author.toLowerCase().includes(ql)) hits.push(row(b));
+});
+const seriesNames = [...new Set(books.filter(b => b.series && b.series.toLowerCase().includes(ql)).map(b => b.series))];
+seriesNames.forEach(name => { const n = books.filter(b => b.series === name).length; hits.push({ color: 'var(--raised)', badge: '', pre: name, mid: '', post: '', sub: 'Series · ' + n + ' books', dot: 'var(--muted)', href: mobile ? HREF.mhome : HREF.home }); });
+list = hits.slice(0, 7);
+searchHead = hits.length ? hits.length + (hits.length === 1 ? ' result' : ' results') : '';
+} else {
+list = [5, 6, 1].map(n => books.find(b => b.n === n)).map(b => row(b));
+searchHead = 'Recent';
+}
+const sIdx = Math.min(s.sIdx ?? -1, list.length - 1);
+const pfx = mobile ? 'sres-m-' : 'sres-d-';
+const searchList = list.map((r, i) => ({ ...r, id: pfx + i, cls: i === sIdx ? 'sres on' : 'sres', sel: i === sIdx ? 'true' : 'false' }));
+const suggCount = SUGG.filter(x => !(s.sugg || {})[x.id]).length;
+const sw = (key, label) => { const on = s[key] !== false; return { on: on ? 'true' : 'false', cls: on ? 'switch on' : 'switch', toggle: () => this.setState({ [key]: !on }), label }; };
+return {
+s, books, reviewCount, convCount, failedCount, activeCount, activeBook, dark, collapsed, mobile, offline,
+light: !dark, isDesktop: !mobile, isMobile: mobile,
+themeCls: (dark ? 'dark' : 'light') + (collapsed ? ' collapsed' : ''),
+toggleTheme: () => this.setState({ theme: dark ? 'light' : 'dark' }),
+themeOpts, notifSw: sw('notif', 'Status notifications'), sw,
+railOpen: collapsed ? 'false' : 'true',
+railLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+toggleRail: () => this.setState({ collapsed: !collapsed }),
+queueLabel: 'Queue, ' + activeCount + ' active',
+reviewLabel: 'Needs review, ' + reviewCount,
+qBadgeCls: 'badge' + sfx(s.bumpQ), qHaloCls: 'halo' + sfx(s.bumpQ),
+rBadgeCls: 'badge amber' + sfx(s.bumpR), rHaloCls: 'halo' + sfx(s.bumpR),
+pqBadgeCls: 'pbadge' + sfx(s.bumpQ), prBadgeCls: 'pbadge amber' + sfx(s.bumpR),
+qringCls: activeBook ? 'qring live' : 'qring', pringCls: activeBook ? 'pring live' : 'pring',
+act, actLabel: 'Activity: ' + act.title + ', ' + act.sub,
+toast,
+cornerShown: shown && !mobile && collapsed,
+sideShown: shown && !mobile && !collapsed,
+phoneShown: shown && mobile,
+toastCls: 'toast ' + pc, snoteCls: 'snote ' + pc, ptoastCls: 'ptoast ' + pc,
+cornerDx: plain ? '0px' : '-251px', cornerDy: plain ? '24px' : ((toR ? 253 : 205) - (2200 - 63)) + 'px',
+sideDx: plain ? '0px' : '85px', sideDy: plain ? '-20px' : (toR ? '-209px' : '-257px'),
+phoneDx: plain ? '0px' : (toR ? '153px' : '60px'), phoneDy: plain ? '24px' : '136px',
+dismiss: () => this.minimize(this.tid),
+q, searchList, searchHead, hasSearchHead: !!searchHead, noResults: !!ql && list.length === 0, showJump: !ql,
+dOpen: !!s.qOpen, dOpenStr: s.qOpen ? 'true' : 'false',
+onQuery: (e) => this.setState({ q: e.target.value, qOpen: true, sIdx: -1 }),
+openSearch: () => this.setState({ qOpen: true }),
+blurSearch: () => this.schedule(160, () => this.setState({ qOpen: false })),
+searchKey: (e) => {
+if (e.key === 'Escape') { this.setState({ qOpen: false, sIdx: -1 }); if (e.target && e.target.blur) e.target.blur(); }
+else if (e.key === 'ArrowDown') { if (e.preventDefault) e.preventDefault(); this.setState({ qOpen: true, sIdx: Math.min(sIdx + 1, list.length - 1) }); }
+else if (e.key === 'ArrowUp') { if (e.preventDefault) e.preventDefault(); this.setState({ sIdx: Math.max(sIdx - 1, 0) }); }
+else if (e.key === 'Enter') { const i = sIdx >= 0 ? sIdx : 0; const el = typeof document !== 'undefined' && document.getElementById(pfx + i); if (el) el.click(); }
+},
+msearch: !!s.msearch, mhCls: s.msearch ? 'mh searching' : 'mh', mqTab: s.msearch ? '0' : '-1',
+openMSearch: () => this.setState({ msearch: true }), closeMSearch: () => this.setState({ msearch: false, q: '', sIdx: -1 }),
+fabCls: s.msearch ? 'fab hide' : 'fab', showBar: true, suggCount,
+retryNow: () => {},
+sheetOpen: !!s.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false })
+};
+}
+pageVals(c) {
+const s = c.s;
+
+const META = {
+review: { label: 'Needs review', pillBg: '#FFF6E3', pillFg: '#6B4500', pillDot: '#C98A12' },
+converting: { label: 'Converting', pillBg: 'rgba(255,255,255,0.92)', pillFg: '#121211', pillDot: '#121211' },
+failed: { label: 'Failed', pillBg: '#FDE7E0', pillFg: '#8A2A12', pillDot: '#C4451E' },
+done: { label: 'Verified', pillBg: 'rgba(255,255,255,0.92)', pillFg: '#1F5A2D', pillDot: '#7FA88A' },
+optimized: { label: 'Optimized', pillBg: '#E4F2E6', pillFg: '#1F5A2D', pillDot: '#2B6A39' },
+cancelled: { label: 'Cancelled', pillBg: 'rgba(255,255,255,0.92)', pillFg: '#62625D', pillDot: '#9D9D97' }
+};
+const sub = b => b.status === 'review' ? (REASON[b.n] || 'Edition not confirmed') : b.status === 'converting' ? 'Checking chapter audio' : b.status === 'failed' ? 'Failed at step 3 · Check audio' : b.status === 'optimized' ? 'M4B and EPUB paired' : b.status === 'cancelled' ? 'Job cancelled' : (!b.epub ? 'Verified · no EPUB paired' : b.mp3 ? 'Verified · MP3s still on disk' : 'Verified');
+const hrefFor = (b, m) => b.status === 'review' ? (m ? HREF.mreview : HREF.review) : (b.status === 'converting' || b.status === 'failed') ? (m ? HREF.mqueue : HREF.queue) : (m ? HREF.mbook : HREF.book);
+const f = s.filter || 'all', group = s.group || 'series', sort = s.sort || 'series', view = s.view || 'grid';
+const closed = s.closedGroups || {};
+const pass = b => f === 'all' || (f === 'attention' ? (b.status === 'review' || b.status === 'failed') : b.status === f);
+const noThe = t => t.replace(/^(The|A|An) /, '');
+const cmp = {
+series: (a, b) => ((a.series || '~') + '').localeCompare((b.series || '~') + '') || (a.sn - b.sn) || noThe(a.title).localeCompare(noThe(b.title)),
+recent: (a, b) => a.rank - b.rank,
+title: (a, b) => noThe(a.title).localeCompare(noThe(b.title)),
+author: (a, b) => a.author.localeCompare(b.author) || noThe(a.title).localeCompare(noThe(b.title))
+}[sort];
+const items = c.books.filter(pass).sort(cmp).map((b, i) => ({
+...b, ...META[b.status], sub: sub(b), href: hrefFor(b, false), hrefM: hrefFor(b, true),
+mark: b.sn ? b.sn : noThe(b.title)[0], eyebrow: b.series ? b.series + ' · ' + b.sn : b.author,
+seriesLabel: b.series ? b.series + ' #' + b.sn : '—', isConverting: b.status === 'converting', delay: Math.min(0.15 + i * 0.03, 0.8) + 's'
+}));
+const STATUS_ORDER = ['Needs review', 'Failed', 'Converting', 'Verified', 'Optimized', 'Cancelled'];
+const keyOf = b => group === 'series' ? (b.series || 'Standalone') : group === 'author' ? b.author : group === 'status' ? b.label : 'All books';
+const keys = [...new Set(items.map(keyOf))].sort((a, b) => {
+if (group === 'status') return STATUS_ORDER.indexOf(a) - STATUS_ORDER.indexOf(b);
+if (a === 'Standalone') return 1; if (b === 'Standalone') return -1;
+return a.replace(/^The /, '').localeCompare(b.replace(/^The /, ''));
+});
+const groups = keys.map(k => {
+const its = items.filter(b => keyOf(b) === k);
+const open = !closed[k];
+const opt = its.filter(b => b.status === 'optimized').length;
+const att = its.filter(b => b.status === 'review' || b.status === 'failed').length;
+const subBits = [];
+if (group === 'series' && k !== 'Standalone') subBits.push(its[0].author);
+if (att) subBits.push(att + ' need attention');
+if (opt) subBits.push(opt + ' optimized');
+return { title: k, count: its.length, items: its, open, isLarge: view === 'large', isGrid: view === 'grid', isList: view === 'list', openStr: open ? 'true' : 'false', hasHead: group !== 'none', sub: subBits.join(' · '), toggle: () => this.setState({ closedGroups: { ...(this.state.closedGroups || {}), [k]: open } }) };
+});
+const n = k => c.books.filter(b => k === 'attention' ? (b.status === 'review' || b.status === 'failed') : b.status === k).length;
+const chips = [['all', 'All', c.books.length], ['attention', 'Needs attention', n('attention')], ['converting', 'Converting', n('converting')], ['done', 'Verified', n('done')], ['optimized', 'Optimized', n('optimized')]].map(([k, label, cnt]) => ({ k, label, n: cnt, on: f === k ? 'true' : 'false', cls: f === k ? 'tab on' : 'tab', pick: () => this.setState({ filter: k }) }));
+const viewDefs = [['large', 'Large covers'], ['grid', 'Grid'], ['list', 'List']];
+const viewOpts = viewDefs.map(([k, label]) => ({ k, label, isLarge: k === 'large', isGrid: k === 'grid', isList: k === 'list', on: view === k ? 'true' : 'false', cls: view === k ? 'sgb on' : 'sgb', pick: () => this.setState({ view: k }) }));
+const segOf = (key, cur, defs) => defs.map(([k, label]) => ({ k, label, on: cur === k ? 'true' : 'false', cls: cur === k ? 'sgb on' : 'sgb', pick: () => this.setState({ [key]: k }) }));
+const stack = c.books.filter(b => b.status === 'review').map((b, i) => ({ n: b.n, mark: b.sn || '', color: b.color, ml: i === 0 ? '0px' : '-18px', mlSm: i === 0 ? '0px' : '-14px', delay: (0.15 + i * 0.08) + 's' }));
+const rc = c.reviewCount;
+const GL = { none: '', series: ' · grouped by series', author: ' · grouped by author', status: ' · grouped by status' };
+return {
+groups, chips, stack, empty: items.length === 0,
+hasReview: rc > 0, bannerTitle: rc + (rc === 1 ? ' book is' : ' books are') + ' waiting on you', bannerShort: rc + (rc === 1 ? ' book needs you' : ' books need you'),
+countLine: (items.length === c.books.length ? c.books.length + ' books' : items.length + ' of ' + c.books.length + ' books') + GL[group],
+group, sort, onGroup: e => this.setState({ group: e.target.value }), onSort: e => this.setState({ sort: e.target.value }),
+viewOpts, isLarge: view === 'large', isGrid: view === 'grid', isList: view === 'list',
+groupOpts: segOf('group', group, [['none', 'None'], ['series', 'Series'], ['author', 'Author'], ['status', 'Status']]),
+sortOpts: segOf('sort', sort, [['series', 'Series'], ['recent', 'Recent'], ['title', 'Title'], ['author', 'Author']]),
+viewOptsM: segOf('view', view, [['large', 'Large'], ['grid', 'Grid'], ['list', 'List']]),
+libSheet: !!s.libSheet, openLibSheet: () => this.setState({ libSheet: true }), closeLibSheet: () => this.setState({ libSheet: false })
+};
+
+}
+renderVals() { const c = this.shellVals(); return { ...c, ...this.pageVals(c) }; }
+}
+
+</script>
+</body>
+</html>
