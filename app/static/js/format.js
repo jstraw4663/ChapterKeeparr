@@ -23,6 +23,9 @@ export function html(strings, ...values) {
   return new Html(out);
 }
 
+/** ARIA booleans: html`` drops true/false, so attribute values must be strings. */
+export const bool = value => (value ? 'true' : 'false');
+
 /** Unknown is always an em dash, never an invented value. */
 export const dash = value => (value == null || value === '' || Number.isNaN(value) ? '—' : String(value));
 

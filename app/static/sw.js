@@ -1,5 +1,43 @@
-const CACHE = 'chapterkeeparr-shell-v7';
-const SHELL = ['/', '/static/styles.css', '/static/app.js', '/manifest.webmanifest', '/static/icon-192.png', '/static/icon-512.png', '/static/icon-180.png'];
+const CACHE = 'chapterkeeparr-shell-v8';
+// Keep in sync with app/static (tests/test_frontend.py checks this list).
+const SHELL = [
+  '/',
+  '/manifest.webmanifest',
+  '/static/icon-180.png',
+  '/static/icon-192.png',
+  '/static/icon-512.png',
+  '/static/icon.svg',
+  '/static/js/api.js',
+  '/static/js/audio.js',
+  '/static/js/books.js',
+  '/static/js/covers.js',
+  '/static/js/events.js',
+  '/static/js/format.js',
+  '/static/js/history.js',
+  '/static/js/icons.js',
+  '/static/js/main.js',
+  '/static/js/notify.js',
+  '/static/js/overlay.js',
+  '/static/js/player.js',
+  '/static/js/prefs.js',
+  '/static/js/router.js',
+  '/static/js/screens/book.js',
+  '/static/js/screens/common.js',
+  '/static/js/screens/evidence.js',
+  '/static/js/screens/library.js',
+  '/static/js/screens/newjob.js',
+  '/static/js/screens/queue.js',
+  '/static/js/screens/review.js',
+  '/static/js/screens/settings.js',
+  '/static/js/screens/suggestions.js',
+  '/static/js/search.js',
+  '/static/js/shell.js',
+  '/static/js/status.js',
+  '/static/js/store.js',
+  '/static/js/ui.js',
+  '/static/styles.css',
+  '/static/tokens.css',
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
