@@ -127,7 +127,7 @@ def scan_markers(source, data, remote, speech, args, report, folder, evidence=No
         raise engine.NeedsReview('Existing marker times are invalid; local-marker recovery cannot safely retain them.')
     draft = dict(algorithm_version=ALGORITHM_VERSION, method='local-marker-review',
                  source_sha256=report['audio_source_sha256'], timeline_hash=digest(remote),
-                 duration_seconds=seconds, markers=[], publication_allowed=False,
+                 duration_seconds=seconds, markers=[], publication_allowed=False, reference_chapters=remote,
                  complete=False, total_markers=len(starts), missing_sections=remote)
     report['recovery_draft'] = draft
     report['status'] = 'checking_speech'

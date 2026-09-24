@@ -1,4 +1,4 @@
-const CACHE = 'chapterkeeparr-shell-v6';
+const CACHE = 'chapterkeeparr-shell-v7';
 const SHELL = ['/', '/static/styles.css', '/static/app.js', '/manifest.webmanifest', '/static/icon-192.png', '/static/icon-512.png', '/static/icon-180.png'];
 
 self.addEventListener('install', event => {

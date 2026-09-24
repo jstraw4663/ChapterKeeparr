@@ -108,6 +108,28 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(all(g['state']=='waiting' for g in saved['workflow']['gates']))
         self.assertNotIn('action',saved['review_answer'])
 
+    def test_recovery_settings_and_explicit_book_acceptance(self):
+        from test_acceptance import report_fixture, approval
+        self.assertEqual(self.client.put('/api/settings/recovery',json={'recovery_minimum_percent':70}).status_code,401)
+        for value in (-1,0,101):
+            self.assertEqual(self.client.put('/api/settings/recovery',json={'recovery_minimum_percent':value},headers=self.headers).status_code,422)
+        response=self.client.put('/api/settings/recovery',json={'recovery_minimum_percent':95},headers=self.headers)
+        self.assertEqual(response.json()['recovery_minimum_percent'],95)
+        r=report_fixture();store=self.app.state.store
+        job,_=store.enqueue(self.book);store.claim('worker')
+        store.finish(job['id'],'awaiting_review',{'report':r},worker='worker')
+        url=f"/api/jobs/{job['id']}/accept-recovery"
+        data=self.client.get(f"/api/jobs/{job['id']}",headers=self.headers).json()
+        self.assertEqual(data['recovery_acceptance_preview']['supported_percent'],75)
+        answer=approval(r);answer.pop('minimum_percent')
+        self.assertEqual(self.client.post(url,json=answer,headers=self.headers).status_code,409)
+        answer['minimum_percent']=75
+        self.assertEqual(self.client.post(url,json={**answer,'accept_possible_gap':False},headers=self.headers).status_code,409)
+        self.assertEqual(self.client.post(url,json={**answer,'optional_sections':[]},headers=self.headers).status_code,409)
+        self.assertEqual(self.client.post(url,json=answer,headers=self.headers).json()['status'],'queued')
+        self.assertEqual(self.client.post(url,json=answer,headers=self.headers).status_code,409)
+        self.assertEqual(store.recovery_minimum(),95)
+
     def test_discovery_and_selective_batch_submission(self):
         books = [self.root / f"Book-{i}.m4b" for i in range(4)]
         for book in books:

@@ -1,4 +1,4 @@
-# ChapterKeeparr 0.4.1 (alpha)
+# ChapterKeeparr 0.5.0 (alpha)
 
 This release starts the alignment-recovery plan: persisted timing diagnostics, bounded search recovery, file minutes during matching, and an on-demand local-marker audio/EPUB draft. Use **Review markers from audio** after selecting an ASIN. Drafts do not publish or change your audiobook; unresolved sections remain visible. See `PROJECT-CONTEXT.md` for implementation status and real-book findings.
 
@@ -99,6 +99,12 @@ All four dashboard count cards open the corresponding Jobs filter and clear any 
 
 ## Gated workflow (0.4.0)
 
-Each book now shows Inspect → Match → Align → Verify → Save, evidence grades, and a targeted review action. See [WORKFLOW-GUIDE.md](WORKFLOW-GUIDE.md) for the process and decision tree. MP3 track/disc gaps block early; content warnings and recovery drafts cannot publish. Timing failure can trigger automatic local-marker review for one unambiguous compatible timeline. Fingerprinted conversions are retained for retries within the cache budget; all publication checks still run.
+Each book now shows Inspect → Match → Align → Verify → Save, evidence grades, and a targeted review action. See [WORKFLOW-GUIDE.md](WORKFLOW-GUIDE.md) for the process and decision tree. MP3 track/disc gaps block early; content warnings and recovery drafts require explicit acceptance before publication. Timing failure can trigger automatic local-marker review for one unambiguous compatible timeline. Fingerprinted conversions are retained for retries within the cache budget; all publication checks still run.
 
-The coverage heuristics are conservative and can flag harmless edits; no grade proves every passage is present. Editable/reconstructed draft publication remains unimplemented. CACHE_MAX_GB bounds retained conversions plus transcript cache; diagnostic reports/excerpts are retained separately. The worker serializes heavy processing across jobs.
+The coverage heuristics are conservative and can flag harmless edits; no grade proves every passage is present. Editing or creating marker times remains unimplemented; existing-marker labels can now be finalized with explicitly accepted exceptions. CACHE_MAX_GB bounds retained conversions plus transcript cache; diagnostic reports/excerpts are retained separately. The worker serializes heavy processing across jobs.
+
+## Recovery acceptance (0.5.0)
+
+Settings now stores a global minimum supported-marker percentage (default 95%, configurable from 1–100%). An eligible paused book offers **Finalize with accepted exceptions** with a per-book minimum. Every unlocated published section, including named narrative chapters, requires its own explicit optional designation. The user separately accepts preserving unresolved original markers and possible content gaps. Thresholds alone never publish.
+
+Acceptance is bound to the exact draft, source audio and reference timeline. The finalizer applies supported labels at existing times, retains unresolved labels/times, validates the output and unchanged audio payload, and backs up an existing M4B. No marker is created or moved. MP3 sources are always retained on this path; their exact prepared conversion must remain available. Normal automatic verification thresholds are unchanged.

@@ -39,3 +39,7 @@
 .assessment-grid dd {margin:0;font-size:.85rem}
 .assessment-grid dd p {opacity:.75}
 @media(max-width:650px) {.workflow-card{padding:16px}.workflow-timeline{display:flex;overflow-x:auto;padding-bottom:12px}.workflow-timeline li{flex:0 0 135px}}
+
+.accept-option {display:flex;align-items:flex-start;gap:10px;margin:16px 0}.accept-option input {width:auto;flex:0 0 auto;margin-top:4px}
+#accept-recovery-form input[type=number], #recovery-settings-form input[type=number] {display:block;max-width:160px;margin:10px 0;background:#0b1521;color:#e9f2f6;border:1px solid #405365;border-radius:8px;padding:10px 12px;font:inherit;width:130px}
+.review-card > .detail-card + .detail-card {margin-top:20px}

@@ -46,6 +46,7 @@ class Store:
             db.execute("PRAGMA journal_mode=WAL")
             db.executescript(
                 """
+                CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY,
                     path TEXT NOT NULL,
@@ -271,6 +272,12 @@ class Store:
             merged = json.loads(row["review_answer"]) if row["review_answer"] else {}
             if "asin" not in answer and any(key in answer for key in ("title", "author", "narrator")):
                 merged.pop("asin", None)
+            if answer.get('recovery') == 'finalize_recovery':
+                from .acceptance import validate
+                validate((json.loads(row['result'] or '{}')).get('report') or {}, answer.get('finalization') or {})
+            else:
+                merged.pop('finalization',None)
+                if merged.get('recovery') == 'finalize_recovery': merged['recovery']='verify'
             merged.update(answer)
             db.execute(
                 "UPDATE jobs SET status='queued',stage='queued',review_answer=?,"
@@ -278,3 +285,14 @@ class Store:
                 (json.dumps(merged), now, job_id),
             )
             return self._dict(db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone())
+
+    def recovery_minimum(self):
+        with self._connect() as db:
+            row=db.execute("SELECT value FROM preferences WHERE key='recovery_minimum_percent'").fetchone()
+            return float(row['value']) if row else 95.0
+
+    def set_recovery_minimum(self, value):
+        import math
+        if not math.isfinite(value) or not 1 <= value <= 100: raise ValueError('Percentage must be between 1 and 100')
+        with self._connect() as db:
+            db.execute("INSERT OR REPLACE INTO preferences(key,value) VALUES('recovery_minimum_percent',?)",(str(value),))

@@ -36,6 +36,17 @@ class ReviewAnswer(BaseModel):
     recovery: str | None = None
 
 
+class RecoverySettings(BaseModel):
+    recovery_minimum_percent: float = Field(ge=1, le=100, allow_inf_nan=False)
+
+class RecoveryAcceptance(BaseModel):
+    draft_token: str
+    minimum_percent: float | None = Field(default=None, ge=1, le=100, allow_inf_nan=False)
+    optional_sections: list[str] = Field(default_factory=list, max_length=1000)
+    preserve_unresolved: bool = False
+    accept_possible_gap: bool = False
+
+
 def _settings() -> dict[str, Any]:
     roots = [str(Path(s).expanduser().resolve()) for s in os.getenv("LIBRARY_ROOTS", "/library").split(":") if s]
     return {
@@ -106,7 +117,24 @@ def create_app(store: Store | None = None) -> FastAPI:
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:
-        return settings
+        return {**settings,"recovery_minimum_percent":store.recovery_minimum()}
+
+    @app.put("/api/settings/recovery", dependencies=[Depends(auth)])
+    def recovery_settings(payload: RecoverySettings):
+        store.set_recovery_minimum(payload.recovery_minimum_percent)
+        return get_settings()
+
+    @app.post("/api/jobs/{job_id}/accept-recovery", dependencies=[Depends(auth)])
+    def accept_recovery(job_id: str, payload: RecoveryAcceptance):
+        from .engine import NeedsReview
+        answer=payload.model_dump()
+        if answer['minimum_percent'] is None: answer['minimum_percent']=store.recovery_minimum()
+        try:
+            job=store.answer_review(job_id,{'recovery':'finalize_recovery','finalization':answer})
+        except (ValueError,NeedsReview) as ex:
+            raise HTTPException(409,str(ex)) from ex
+        if job is None: raise HTTPException(404,'Job not found')
+        return job
 
     @app.get("/api/editions", dependencies=[Depends(auth)])
     def editions(query: str, region: str = "us"):
@@ -178,7 +206,8 @@ def create_app(store: Store | None = None) -> FastAPI:
         if job is None:
             raise HTTPException(404, "Job not found")
         from .flow import present
-        return {**job, "workflow": present(job)}
+        from .acceptance import preview
+        return {**job, "workflow": present(job), "recovery_acceptance_preview": preview((job.get("result") or {}).get("report") or {},store.recovery_minimum())}
 
     @app.post("/api/jobs/{job_id}/cancel", dependencies=[Depends(auth)])
     def cancel_job(job_id: str) -> dict[str, Any]:
@@ -307,6 +336,9 @@ def create_app(store: Store | None = None) -> FastAPI:
         report = result.get("report_path")
         if not isinstance(report, str):
             raise HTTPException(404, "No report available")
+        evidence=(result.get('report') or {}).get('recovery_evidence_report_path')
+        if name.startswith('recovery-clips/') and isinstance(evidence,str):
+            report=evidence
         base = Path(report).resolve().parent
         requested = (base / name).resolve()
         if base not in requested.parents or requested.suffix.casefold() not in (".json", ".md", ".wav"):

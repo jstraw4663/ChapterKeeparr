@@ -136,6 +136,7 @@
     if (!s) { target.innerHTML = '<div><dt>Status</dt><dd>Unavailable</dd></div>'; return; }
     const roots = Array.isArray(s.library_roots) ? s.library_roots : [];
     target.innerHTML = `<div><dt>API authentication</dt><dd>${s.auth_required ? 'Required' : 'Not required'}</dd></div><div><dt>Library roots</dt><dd>${roots.length ? roots.map(x => `<span class="path-chip">${safe(x)}</span>`).join('') : 'None configured'}</dd></div><div><dt>Workers</dt><dd>${safe(text(s.workers))}</dd></div><div><dt>CPU threads</dt><dd>${safe(text(s.cpu_threads))}</dd></div><div><dt>Work cache budget</dt><dd>${s.work_cache_budget_gb == null ? '—' : `${safe(s.work_cache_budget_gb)} GB`}</dd></div><div><dt>BookOrbit</dt><dd>${s.bookorbit_enabled ? 'Enabled' : 'Unavailable'}</dd></div><div><dt>Work directory</dt><dd class="break-path">${safe(text(s.work_dir))}</dd></div><div><dt>Config directory</dt><dd class="break-path">${safe(text(s.config_dir))}</dd></div>`;
+    target.insertAdjacentHTML('beforeend', `<div><dt>Recovery acceptance</dt><dd><form id="recovery-settings-form"><label for="recovery-default">Minimum supported markers (%)</label><input id="recovery-default" name="minimum" type="number" min="1" max="100" step="0.1" value="${safe(s.recovery_minimum_percent ?? 95)}" required><p class="subtle">Default for book acceptance. Each book still requires explicit exceptions and output validation.</p><button class="button button-secondary" type="submit">Save recovery default</button><p id="recovery-settings-message" role="status"></p></form></dd></div>`);
     $('#roots-help').textContent = roots.length ? `Configured roots: ${roots.join(' · ')}` : 'No library roots configured. Enter an allowed server folder path.';
   }
 
@@ -220,7 +221,7 @@
   }
   function recoveryDraft(job, report) {
     const draft = report.recovery_draft; if (!draft) return '';
-    return detailSection('Local-marker recovery draft', `<p>${draft.complete ? 'Scan complete' : 'Partial scan saved'} · ${draft.supported_count || 0} supported · ${draft.unresolved_count || 0} unresolved · ${draft.markers.length}/${draft.total_markers} scanned</p><p class="subtle">Draft only. Original timestamps are retained. Supported headings identify chapters; unresolved sections need further evidence before publication.</p>${draft.invalidated ? '<p class="error">Source changed; this draft is invalid.</p>' : ''}<details class="alignment-attempt"><summary>Review ${draft.markers.length} marker entries</summary><div class="checks-list">${draft.markers.map((m,i) => `<details class="alignment-attempt"><summary>${i+1}. ${safe(m.title || m.old_title || 'Untitled marker')} · ${safe(formatDuration(m.new_seconds))} · ${safe(m.status)}</summary><p>Old ${safe(formatDuration(m.old_seconds))} → Proposed ${safe(formatDuration(m.new_seconds))}</p><p>${safe(m.reason)}</p>${m.retry ? `<p>Automatic wider-excerpt retry: ${safe(m.retry.status)} · ${safe(formatDuration(m.retry.clip_start_seconds))}–${safe(formatDuration(m.retry.clip_end_seconds))}</p>` : ''}<p>${safe(m.source)} · ${safe(m.confidence)}</p><blockquote>${safe(m.transcript)}</blockquote><a class="excerpt-link" href="${safe(artifactPath(job.id,m.audio_excerpt))}" data-audio-link="true">▶ Listen to excerpt</a></details>`).join('')}</div></details><details class="alignment-attempt"><summary>Unresolved published sections: ${draft.missing_sections.length}</summary><p>${draft.missing_sections.map(c=>safe(c.title)).join(', ')}</p></details>`);
+    return detailSection('Local-marker recovery draft', `<p>${draft.complete ? 'Scan complete' : 'Partial scan saved'} · ${draft.supported_count || 0} supported · ${draft.unresolved_count || 0} unresolved · ${draft.markers.length}/${draft.total_markers} scanned</p><p class="subtle">Recovery evidence retains original timestamps. Supported headings identify chapters; unresolved sections require explicit exceptions before finalization.</p>${draft.invalidated ? '<p class="error">Source changed; this draft is invalid.</p>' : ''}<details class="alignment-attempt"><summary>Review ${draft.markers.length} marker entries</summary><div class="checks-list">${draft.markers.map((m,i) => `<details class="alignment-attempt"><summary>${i+1}. ${safe(m.title || m.old_title || 'Untitled marker')} · ${safe(formatDuration(m.new_seconds))} · ${safe(m.status)}</summary><p>Old ${safe(formatDuration(m.old_seconds))} → Proposed ${safe(formatDuration(m.new_seconds))}</p><p>${safe(m.reason)}</p>${m.retry ? `<p>Automatic wider-excerpt retry: ${safe(m.retry.status)} · ${safe(formatDuration(m.retry.clip_start_seconds))}–${safe(formatDuration(m.retry.clip_end_seconds))}</p>` : ''}<p>${safe(m.source)} · ${safe(m.confidence)}</p><blockquote>${safe(m.transcript)}</blockquote><a class="excerpt-link" href="${safe(artifactPath(job.id,m.audio_excerpt))}" data-audio-link="true">▶ Listen to excerpt</a></details>`).join('')}</div></details><details class="alignment-attempt"><summary>Unresolved published sections: ${draft.missing_sections.length}</summary><p>${draft.missing_sections.map(c=>safe(c.title)).join(', ')}</p></details>`);
   }
   async function downloadReport() {
     try {
@@ -235,10 +236,16 @@
     if (!w) return '';
     return `<section class="surface workflow-card" aria-label="Book process"><h2>${safe(w.overall)}</h2><ol class="workflow-timeline">${w.gates.map((g,i)=>`<li class="gate-${safe(g.state)}"><details><summary><span class="gate-number">${i+1}</span><strong>${safe(g.label)}</strong><small>${safe(g.state)}</small></summary><p>${safe(g.detail)}</p></details></li>`).join('')}</ol><p class="subtle">Open a step to see its checks. Evidence grades describe checks performed; they are not probabilities of completeness.</p>${Object.keys(w.assessment).length ? `<dl class="assessment-grid">${Object.entries(w.assessment).map(([key,value])=>`<div><dt>${safe(key)}</dt><dd><strong>${safe(value.level.replaceAll('_',' '))}</strong><p>${safe(value.detail)}</p></dd></div>`).join('')}</dl>` : ''}</section>`;
   }
+  function acceptanceForm(job) {
+    const p = job.recovery_acceptance_preview;
+    if (!p) return '';
+    if (!p.ready) return '<p class="subtle">Finalization needs a complete, valid draft with its reference timeline. Resume checks first.</p>';
+    return `<section class="surface detail-card"><h2>Finalize with accepted exceptions</h2><p>${p.supported} of ${p.total} markers supported (${p.supported_percent.toFixed(1)}%). Supported labels will be applied at existing times. Unresolved labels and times are preserved; no missing marker is invented.</p><form id="accept-recovery-form" data-draft-token="${safe(p.token)}"><label for="book-recovery-minimum">Minimum supported markers for this book (%)</label><input id="book-recovery-minimum" name="minimum" type="number" min="1" max="100" step="0.1" value="${safe(p.default_minimum_percent)}" required><p class="subtle">Global default: ${safe(p.default_minimum_percent)}%. This value applies only to this approval.</p>${p.sections.length ? '<h3>Accept unlocated sections individually</h3><p>Checking a section designates it optional for this book. Named narrative chapters are not automatically optional.</p>' : ''}${p.sections.map(c=>`<label class="accept-option"><input type="checkbox" name="optional_section" value="${safe(c.id)}" required> Accept unlocated section: ${safe(c.title)}</label>`).join('')}${p.unresolved_markers.length ? `<details><summary>${p.unresolved_markers.length} original markers will keep their labels and times</summary><ul>${p.unresolved_markers.map(m=>`<li>${m.index}. ${safe(m.title)} · ${safe(formatDuration(m.seconds))}</li>`).join('')}</ul></details><label class="accept-option"><input type="checkbox" name="preserve" required> Keep these unresolved original markers</label>` : ''}<h3>Content coverage</h3>${p.coverage_warnings.map(w=>`<p>${safe(w)}</p>`).join('')}<label class="accept-option"><input type="checkbox" name="gap" required> I accept the possible content gaps or edition differences in this recording. Chapter matching does not establish complete audio.</label><p class="subtle">The audio must be unchanged, the output must validate, and an existing M4B will be backed up. Source MP3s are retained.</p><button class="button button-primary" type="submit">Accept exceptions and finalize</button><p id="accept-recovery-message" role="status"></p></form></section>`;
+  }
   function targetedReview(job, report, identity) {
     const w = job.workflow;
     if (!w || w.review_category === 'identity') return reviewForm(job,report,identity);
-    return `<section class="surface detail-card"><h2>${safe(w.next_action)}</h2><p>${safe(report.review_reason?.detail || report.reason || job.error)}</p><p class="subtle">Resume reruns the required checks. A recovery draft cannot be saved to the audiobook.</p><button type="button" class="button button-primary" data-resume-checks>Resume checks</button><details class="alignment-attempt"><summary>Change recording details</summary>${reviewForm(job,report,identity)}</details></section>`;
+    return `<section class="surface detail-card"><h2>${safe(w.next_action)}</h2><p>${safe(report.review_reason?.detail || report.reason || job.error)}</p><p class="subtle">Resume reruns the required checks. Use explicit acceptance below to finalize an eligible recovery draft.</p><button type="button" class="button button-primary" data-resume-checks>Resume checks</button><details class="alignment-attempt"><summary>Change recording details</summary>${reviewForm(job,report,identity)}</details></section>`;
   }
   function renderDetail(job, force = false) {
     if (state.selected !== job.id) return;
@@ -257,10 +264,11 @@
       ${workflowMarkup(job)}
       ${isActive ? `<div class="surface detail-progress"><div><strong>${safe(statusName(job.stage || job.status))}</strong><span>${progress}%</span></div><div class="progress-track"><span style="width:${progress}%"></span></div></div>` : ''}
       ${(job.error || report.reason || report.pending_question) ? `<div class="alert ${isReview ? 'warning' : ''}" role="status"><strong>${isReview ? 'Review needed' : 'Job note'}</strong><p>${safe(job.error || report.reason || report.pending_question)}</p></div>` : ''}
-      ${isReview ? `<div class="review-card">${targetedReview(job, report, identity)}</div>` : ''}
+      ${isReview ? `<div class="review-card">${targetedReview(job, report, identity)}${acceptanceForm(job)}</div>` : ''}
       <div class="detail-grid"><div class="detail-main">
       ${['complete', 'skipped'].includes(job.status) ? detailSection('Chapter Details', '<div id="chapter-list">Loading saved chapters…</div><p id="chapter-message" class="subtle" role="status"></p>') : ''}
-      ${detailSection('Verification evidence', checks.length ? `<div class="check-summary"><strong>${checks.filter(c => c.passed === true).length} of ${checks.length}</strong> checks passed</div><div class="checks-list">${checks.map((check, i) => checkMarkup(job, check, i)).join('')}</div>` : '', 'Audio checks will appear here when a chapter plan is ready.')}
+      ${report.recovery_acceptance ? detailSection('Recorded recovery acceptance', `<p>${Number(report.recovery_acceptance.supported_percent).toFixed(1)}% supported · ${safe(report.recovery_acceptance.minimum_percent)}% required</p><p>Accepted sections: ${report.recovery_acceptance.sections.map(s=>safe(s.title)).join(', ') || 'None'}</p><p>Unresolved original markers retained: ${report.recovery_acceptance.unresolved_markers.length}. Possible content gaps explicitly accepted.</p>`) : ''}
+      ${detailSection('Verification evidence', checks.length ? `<div class="check-summary"><strong>${checks.filter(c => c.passed === true).length} of ${checks.length}</strong> checks passed</div><div class="checks-list">${checks.map((check, i) => checkMarkup(job, check, i)).join('')}</div>` : '', report.recovery_acceptance ? 'Recovery speech evidence is recorded below; output integrity is shown in the Verify gate.' : 'Audio checks will appear here when a chapter plan is ready.')}
       ${recoveryDraft(job, report)}
       ${alignmentDetails(report)}
       ${attempts.length ? detailSection('Edition attempts', `<div class="attempt-list">${attempts.map(a => `<div class="attempt-row"><div><strong>${safe(a.asin || 'Unknown edition')}</strong><small>${safe(a.alignment?.matching_boundaries == null ? 'Timeline evaluated' : `${a.alignment.matching_boundaries} matching boundaries`)}</small></div>${evidenceStatus(a.passed)}</div>`).join('')}</div>`) : ''}
@@ -480,6 +488,25 @@
   }
 
   function bind() {
+    document.addEventListener('submit', async event => {
+      const form=event.target;
+      if (!['accept-recovery-form','recovery-settings-form'].includes(form.id)) return;
+      event.preventDefault();
+      const button=form.querySelector('button[type=submit]');button.disabled=true;
+      const values=new FormData(form);
+      const message=form.querySelector('[role=status]');
+      try {
+        if(form.id==='recovery-settings-form') {
+          state.settings=await api('/api/settings/recovery',{method:'PUT',body:JSON.stringify({recovery_minimum_percent:Number(values.get('minimum'))})});
+          message.textContent='Recovery default saved.';
+        } else {
+          const body={draft_token:form.dataset.draftToken,minimum_percent:Number(values.get('minimum')),optional_sections:values.getAll('optional_section'),preserve_unresolved:values.has('preserve'),accept_possible_gap:values.has('gap')};
+          await api(`/api/jobs/${encodeURIComponent(state.selected)}/accept-recovery`,{method:'POST',body:JSON.stringify(body)});
+          await refresh();await loadDetail(state.selected);
+        }
+      } catch(error) { message.textContent=error.message; }
+      finally { button.disabled=false; }
+    });
     window.addEventListener('hashchange', route);
     $('#refresh-button').addEventListener('click', () => refresh());
     $('#menu-toggle').addEventListener('click', () => { const open = $('.sidebar').classList.toggle('open'); $('#menu-toggle').setAttribute('aria-expanded', String(open)); });

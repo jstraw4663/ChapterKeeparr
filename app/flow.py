@@ -47,16 +47,22 @@ def assert_publishable(report):
     """Called after output validation, immediately before entering commit."""
     from .engine import NeedsReview
     initialize(report)
+    accepted = report.get('recovery_acceptance')
+    if accepted and not report.get('recovery_draft'):
+        raise NeedsReview('Acceptance requires the original recovery evidence')
     if report.get('recovery_draft') is not None:
-        raise NeedsReview('Recovery drafts cannot authorize publication')
+        if not accepted:
+            raise NeedsReview('Recovery drafts cannot authorize publication without explicit acceptance')
+        from .acceptance import validate
+        validate(report,accepted)
     if any(report['gates'][key]['state'] != 'passed' for key in ('inspect','match','align','verify')):
         raise NeedsReview('Publication blocked: required workflow gates have not passed')
-    if report['assessment']['coverage']['level'] != 'no_known_gaps':
+    if report['assessment']['coverage']['level'] != ('accepted_exceptions' if accepted else 'no_known_gaps'):
         raise NeedsReview('Publication blocked: content coverage remains unresolved')
     if report['assessment']['integrity']['level'] != 'passed':
         raise NeedsReview('Publication blocked: output integrity is unverified')
     checks = report.get('checks', [])
-    if not checks or any(c.get('passed') is not True for c in checks):
+    if not accepted and (not checks or any(c.get('passed') is not True for c in checks)):
         raise NeedsReview('Publication blocked: required speech checks have not passed')
 
 
@@ -78,10 +84,11 @@ def present(job):
     if status in ('queued','running'): overall = 'Processing' if status=='running' else 'Queued'
     elif status == 'cancelled': overall = 'Cancelled'
     elif status == 'failed': overall = 'Processing blocked'
+    elif status == 'complete' and report.get('completion_label') == 'Finalized with accepted exceptions': overall = report['completion_label']
     elif assessment.get('coverage',{}).get('level') == 'suspected_gap': overall = 'Possible missing content'
     elif status == 'complete' and current and gates['save']['state'] == 'passed':
         overall = 'Verified — all numbered chapters checked' if report.get('verification_scope') == 'all_numbered' else 'Verified — sampled checks'
-    elif status == 'skipped': overall = 'Unchanged — previous verification retained' if report.get('output_sha256') else 'Skipped — no processable source'
+    elif status == 'skipped': overall = 'Unchanged — previously finalized with accepted exceptions' if report.get('recovery_acceptance') else 'Unchanged — previous verification retained' if report.get('output_sha256') else 'Skipped — no processable source'
     elif not current and status == 'complete': overall = 'Completed under earlier verification rules'
     else: overall = 'Review required'
     category = reason.get('category', 'identity' if not report.get('recovery_draft') else 'chapters')

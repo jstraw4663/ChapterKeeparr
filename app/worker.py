@@ -54,6 +54,7 @@ def arguments(job):
         author=options.get('author') or None, narrator=options.get('narrator') or None,
         region=options.get('region', 'us'), _report_path=None,
         recovery=options.get('recovery', 'verify'),
+        finalization=options.get('finalization'),
     )
 
 
@@ -210,7 +211,13 @@ def execute(store: Store, job: dict, owner: str):
                 current.update(report=json.loads(receipt.read_text()), report_path=str(receipt))
                 store.finish(job['id'], 'skipped', current, worker=owner)
                 return
-        if args.recovery == 'local_markers':
+        if args.recovery == 'finalize_recovery':
+            from .acceptance import finalize
+            current['report'] = json.loads(json.dumps((job.get('result') or {}).get('report') or {}))
+            args.evidence_report_path = current['report'].get('recovery_evidence_report_path') or (job.get('result') or {}).get('report_path')
+            with heavy_slot():
+                code = finalize(args,(job.get('result') or {}).get('report') or {},args.finalization or {},folder)
+        elif args.recovery == 'local_markers':
             from .recovery import run_local_review
             report = {'status': 'starting', 'identity': {k: getattr(args,k) for k in ('title','author','narrator','asin')}, 'checks': []}
             engine.write_report(folder, report)
