@@ -1,0 +1,31 @@
+services:
+  chapterkeeparr:
+    platform: linux/amd64
+    build:
+      context: .
+      args:
+        MODEL_REVISION: ${MODEL_REVISION:-d1d751a5f8271d482d14ca55d9e2deeebbae577f}
+    image: chapterkeeparr:latest
+    container_name: chapterkeeparr
+    restart: unless-stopped
+    mem_limit: ${MEM_LIMIT:-4g}
+    memswap_limit: ${MEMSWAP_LIMIT:-4g}
+    ports:
+      - "${CHAPTERKEEPER_BIND:-127.0.0.1}:${CHAPTERKEEPER_PORT:-8000}:8000"
+    environment:
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
+      LIBRARY_ROOTS: /library
+      CONFIG_DIR: /config
+      WORK_DIR: /work
+      MODEL_CACHE: /models
+      MODEL: /opt/models/small.en
+      WORKERS: ${WORKERS:-1}
+      ENABLE_WORKERS: ${ENABLE_WORKERS:-1}
+      CPU_THREADS: ${CPU_THREADS:-4}
+      CACHE_MAX_GB: ${CACHE_MAX_GB:-10}
+      CHAPTERKEEPER_API_TOKEN: ${CHAPTERKEEPER_API_TOKEN:-}
+    volumes:
+      - ${CONFIG_HOST_PATH:-./config}:/config
+      - ${LIBRARY_HOST_PATH:-/mnt/user/media/audiobooks}:/library:rw
+      - ${DOWNLOADS_HOST_PATH:-/mnt/user/usenet/downloads}:/downloads:ro
