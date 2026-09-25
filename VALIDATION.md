@@ -51,3 +51,11 @@ Not validated here: Linux/amd64 Docker build, Unraid CPU speech performance, the
 ## 0.4.1 wider retry
 
 52 tests pass, including selective retry, bounded attempts, preserved initial evidence and timestamp, unchanged audio, narrow heading acceptance, and first-pass conflict retention. JavaScript syntax and diff whitespace checks pass. Recognition efficacy on the server's speech backend was not benchmarked; this release changes excerpt context, not the model or publication rules.
+
+## UI redesign validation (2026-09-24)
+
+- `python -m unittest discover -s tests`: 71 tests pass, including `tests/test_frontend.py` (tokens-only colours, gap logging, service-worker list, no legacy design, `node --check`, and 29 `node --test` unit tests for the status adapter, search, grouping/sorting, routing and notification destinations).
+- Every screen checked in a browser at 1440×900 and 390×844, light and dark, against a generated fixture DB (`tests/fixtures/ui_seed.py`, workers disabled). Screenshots: `docs/design/screenshots/`.
+- Checked by script on every screen: named buttons and links, labelled inputs, no duplicate ids, 44px targets (switches extend their hit area). Keyboard: `/` search with arrows, Enter and Esc; modal focus trap, Esc and focus return. Reduced motion replaces loops with a single fade.
+- Spot-check playback verified against a generated M4B with chapters. Not validated: a physical iPhone install, and screen readers beyond the ARIA structure.
+

@@ -260,3 +260,58 @@ Content: book cover thumbnail with a small status icon, one-line title ("A Parad
 - Hide technical detail behind a "Technical details" disclosure (HTTP codes, URLs, raw errors).
 - Sentence case everywhere. No exclamation marks. No "Oops".
 - Say "source MP3s", "M4B", "EPUB", "edition", "chapter checks", "spot check". Don't say "job ID" in primary UI (it belongs in details).
+
+---
+
+## 12. Implementation notes (2026-09-24)
+
+Changes made while building the redesign against the real server, one line each with the reason. Decisions still open are in [FOLLOW_UPS.md](FOLLOW_UPS.md).
+
+- **Tokens live in `app/static/tokens.css`** (`docs/design/tokens.css` is a symlink to it). Added tokens for the shadows, scrim, knob and on-cover colours used by components, so no raw colour exists outside tokens.css and the cover palette in `js/books.js`. On-cover pill colours (§3) are now `--cp-*` tokens.
+- **Figtree loads from Google Fonts** for now (G-045). Self-hosting is possible since the static route was widened (G-027).
+- **Routes are hash routes** (`#/books/<id>`), because the server only serves `/` (G-028). Old hashes redirect.
+- **The step tracker keeps 4 dots**, but the current "Check audio" step always names its sub-check ("timing" from the server's Align gate or "speech" from Verify), and the five server gates plus evidence grades are shown under "Checks the server ran". Reason: AGENTS.md requires timing compatibility and speech verification to stay distinct (G-031). Compact trackers in rows omit the sub-check label to fit.
+- **Chapter checks offer Spot checks and Every chapter only.** "Off" was removed because publication requires passing speech checks (G-038).
+- **Needs review has an extra collapsible, "Finalize with accepted exceptions"**, between Chapter checks and Fix the edition, shown only when the server offers a recovery acceptance preview. It keeps every explicit consent from the previous UI (G-029). "Resume checks" is the Problem panel's action for non-edition pauses, and "Review markers from audio" sits next to "Save and re-verify" (G-030).
+- **The spot-check preview bar has a "Play to chapter end" button.** It preserves the pre-redesign full-chapter playback until the removal is approved (G-048). Default behaviour is the 15-second check.
+- **Notifications** follow §9. Events come from polling diffs (G-003). An own action that causes a status change is announced once, not twice.
+- **Search** matches title, ASIN, author, narrator and series; a series result opens the Library filtered to that series.
+- **Library defaults to grouping by author** while the server has no series data (G-007); the Group: Series option still works and explains the gap.
+- **Icons** are an inline SVG set in `js/icons.js` (the prototype's paths), with no icon dependency.
+
+## 13. Component index
+
+| Component (§8) | File | Function / class |
+|---|---|---|
+| Tokens | `app/static/tokens.css` | custom properties |
+| Button (primary / ghost / danger / warn / chip) | `app/static/js/ui.js` | `button()` · `.btn`, `.btn-primary` |
+| IconButton | `app/static/js/ui.js` | `iconButton()` · `.icb` |
+| Destructive confirm (desktop row / phone sheet) | `app/static/js/ui.js`, `app/static/js/overlay.js` | `confirmRow()`, `confirmSheet()` |
+| Field, Select | `app/static/js/ui.js` | `field()`, `selectField()` · `.fld`, `.sel` |
+| Switch | `app/static/js/ui.js` | `toggle()` · `.switch` |
+| SegmentedControl | `app/static/js/ui.js` | `segmented()` · `.segctl` |
+| Tabs | `app/static/js/ui.js` | `tabs()` · `.tabs` |
+| StatusPill, status line, dot | `app/static/js/ui.js` | `statusPill()`, `statusLine()` · `.pill`, `.dot` |
+| On-cover pill / dot | `app/static/js/ui.js` | `cover({ pill, dot })` · `.cpill`, `.cdot` |
+| Badge (nav, tab bar) | `app/static/js/shell.js` | `.nbadge`, `.pbadge` |
+| Cover (art or generated) | `app/static/js/ui.js`, `app/static/js/covers.js` | `cover()`, `hydrateCovers()` |
+| StepTracker | `app/static/js/ui.js` | `stepTracker()` · `.steps` |
+| Progress bar | `app/static/js/ui.js` | `progressBar()` · `.bar` |
+| Panel, Collapsible | `app/static/js/ui.js` | `collapsible()` · `.panel`, `.gh` |
+| Sheet, Modal | `app/static/js/overlay.js` | `open()`, `head()` |
+| ActionSheet | `app/static/js/overlay.js` | `actionSheet()` · `.actrow` |
+| LogRow, History list | `app/static/js/ui.js` | `logRow()`, `historyList()` |
+| Checklist | `app/static/js/ui.js` | `checklistRow()` · `.chk` |
+| ChapterRow + spot check | `app/static/js/ui.js`, `app/static/js/audio.js`, `app/static/js/player.js` | `spotButton()`, `playChapter()`, `playerBar()` |
+| Chapter-check rows, timeline, gates | `app/static/js/screens/evidence.js` | `checkRows()`, `checkTimeline()`, `gatesDetail()` |
+| FolderRow, folder browser | `app/static/js/screens/newjob.js` | `openBrowser()` · `.fbrow` |
+| OfflineBanner | `app/static/js/shell.js` | `.offline`, `.moffline` |
+| EmptyState | `app/static/js/ui.js` | `emptyState()` · `.empty` |
+| Skeleton | `app/static/js/ui.js` | `skeletonRows()`, `skeletonGrid()` |
+| Notification | `app/static/js/notify.js` | `notify()` · `.note-card` |
+| ActivityCard, sidebar, top bar, phone header, tab bar, FAB | `app/static/js/shell.js` | `shellMarkup()`, `updateShell()` |
+| Search overlay | `app/static/js/shell.js`, `app/static/js/search.js` | `searchLibrary()` |
+| Status model adapter | `app/static/js/status.js` | `toStatus()` |
+| Book derivation, grouping, sorting | `app/static/js/books.js` | `deriveLibrary()`, `groupBooks()`, `sortBooks()` |
+| Notification destinations | `app/static/js/events.js` | `destinationFor()`, `diffJobs()` |
+| Icons | `app/static/js/icons.js` | `icon()`, `logo()` |

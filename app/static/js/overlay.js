@@ -68,11 +68,11 @@ export function open({ label, kind = 'auto', render, actions = {}, onClose, tall
     const fn = handle.actions[el.dataset.act];
     if (fn) { event.preventDefault(); event.stopPropagation(); fn(el, event); }
   });
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     const target = (initialFocus && box.querySelector(initialFocus)) || box.querySelector('[autofocus]') || box.querySelector(FOCUSABLE) || box;
     if (target === box) box.tabIndex = -1;
     target.focus({ preventScroll: true });
-  });
+  }, 0);
   return handle;
 }
 

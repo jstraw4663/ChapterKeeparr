@@ -71,3 +71,8 @@ This does not add sentence-internal heading parsing. MLX versus Linux speech rec
 - This is an explicit accepted-exceptions outcome, not evidence that the whole recording is complete. Thresholds never auto-publish. Editable marker times, new/moved boundaries, deeper audio/EPUB reconstruction, and independent verification of reconstructed boundaries remain unsupported.
 
 Validation totals and deployment status are not established by this context update.
+
+## UI redesign (2026-09-24)
+
+The frontend was rebuilt to the approved design in `docs/design/` (Claude owns `app/static/`). The only backend change is the widened static-file route (GAPS G-027). Every build feature kept a home, including explicit recovery acceptance, which still requires each consent and never auto-publishes. Placeholders for missing server support are listed in `docs/design/GAPS.md`; next steps in `docs/design/FOLLOW_UPS.md`. UI previews use the generated fixture `tests/fixtures/ui_seed.py`; no real audiobook was read or modified for the redesign.
+

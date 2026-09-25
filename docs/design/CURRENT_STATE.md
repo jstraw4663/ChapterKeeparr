@@ -1,5 +1,7 @@
 # Current state of the build (Phase 0 audit, 2026-09-24)
 
+> This is the audit taken **before** the rebuild, kept as the record of what was replaced. The legacy `app.js`, stylesheet and screens listed below are now deleted. For the new structure see DESIGN.md §13 (component index); for open items see GAPS.md and FOLLOW_UPS.md.
+
 Audit of the repo at `4fe9b61` (ChapterKeeparr 0.5.0 alpha) against the redesign in `DESIGN.md` / `SCREENS.md`. The design was drawn without access to the repo. This file records what the build actually is, so the redesign is implemented against it rather than against assumptions.
 
 ## 1. Stack

@@ -6,6 +6,10 @@ ChapterKeeparr is a local audiobook chapter-repair workbench. Its current workfl
 
 This alpha has no BookOrbit adapter. It does not watch download folders, consume torrent payloads, or import completed books into another library manager. You can submit a finished audio file from the mounted library to `/api/jobs`; the job is queued for automatic verification in ChapterKeeparr. Confirm BookOrbit's installed API and which application owns importing before building an adapter. The `/downloads` mount is read-only and is not a job source.
 
+## UI
+
+The web UI follows the redesign in [`docs/design/`](docs/design/): start with [RULES.md](docs/design/RULES.md), then [DESIGN.md](docs/design/DESIGN.md) and [SCREENS.md](docs/design/SCREENS.md). Screens: Library, Suggestions, Queue, Needs review, Book, New job and Settings, on desktop and on a 390px phone, light and dark. Features the server can't support yet are shown disabled with a reason and tracked in [GAPS.md](docs/design/GAPS.md); remaining work is in [FOLLOW_UPS.md](docs/design/FOLLOW_UPS.md). The frontend is plain ES modules in `app/static/js/` with no build step. Theme, reduced motion, notifications and New job defaults are saved per browser.
+
 ## Build and run
 
 Install Docker Engine or Docker Desktop with Compose, then from this directory run:
@@ -108,3 +112,7 @@ The coverage heuristics are conservative and can flag harmless edits; no grade p
 Settings now stores a global minimum supported-marker percentage (default 95%, configurable from 1–100%). An eligible paused book offers **Finalize with accepted exceptions** with a per-book minimum. Every unlocated published section, including named narrative chapters, requires its own explicit optional designation. The user separately accepts preserving unresolved original markers and possible content gaps. Thresholds alone never publish.
 
 Acceptance is bound to the exact draft, source audio and reference timeline. The finalizer applies supported labels at existing times, retains unresolved labels/times, validates the output and unchanged audio payload, and backs up an existing M4B. No marker is created or moved. MP3 sources are always retained on this path; their exact prepared conversion must remain available. Normal automatic verification thresholds are unchanged.
+
+## UI redesign (2026-09-24)
+
+The teal dashboard is replaced by the redesign in `docs/design/`: a Library of covers, a Queue with live progress and an activity log, a Needs review workspace, a Book page with 15-second spot checks, a New job flow with a server folder browser, partial Suggestions and Settings. Old links (`#jobs`, `#job/<id>`, `#new-job`, `#settings`) redirect. Recovery acceptance, Review markers from audio, Resume checks, multi-book discovery, the access token and the recovery minimum all keep a place in the new screens. The static route now serves any `.js/.css/.woff2/.png/.svg` file inside `app/static`. `tests/test_frontend.py` guards the design rules and runs the JavaScript unit tests when Node is installed.

@@ -161,3 +161,18 @@ Needs from server: settings read/write, health check, version.
 - **Offline**: banner (see DESIGN.md). Show last known data; disable actions that need the server with a tooltip "Needs a connection".
 - **Loading**: skeletons in the shape of the content (cover squares, row bars), never spinners in the middle of a page.
 - **First run** (not designed yet, see BACKLOG): until then, if no library folder is set, Library shows an empty state linking to Settings → Library.
+
+---
+
+## Implementation notes (2026-09-24)
+
+What changed from the screens above once they met the real server. Gap IDs are in [GAPS.md](GAPS.md).
+
+- **Routes:** `#/` Library, `#/suggestions`, `#/queue` (`?job=<id>` focuses a job), `#/review` and `#/review/<id>`, `#/books/<id>`, `#/new`, `#/settings` and `#/settings/<section>`. Ids are job ids (G-047).
+- **Library:** grouped by author until series data exists (G-007). Renders 120 covers at a time and loads more as you scroll (G-008).
+- **Queue:** a book in no active list (for example cancelled) opened with `?job=` shows at the top with Retry. Error details show the recorded error; the converter's output needs G-005. Activity combines each job's latest change with this device's own actions (G-010).
+- **Needs review:** adds "Finalize with accepted exceptions" (G-029), "Resume checks" for pauses that aren't about the edition, and "Review markers from audio" (G-030). Technical details include timing diagnostics and the server's five checks (G-031, G-032). "Use tags" fills from the file details the server recorded (G-014). Checks from a local-marker draft read "Heard" instead of "Passed".
+- **Book:** "Clean up source MP3s" (G-015), "Open in BookOrbit" (G-021) and saving Edit details (G-018) are disabled with a reason. Re-verify uses retry (G-019). Details adds "Download report (JSON)" (G-041).
+- **New job:** a folder holding several books shows a checklist of them and "Start N jobs" (G-033). Edition fields are read-only (G-040). Options add "Process again" (G-037). "Save to" is a fixed line (G-039). Chapter checks drop "Off" (G-038).
+- **Suggestions:** partial (G-020). "Chapters need a fix" became "Chapters need a check", listing M4Bs never checked, because wrong chapters can't be detected before a check. Ignore hides a row on this device only.
+- **Settings:** adds Access token, the server readout and the accepted-exceptions minimum (G-034 to G-036). Default region and BookOrbit address are disabled (G-023, G-021). Version shows "—" (G-024).
