@@ -2,7 +2,7 @@
 // are declared with data-act="name" and handled by the screen or shell (main.js).
 // Don't hand-roll variants in screens: extend these.
 
-import { html, raw, esc, dash, relative, timeOfDay, dayLabel } from './format.js';
+import { html, raw, esc, bool, dash, relative, timeOfDay, dayLabel } from './format.js';
 import { icon, countdownRing, ICON_FOR_KIND } from './icons.js';
 import { STEPS } from './status.js';
 import { coverColor, coverMark } from './books.js';
@@ -23,6 +23,20 @@ export function button({ label, kind = 'ghost', icon: ic, iconEnd, act, arg, hre
 
 export function iconButton({ icon: ic, label, act, arg, cls = 'icb', disabled = false, disabledReason = '', size = 20, extra = {} }) {
   return html`<button type="button"${attrs({ class: cls, 'aria-label': label, title: disabled && disabledReason ? disabledReason : label, 'data-act': act, 'data-arg': arg, disabled, ...extra })}>${icon(ic, size)}</button>`;
+}
+
+/**
+ * A button that opens a short list of choices below it (search-style drop-down, SEARCH §edition).
+ * Open state lives in the screen's ui.menu; main.js closes it on pick, outside click and Esc.
+ * items: [{ label, icon, act, arg }]. With `text`, the toggle is a labelled button; otherwise icon only.
+ */
+export function menuButton({ id, label, text = '', icon: ic = 'chevronDown', open = false, items = [] }) {
+  const toggle = { 'aria-haspopup': 'menu', 'aria-expanded': bool(open), 'aria-controls': `${id}-menu` };
+  return html`<div class="menuwrap" data-key="${id}">
+    ${text ? button({ label: text, iconEnd: ic, act: 'menu-toggle', arg: id, extra: { ...toggle, 'aria-label': label, style: 'height:44px' } })
+      : iconButton({ icon: ic, label, act: 'menu-toggle', arg: id, extra: toggle })}
+    ${open ? html`<div class="menu" id="${id}-menu" role="menu" aria-label="${label}">${items.map(item => html`<button type="button" class="menuitem" role="menuitem" data-act="${item.act}" ${item.arg != null ? html`data-arg="${item.arg}"` : ''}>${item.icon ? icon(item.icon, 18) : ''}${item.label}</button>`)}</div>` : ''}
+  </div>`;
 }
 
 /** Destructive actions never fire on one click: first click shows this row (desktop) or a sheet (phone). */
@@ -61,8 +75,9 @@ export function cover(book, { size = 48, radius = 8, variant = 'thumb', pill = f
   const conv = book.status?.key === 'converting';
   const pct = book.status?.pct ?? 0;
   const style = `--c:${coverColor(book.path || book.id)};${['large', 'grid', 'grid-sm'].includes(variant) ? '' : `width:${size}px;height:${size}px;`}border-radius:${radius}px;${varsFor(variant, size)}`;
-  const art = book.coverUrl ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${book.coverUrl}" data-cover-fallback="${book.id}">`
-    : book.id ? html`<img alt="" loading="lazy" data-cover-id="${book.id}">` : '';
+  // data-art lets re-renders keep an already loaded image (morph.js).
+  const art = book.coverUrl ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${book.coverUrl}" data-cover-fallback="${book.id}" data-art="${book.id}:${book.coverUrl}">`
+    : book.id ? html`<img alt="" loading="lazy" data-cover-id="${book.id}" data-art="${book.id}">` : '';
   const showTitle = variant !== 'thumb' || size >= 84;
   return html`<div class="cover ${(variant === 'thumb' || variant === 'list') && size < 84 ? 'corner' : ''} ${cls}" style="${style}" aria-hidden="true">
     ${art}<span class="mark">${mark}</span>

@@ -57,7 +57,12 @@ function pump() {
 export function hydrateCovers(root = document) {
   root.querySelectorAll('img[data-cover-id]').forEach(img => {
     const id = img.dataset.coverId;
-    if (cache.has(id)) { const url = cache.get(id); if (url) img.src = url; return; }
+    if (cache.has(id)) {
+      const url = cache.get(id);
+      // Already fetched: show it at once, without the fade, so re-renders don't blink.
+      if (url && img.src !== url) { img.src = url; img.classList.add('loaded'); img.parentElement?.classList.add('has-art'); }
+      return;
+    }
     if (observer) observer.observe(img); else { enqueue(id); pump(); }
   });
 }

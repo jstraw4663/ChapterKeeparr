@@ -10,6 +10,7 @@ import { getPrefs, setPrefs, rememberRecent } from './prefs.js';
 import { searchLibrary } from './search.js';
 import { routeFor } from './books.js';
 import { cover, segmented, toggle } from './ui.js';
+import { morphInto } from './morph.js';
 import { open as openOverlay, head } from './overlay.js';
 import { hydrateCovers } from './covers.js';
 
@@ -133,7 +134,7 @@ export function updateShell(route) {
   if (card) {
     card.querySelector('[data-act-title]').textContent = conv ? conv.title : 'Queue is idle';
     const sub = card.querySelector('[data-act-sub]');
-    sub.innerHTML = String(conv ? html`<span class="dot dot-ink pulse" style="width:6px;height:6px"></span><span class="ell">${conv.status.stepLabel || 'Starting'} · ${pct}%</span>` : html`<span class="ell">Nothing converting</span>`);
+    morphInto(sub, String(conv ? html`<span class="dot dot-ink pulse" style="width:6px;height:6px"></span><span class="ell">${conv.status.stepLabel || 'Starting'} · ${pct}%</span>` : html`<span class="ell">Nothing converting</span>`));
     card.querySelector('[data-act-bar]').style.width = `${pct}%`;
     const slot = card.querySelector('[data-act-cover]');
     const key = conv ? conv.id : '';

@@ -1,4 +1,4 @@
-const CACHE = 'chapterkeeparr-shell-v8';
+const CACHE = 'chapterkeeparr-shell-v9';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
   '/',
@@ -16,6 +16,7 @@ const SHELL = [
   '/static/js/history.js',
   '/static/js/icons.js',
   '/static/js/main.js',
+  '/static/js/morph.js',
   '/static/js/notify.js',
   '/static/js/overlay.js',
   '/static/js/player.js',

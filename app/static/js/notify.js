@@ -50,7 +50,7 @@ function show(event) {
   const close = html`<button type="button" class="tclose" data-note-close aria-label="Dismiss notification">${icon('x', 18)}</button>`;
   el.innerHTML = String(where === 'side'
     ? html`<div class="row gap12" style="align-items:flex-start">${thumb}<span class="nt clamp2">${event.title}</span></div>${event.body ? html`<p class="nb">${event.body}</p>` : ''}<div class="row" style="justify-content:space-between;margin-top:10px">${action || html`<span></span>`}<span style="margin-right:-10px">${close}</span></div><span class="holdbar"></span>`
-    : html`<div class="row gap14" style="padding:${where === 'phone' ? '12px 8px 12px 12px' : '14px 16px 14px 14px'}">${thumb}<div class="col gap4 grow"><span class="nt ell">${event.title}</span>${event.body ? html`<span class="nb ell">${event.body}</span>` : ''}</div>${where === 'phone' ? '' : action}${close}</div><span class="holdbar"></span>`);
+    : html`<div class="row gap14" style="padding:${where === 'phone' ? '12px 8px 12px 12px' : '14px 16px 14px 14px'}">${thumb}${where === 'phone' && action ? html`<a class="col gap4 grow nlink" href="${event.href}" data-note-action><span class="nt ell">${event.title}</span>${event.body ? html`<span class="nb ell">${event.body}</span>` : ''}</a>` : html`<div class="col gap4 grow"><span class="nt ell">${event.title}</span>${event.body ? html`<span class="nb ell">${event.body}</span>` : ''}</div>`}${where === 'phone' ? '' : action}${close}</div><span class="holdbar"></span>`);
   if (where === 'side') {
     const settings = document.querySelector('.rail [data-nav="settings"]');
     const top = settings ? settings.getBoundingClientRect().bottom + 16 : 360;
@@ -81,9 +81,12 @@ function show(event) {
       next();
     }, reduced() ? 220 : FLY + 20);
   }
+  // The whole card opens its destination (the phone card has no room for an action button).
+  if (event.href && event.kind !== 'plain') el.classList.add('tappable');
   el.addEventListener('click', ev => {
-    if (ev.target.closest('[data-note-close]')) minimize();
-    else if (ev.target.closest('[data-note-action]')) setTimeout(minimize, 50);
+    if (ev.target.closest('[data-note-close]')) { minimize(); return; }
+    if (!ev.target.closest('[data-note-action]') && event.href && event.kind !== 'plain') location.hash = event.href;
+    if (event.href) setTimeout(minimize, 50);
   });
   return { minimize };
 }

@@ -430,6 +430,11 @@ html.collapsed .act{transform:translate(var(--act-dx,-86px),var(--act-dy,0)) sca
 .search::placeholder{color:var(--muted)}
 .search:focus{outline:2px solid var(--ink);outline-offset:1px}
 .search::-webkit-search-cancel-button{display:none}
+.menuwrap{position:relative;flex-shrink:0}
+.menu{position:absolute;z-index:30;top:calc(100% + 6px);right:0;min-width:200px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;animation:dropin .28s var(--ease-out) both;transform-origin:top right}
+.menuitem{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;font-size:15px;font-weight:600;text-align:left;white-space:nowrap;cursor:pointer}
+.menuitem:hover,.menuitem:focus-visible{background:var(--hover)}
+.menuitem>svg{color:var(--muted)}
 .sdrop{position:absolute;z-index:30;top:54px;left:0;width:540px;max-width:calc(100vw - 48px);padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:dropin .28s var(--ease-out) both;transform-origin:top left}
 .sres{display:flex;align-items:center;gap:14px;min-height:56px;padding:8px 10px;border-radius:12px;text-decoration:none;color:var(--ink)}
 .sres:hover,.sres[aria-selected="true"]{background:var(--hover);outline:none}
@@ -447,6 +452,8 @@ html.collapsed .offline{left:calc(50% + var(--sidebar-collapsed) / 2)}
 
 /* notifications (DESIGN.md §9) */
 .note-card{position:fixed;z-index:30;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.note-card.tappable{cursor:pointer}
+.note-card .nlink{color:inherit;text-decoration:none;min-width:0}
 .note-card.at-side{left:16px;width:216px;padding:14px;border-radius:14px;box-shadow:var(--shadow-note)}
 .note-card.at-side.in{animation:snoteIn .6s var(--ease-out) both}
 .note-card.at-corner{left:calc(var(--sidebar-collapsed) + 24px);bottom:24px;width:400px;border-radius:18px}

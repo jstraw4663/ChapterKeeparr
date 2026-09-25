@@ -88,7 +88,8 @@ export default {
   mount(root, ctx) {
     if (ctx.enter && ctx.route.section) setTimeout(() => document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }));
     const min = root.querySelector('#set-min');
-    min?.addEventListener('change', async () => {
+    // Re-renders keep this element (morph.js), so assign rather than add a listener.
+    if (min) min.onchange = async () => {
       const value = Number(min.value);
       if (!(value >= 1 && value <= 100)) { local.minMsg = 'Enter a percentage between 1 and 100.'; ctx.rerender(); return; }
       try {
@@ -96,7 +97,7 @@ export default {
         local.minimum = null; local.minMsg = 'Saved.';
       } catch (error) { local.minMsg = error.message; }
       ctx.rerender();
-    });
+    };
   },
 
   onInput(el) {

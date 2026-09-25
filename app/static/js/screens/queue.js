@@ -133,7 +133,7 @@ export default {
 
   mount(root, ctx) {
     const id = ctx.route.query.get('job');
-    if (id && ctx.enter) requestAnimationFrame(() => root.querySelector(`#job-${CSS.escape(id)}`)?.scrollIntoView({ block: 'center' }));
+    if (id && ctx.enter) setTimeout(() => root.querySelector(`#job-${CSS.escape(id)}`)?.scrollIntoView({ block: 'center' }));
   },
 
   actions: {

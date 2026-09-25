@@ -7,9 +7,8 @@ import { icon } from '../icons.js';
 import { api } from '../api.js';
 import { state, refresh, expect, jobDetail, bookById } from '../store.js';
 import { reportOf, reviewTitle, reviewDetail } from '../status.js';
-import { cover, button, iconButton, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
+import { cover, button, iconButton, menuButton, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
 import { notify } from '../notify.js';
-import { ownAction } from '../events.js';
 import { historyFor } from '../history.js';
 import { readLog } from '../prefs.js';
 import { confirmSheet } from '../overlay.js';
@@ -138,9 +137,13 @@ function fixSection(book, form, ctx) {
     <p class="meta" style="font-size:14px">Pick the right edition. Your audio is re-checked against it before anything is saved.${seconds ? html` This file runs ${minutes(seconds)}; compare it with each edition’s runtime.` : ''}</p>
     <div class="row gap8">
       <div class="inputwrap grow"><label for="rv-find" class="sr">Search editions by title or ASIN</label><span class="icon">${icon('search', 18)}</span><input id="rv-find" class="input" type="search" style="height:48px;border-radius:14px" placeholder="${ctx.phone ? 'Search editions' : 'Search editions by title or ASIN'}" value="${form.query}" enterkeyhint="search" autocomplete="off"></div>
+      ${menuButton({ id: 'rv-fill', label: 'Fill the search from this book', text: ctx.phone ? '' : 'Fill from', open: ctx.ui.menu === 'rv-fill', items: [
+        { label: 'Use filename', icon: 'file', act: 'use-filename' },
+        { label: 'Use tags', icon: 'tag', act: 'use-tags' },
+      ] })}
       ${ctx.phone
-        ? html`${iconButton({ icon: 'file', label: 'Fill from filename', act: 'use-filename' })}${iconButton({ icon: 'tag', label: 'Fill from embedded tags', act: 'use-tags' })}`
-        : html`${button({ label: 'Use filename', kind: 'chip', icon: 'file', act: 'use-filename', extra: { style: 'height:44px' } })}${button({ label: 'Use tags', kind: 'chip', icon: 'tag', act: 'use-tags', extra: { style: 'height:44px' } })}`}
+        ? iconButton({ icon: 'search', label: 'Search editions', act: 'find', cls: 'icb solid', disabled: form.searching })
+        : button({ label: form.searching ? 'Searching…' : 'Search', icon: 'search', act: 'find', disabled: form.searching, extra: { style: 'height:44px' } })}
     </div>
     ${editionResults(form)}
     <div class="formgrid">
@@ -190,6 +193,10 @@ function allClear(ctx) {
   return html`<div class="panel bigempty ${ctx.phone ? 'page-inset' : ''} ${ctx.enter ? 'rise' : ''}"><span class="circ tone-ok">${icon('check', 26, { stroke: 2.2 })}</span><span class="t">You’re all caught up</span><span class="lede" style="font-size:15px">Nothing needs your review right now.</span>${button({ label: 'Open queue', href: '#/queue' })}</div>`;
 }
 
+function resumedPanel(book, list, ctx) {
+  return html`<div class="panel bigempty ${ctx.enter ? 'rise' : ''}" style="animation-delay:.1s"><span class="circ tone-ok">${icon('check', 26, { stroke: 2.2 })}</span><span class="t">${book ? `${book.title} is back in the queue` : 'Sent back to the queue'}</span><span class="lede" style="font-size:15px">Nothing is saved until its checks pass. If it needs you again, it comes back here.</span><div class="row gap8" style="flex-wrap:wrap;justify-content:center">${book ? button({ label: 'Watch in queue', href: `#/queue?job=${encodeURIComponent(book.id)}` }) : ''}${button({ label: 'Review next', kind: 'primary', href: `#/review/${encodeURIComponent(list[0].id)}`, iconEnd: 'arrowRight' })}</div></div>`;
+}
+
 // ---------- actions ----------
 function current(ctx) {
   const list = waiting();
@@ -207,6 +214,16 @@ function readForm(book) {
   return form;
 }
 
+/**
+ * A book left Needs review and went back to the queue: tell the user (the
+ * notification opens it in the Queue) and return to the list rather than
+ * jumping to the next book.
+ */
+function sentToQueue(book, body) {
+  notify({ kind: 'info', title: `${book.title} is back in the queue`, body, action: 'Watch', href: `#/queue?job=${encodeURIComponent(book.id)}`, dest: 'queue', jobId: book.id, at: Date.now() });
+  location.hash = `#/review?resumed=${encodeURIComponent(book.id)}`;
+}
+
 async function submit(book, ctx, recovery) {
   const form = readForm(book);
   form.message = '';
@@ -214,15 +231,12 @@ async function submit(book, ctx, recovery) {
   if (asin && !/^[A-Z0-9]{10}$/.test(asin)) { form.message = 'ASIN must be 10 letters or digits.'; ctx.rerender(); return; }
   if (recovery === 'local_markers' && !asin) { form.message = 'Enter the ASIN of a matching edition before reviewing markers.'; ctx.rerender(); return; }
   form.busy = true; ctx.rerender();
-  const { list, idx } = current(ctx);
   try {
     await api.answerReview(book.id, { title: form.title, author: form.author, narrator: form.narrator, asin, region: form.region, recovery });
     expect(book.id, 'queued');
-    notify({ kind: 'info', title: `${book.title} resumed`, body: recovery === 'local_markers' ? 'Listening near each marker for a draft' : 'Re-checking chapter audio with your changes', action: 'Watch', href: '#/queue', dest: 'queue', jobId: book.id, at: Date.now() });
     forms.delete(book.id); details.delete(book.id);
-    const next = list[idx + 1] || list[idx - 1];
     await refresh();
-    location.hash = next ? `#/review/${encodeURIComponent(next.id)}` : '#/review';
+    sentToQueue(book, recovery === 'local_markers' ? 'Listening near each marker for a draft' : 'Re-checking chapter audio with your changes');
   } catch (error) {
     form.busy = false; form.message = error.message; ctx.rerender();
   }
@@ -273,6 +287,8 @@ export default {
       return html`<div style="height:0"></div>${heading}${list.length ? html`<div class="col page-inset ${enter ? 'rise' : ''}">${list.map(b => listItem(b, false, ctx))}</div>` : allClear(ctx)}`;
     }
     if (!list.length) return html`${heading}${allClear(ctx)}`;
+    const resumed = !ctx.route.id && ctx.route.query.get('resumed');
+    if (resumed) return html`${heading}<div class="revgrid"><div class="revlist ${enter ? 'rise' : ''}" role="list" aria-label="Books waiting for review" style="animation-delay:.05s">${list.map(b => listItem(b, false, ctx))}</div>${resumedPanel(bookById(resumed), list, ctx)}</div>`;
     return html`${heading}<div class="revgrid"><div class="revlist ${enter ? 'rise' : ''}" role="list" aria-label="Books waiting for review" style="animation-delay:.05s">${list.map(b => listItem(b, b.id === book.id, ctx))}</div>${detail(book, list, idx, ctx)}</div>`;
   },
 
@@ -297,10 +313,11 @@ export default {
 
   mount(root, ctx) {
     const find = root.querySelector('#rv-find');
-    find?.addEventListener('keydown', ev => {
+    // Re-renders keep this element (morph.js), so assign rather than add a listener.
+    if (find) find.onkeydown = ev => {
       if (ev.key === 'Enter') { ev.preventDefault(); const { book } = current(ctx); if (book) searchEditions(book, ctx); }
-    });
-    if (ctx.enter && ctx.route.query.has('match')) requestAnimationFrame(() => find?.focus());
+    };
+    if (ctx.enter && ctx.route.query.has('match')) setTimeout(() => find?.focus());
   },
 
   actions: {
@@ -333,9 +350,9 @@ export default {
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
       form.query = stripAudioExt(folderName(book.path)).replace(/^\d+[.\s_-]+/, '');
-      form.note = 'Filled the search from the filename. Edit it if needed, then press Enter to search.';
+      form.note = 'Filled the search from the filename. Edit it if needed, then search.';
       ctx.rerender();
-      requestAnimationFrame(() => document.getElementById('rv-find')?.focus());
+      setTimeout(() => document.getElementById('rv-find')?.focus());
     },
     'use-tags': (el, ev, ctx) => {
       // DESIGN-GAP: G-014 — raw embedded tags aren't exposed; report.identity mixes tags, EPUB and answers.
@@ -344,8 +361,9 @@ export default {
       const id = reportOf(book.job).identity || {};
       form.title = id.title || form.title; form.author = id.author || form.author; form.narrator = id.narrator || form.narrator; form.asin = id.asin || form.asin;
       form.query = id.asin || id.title || form.query;
-      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Raw tags need server support (G-014).';
+      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Edit the search if needed, then search. Raw tags need server support (G-014).';
       ctx.rerender();
+      setTimeout(() => document.getElementById('rv-find')?.focus());
     },
     'pick-edition': (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
@@ -360,6 +378,7 @@ export default {
       form.note = `${e.title || e.asin} selected. It’s checked against your audio when you save.`;
       ctx.rerender();
     },
+    find: (el, ev, ctx) => { const { book } = current(ctx); if (book) searchEditions(book, ctx); },
     save: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'verify'); },
     markers: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'local_markers'); },
     resume: async (el, ev, ctx) => {
@@ -367,8 +386,8 @@ export default {
       try {
         await api.resumeChecks(book.id);
         expect(book.id, 'queued');
-        notify({ kind: 'info', title: `${book.title} resumed`, body: 'Running the required checks again', action: 'Watch', href: '#/queue', dest: 'queue', jobId: book.id, at: Date.now() });
         await refresh();
+        sentToQueue(book, 'Running the required checks again');
       } catch (error) { reportError(error, 'Couldn’t resume checks'); }
     },
     accept: async (el, ev, ctx) => {
@@ -388,9 +407,9 @@ export default {
       try {
         await api.acceptRecovery(book.id, { draft_token: p.token, minimum_percent: min, optional_sections: f.sections || [], preserve_unresolved: Boolean(f.preserve), accept_possible_gap: true });
         expect(book.id, 'queued');
-        notify(ownAction('Exceptions accepted', `${book.title} is being finalized`, book.id));
         details.delete(book.id);
         await refresh();
+        sentToQueue(book, 'Exceptions accepted; finalizing now');
       } catch (error) { setAccept({ busy: false, message: error.message }); }
     },
     'desk-cancel': (el, ev, ctx) => { const { book } = current(ctx); if (book) { ctx.ui.confirm = `cancel:${book.id}`; ctx.rerender(); } },

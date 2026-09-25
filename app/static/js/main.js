@@ -11,6 +11,7 @@ import { top as topOverlay } from './overlay.js';
 import * as audio from './audio.js';
 import { playerBar } from './player.js';
 import { emptyState } from './ui.js';
+import { morphInto } from './morph.js';
 
 import library from './screens/library.js';
 import queue from './screens/queue.js';
@@ -51,7 +52,9 @@ function render(enter = false, force = false) {
   unmount?.();
   if (typeof screen.title === 'function') document.title = `${screen.title(c)} · ChapterKeeparr`;
   try {
-    view.innerHTML = String(screen.render(c));
+    // A new screen renders fresh (with its entrance); updates patch in place.
+    if (enter) view.innerHTML = String(screen.render(c));
+    else morphInto(view, String(screen.render(c)));
     hydrateCovers(view);
     unmount = screen.mount?.(view, c) || null;
   } catch (error) {
@@ -83,6 +86,7 @@ function go() {
   const key = location.hash.split('?')[0] || '#/';
   if (!uiByRoute.has(key)) uiByRoute.set(key, {});
   ui = uiByRoute.get(key);
+  ui.menu = null;
   route = { ...parsed, nav: navFor(parsed) };
   screen = SCREENS[route.name];
   const phone = phoneQuery.matches;
@@ -96,7 +100,20 @@ function go() {
   firstRender = false;
 }
 
+/** Close an open drop-down menu (menuButton); returns true when one was open. */
+function closeMenu({ focusToggle = false } = {}) {
+  if (!ui.menu) return false;
+  const id = ui.menu;
+  ui.menu = null;
+  render(false, true);
+  if (focusToggle) document.querySelector(`[data-act="menu-toggle"][data-arg="${CSS.escape(id)}"]`)?.focus();
+  return true;
+}
+
 function dispatch(event) {
+  // Any click outside an open menu closes it; picking an item closes it too.
+  if (ui.menu && !event.target.closest(`.menuwrap[data-key="${CSS.escape(ui.menu)}"]`)) closeMenu();
+  else if (ui.menu && event.target.closest('.menuitem')) ui.menu = null;
   const el = event.target.closest('[data-act]');
   if (!el || el.closest('.layer')) return;
   if (el.disabled || el.getAttribute('aria-disabled') === 'true') return;
@@ -108,6 +125,12 @@ function dispatch(event) {
 }
 
 const commonActions = {
+  'menu-toggle'(el, event, c) {
+    const id = el.dataset.arg;
+    c.ui.menu = c.ui.menu === id ? null : id;
+    render(false, true);
+    if (c.ui.menu) document.querySelector(`#${CSS.escape(id)}-menu .menuitem`)?.focus();
+  },
   'player-stop': () => audio.stop(),
   'player-full': () => audio.continueToChapterEnd(),
   /** Collapsible panels: open state lives in the screen's ui.open map. */
@@ -131,6 +154,17 @@ function boot() {
   applyAppearance();
   initShell();
   document.addEventListener('click', dispatch);
+  document.addEventListener('keydown', event => {
+    if (!ui.menu || document.querySelector('.layer')) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeMenu({ focusToggle: true }); return; }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const items = [...document.querySelectorAll(`#${CSS.escape(ui.menu)}-menu .menuitem`)];
+      if (!items.length) return;
+      event.preventDefault();
+      const i = items.indexOf(document.activeElement);
+      items[(i + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    }
+  });
   const onField = event => {
     const el = event.target;
     if (!(el instanceof HTMLElement) || el.closest('.layer') || !document.getElementById('view').contains(el)) return;

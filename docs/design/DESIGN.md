@@ -278,6 +278,9 @@ Changes made while building the redesign against the real server, one line each 
 - **Search** matches title, ASIN, author, narrator and series; a series result opens the Library filtered to that series.
 - **Library defaults to grouping by author** while the server has no series data (G-007); the Group: Series option still works and explains the gap.
 - **Icons** are an inline SVG set in `js/icons.js` (the prototype's paths), with no icon dependency.
+- **Updates patch the page in place** (`js/morph.js`). Only a route change renders a screen fresh with its entrance; polling and local changes update just what changed, so covers, progress bars and animations don't restart. Screens must not add listeners in `mount()` with `addEventListener` on elements that survive re-renders; assign `onkeydown`/`onchange` instead. (2026-09-25)
+- **Edition search has an explicit Search button and a "Fill from" drop-down** (Use filename, Use tags) instead of two chips; icon-only on phone. It uses the shared `menuButton()`. (2026-09-25)
+- **Sending a book back from Needs review returns to the list.** Save and re-verify, Resume checks and Finalize go to `#/review?resumed=<id>` (desktop shows a "back in the queue" panel with Watch in queue / Review next) instead of opening the next book. The notification opens that book in the Queue, and on phone the whole notification is tappable. (2026-09-25)
 
 ## 13. Component index
 
@@ -286,6 +289,7 @@ Changes made while building the redesign against the real server, one line each 
 | Tokens | `app/static/tokens.css` | custom properties |
 | Button (primary / ghost / danger / warn / chip) | `app/static/js/ui.js` | `button()` · `.btn`, `.btn-primary` |
 | IconButton | `app/static/js/ui.js` | `iconButton()` · `.icb` |
+| Drop-down menu | `app/static/js/ui.js` | `menuButton()` · `.menu`, `.menuitem` (open state in `ui.menu`; closing in `main.js`) |
 | Destructive confirm (desktop row / phone sheet) | `app/static/js/ui.js`, `app/static/js/overlay.js` | `confirmRow()`, `confirmSheet()` |
 | Field, Select | `app/static/js/ui.js` | `field()`, `selectField()` · `.fld`, `.sel` |
 | Switch | `app/static/js/ui.js` | `toggle()` · `.switch` |
@@ -311,6 +315,7 @@ Changes made while building the redesign against the real server, one line each 
 | Notification | `app/static/js/notify.js` | `notify()` · `.note-card` |
 | ActivityCard, sidebar, top bar, phone header, tab bar, FAB | `app/static/js/shell.js` | `shellMarkup()`, `updateShell()` |
 | Search overlay | `app/static/js/shell.js`, `app/static/js/search.js` | `searchLibrary()` |
+| In-place re-render | `app/static/js/morph.js` | `morphInto()` |
 | Status model adapter | `app/static/js/status.js` | `toStatus()` |
 | Book derivation, grouping, sorting | `app/static/js/books.js` | `deriveLibrary()`, `groupBooks()`, `sortBooks()` |
 | Notification destinations | `app/static/js/events.js` | `destinationFor()`, `diffJobs()` |
