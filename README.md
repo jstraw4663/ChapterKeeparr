@@ -54,7 +54,45 @@ Do not expose an unauthenticated ChapterKeeparr port to the public internet. Kee
 
 ## Unraid
 
-Build the image on a Docker-capable machine with `docker compose build`, then transfer it to Unraid or publish it to a private registry and set the template's Repository field to that image. The included [`deploy/unraid-template.xml`](deploy/unraid-template.xml) is a starting template: update the image repository and host share paths for your installation. Map `/config` to a persistent appdata directory, `/library` to the audiobook library with read/write access, and `/downloads` to the downloads share with read-only access. Set the PUID and PGID to the IDs that own the host media files. Do not grant the container privileged mode or Docker socket access.
+Unraid pulls a prebuilt image from GitHub's container registry: `ghcr.io/jstraw4663/chapterkeeparr`. GitHub Actions builds it whenever a version tag is pushed (see [Releasing](#releasing)). Nothing is built on the Unraid server.
+
+The included [`deploy/unraid-template.xml`](deploy/unraid-template.xml) already points at `ghcr.io/jstraw4663/chapterkeeparr:latest`; update the host share paths for your installation. Map `/config` to a persistent appdata directory, `/library` to the audiobook library with read/write access, and `/downloads` to the downloads share with read-only access. Set the PUID and PGID to the IDs that own the host media files. Do not grant the container privileged mode or Docker socket access.
+
+### Registry login (once)
+
+The image is private, so Unraid needs a read-only login. Unraid keeps `/root` in memory, so the login is saved to the flash drive and restored at boot.
+
+1. On GitHub, create a classic personal access token with only the `read:packages` scope (Settings → Developer settings → Personal access tokens → Tokens (classic)). Fine-grained tokens can't read GHCR packages.
+2. In the Unraid terminal:
+   ```sh
+   docker login ghcr.io -u jstraw4663
+   cp /root/.docker/config.json /boot/config/ghcr-docker-config.json
+   ```
+3. Add these lines to `/boot/config/go` so the login survives a reboot:
+   ```sh
+   mkdir -p /root/.docker
+   cp /boot/config/ghcr-docker-config.json /root/.docker/config.json
+   ```
+
+### Update and roll back
+
+Wait for active processing to finish. In the Unraid Docker tab, click **Update** on ChapterKeeparr (or **Force update** in Advanced view if Unraid hasn't noticed the new image yet). Unraid pulls the new `:latest` and recreates the container with the existing mappings and `/config`. Reload the browser/PWA after it starts.
+
+To roll back, edit the container, change the Repository tag from `:latest` to a previous version such as `ghcr.io/jstraw4663/chapterkeeparr:0.5.0`, and Apply. Change it back to `:latest` to follow releases again.
+
+### Releasing
+
+Work happens on branches and reaches `main` through pull requests; GitHub runs the tests on each one. To release from `main`:
+
+1. Change the first line of this README to `# ChapterKeeparr <version> (alpha)` and add the release notes; merge that.
+2. Tag the merge and push the tag:
+   ```sh
+   git tag -a v0.6.0 -m "0.6.0 alpha: <summary>"
+   git push origin v0.6.0
+   ```
+3. GitHub Actions runs the tests, checks the README title matches the tag, then pushes `:0.6.0` and `:latest`. Follow it under the repository's **Actions** tab, then update the container on Unraid.
+
+A tag with a suffix (`v0.6.0-rc1`) publishes only that tag, not `:latest`. Running the workflow by hand from a branch (Actions → CI and release → Run workflow) publishes `:<branch-name>` for trying a build in a separate container.
 
 ## Model revision and rebuilds
 
@@ -86,14 +124,7 @@ CLI compatibility: `python3 main.py "/path/to/book"` invokes the existing engine
 
 ### Upgrade on Unraid
 
-Wait for active processing to finish, then stop the container. Extract this release and copy the contents of its `chapterkeeparr/` directory into `/mnt/user/appdata/chapterkeeparr/source/`, replacing the source files. Keep the existing `/config` mapping and its files.
-
-```sh
-cd /mnt/user/appdata/chapterkeeparr/source
-docker build -t chapterkeeparr:latest .
-```
-
-In Unraid, edit the existing container, set or update an environment variable `CHAPTERKEEPER_BUILD` to `0.2.1`, and Apply to recreate the container with the rebuilt image and existing mappings. A plain restart keeps the old image. For Compose deployments, use `docker compose up -d --build` instead. Reload the browser/PWA after the container starts.
+Superseded: releases are now pulled from GHCR (see [Update and roll back](#update-and-roll-back)). Copying source into `/mnt/user/appdata/chapterkeeparr/source/` and running `docker build` on Unraid is no longer needed, and neither is the `CHAPTERKEEPER_BUILD` variable. For Compose deployments, `docker compose up -d --build` still works from a checkout.
 
 No new runtime dependencies are needed. This release does not add BookOrbit integration or GPU processing.
 

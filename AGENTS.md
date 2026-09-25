@@ -6,6 +6,8 @@ Preserve the distinction between recording identity, timing compatibility and sp
 
 Run the relevant unittest suite and JavaScript syntax check for changes. Use generated media for write tests; keep actual audiobook diagnosis read-only unless the user requests publication/repair.
 
+Work on a branch and open a pull request against `main` on GitHub (`jstraw4663/ChapterKeeparr`). Don't merge to `main`, push version tags or trigger releases: a `v*` tag publishes the image the Unraid server runs, so only Jeremy merges and tags. Release steps are in README.md → Releasing.
+
 ## Design (UI)
 
 The UI follows an approved redesign. Full spec: [docs/design/DESIGN.md](docs/design/DESIGN.md) and [docs/design/SCREENS.md](docs/design/SCREENS.md); gaps between design and build: [docs/design/GAPS.md](docs/design/GAPS.md); remaining work: [docs/design/FOLLOW_UPS.md](docs/design/FOLLOW_UPS.md). The frontend is plain ES modules in `app/static/js/` with no build step; `tokens.css` is the only colour source. `tests/test_frontend.py` enforces the rules below and runs the JavaScript unit tests (`node --test tests/js/*.test.mjs`).
