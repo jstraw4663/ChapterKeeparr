@@ -279,6 +279,7 @@ Changes made while building the redesign against the real server, one line each 
 - **Library defaults to grouping by author** while the server has no series data (G-007); the Group: Series option still works and explains the gap.
 - **Icons** are an inline SVG set in `js/icons.js` (the prototype's paths), with no icon dependency.
 - **Updates patch the page in place** (`js/morph.js`). Only a route change renders a screen fresh with its entrance; polling and local changes update just what changed, so covers, progress bars and animations don't restart. Screens must not add listeners in `mount()` with `addEventListener` on elements that survive re-renders; assign `onkeydown`/`onchange` instead. (2026-09-25)
+- **Needs review detail is organised as What happened → What to do next → Evidence.** "What happened" is plain language per pause reason with the key facts (edition, checks passed); the server's sentence, technical details, timing diagnostics and gates sit under one "Details from the server" link. "What to do next" is a short list of exclusive choices (`choices()`), each with a one-line explanation and one button: for chapter timing, Draft chapters from the audio / Choose a different edition / Run the checks again, and once a draft is ready, Save using the draft first (the accepted-exceptions form, all consents kept). Chapter checks and History are collapsed under Evidence. The phone's sticky Skip / Save bar is gone; Cancel job is the header's trash button on both layouts. Reason: the previous layout showed up to seven buttons at once with no order, and the chapter-recovery steps looked like alternatives rather than a sequence. (2026-09-25)
 - **Edition search has an explicit Search button and a "Fill from" drop-down** (Use filename, Use tags) instead of two chips; icon-only on phone. It uses the shared `menuButton()`. (2026-09-25)
 - **Sending a book back from Needs review returns to the list.** Save and re-verify, Resume checks and Finalize go to `#/review?resumed=<id>` (desktop shows a "back in the queue" panel with Watch in queue / Review next) instead of opening the next book. The notification opens that book in the Queue, and on phone the whole notification is tappable. (2026-09-25)
 
@@ -289,6 +290,7 @@ Changes made while building the redesign against the real server, one line each 
 | Tokens | `app/static/tokens.css` | custom properties |
 | Button (primary / ghost / danger / warn / chip) | `app/static/js/ui.js` | `button()` · `.btn`, `.btn-primary` |
 | IconButton | `app/static/js/ui.js` | `iconButton()` · `.icb` |
+| Exclusive choices (What to do next) | `app/static/js/ui.js` | `choices()` · `.choice`, `.choicehead` |
 | Drop-down menu | `app/static/js/ui.js` | `menuButton()` · `.menu`, `.menuitem` (open state in `ui.menu`; closing in `main.js`) |
 | Destructive confirm (desktop row / phone sheet) | `app/static/js/ui.js`, `app/static/js/overlay.js` | `confirmRow()`, `confirmSheet()` |
 | Field, Select | `app/static/js/ui.js` | `field()`, `selectField()` · `.fld`, `.sel` |

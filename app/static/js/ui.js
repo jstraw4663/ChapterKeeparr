@@ -39,6 +39,23 @@ export function menuButton({ id, label, text = '', icon: ic = 'chevronDown', ope
   </div>`;
 }
 
+/**
+ * Exclusive choices, each with a title, a one-line explanation and its own body
+ * (one primary button inside). Only the open choice shows its body.
+ * items: [{ id, title, desc, body }]; `act` receives the choice id as data-arg.
+ */
+export function choices({ label, act, open, items }) {
+  return html`<div class="choices" role="group" aria-label="${label}">${items.map(item => {
+    const on = item.id === open;
+    return html`<section class="choice ${on ? 'on' : ''}" data-key="choice-${item.id}">
+      <button type="button" class="choicehead" data-act="${act}" data-arg="${item.id}" aria-expanded="${bool(on)}" aria-controls="choice-${item.id}-body">
+        <span class="radio" aria-hidden="true"></span><span class="col gap4 grow" style="min-width:0"><span class="ct">${item.title}</span><span class="cd">${item.desc}</span></span>
+      </button>
+      ${on ? html`<div class="choicebody opened" id="choice-${item.id}-body">${item.body}</div>` : ''}
+    </section>`;
+  })}</div>`;
+}
+
 /** Destructive actions never fire on one click: first click shows this row (desktop) or a sheet (phone). */
 export function confirmRow({ question, keepAct, confirmAct, confirmLabel, arg }) {
   return html`<div class="confirm opened" role="group" aria-label="${question}"><span class="muted">${question}</span>${button({ label: 'Keep', act: keepAct, arg, size: 'md' })}${button({ label: confirmLabel, kind: 'danger', act: confirmAct, arg, size: 'md' })}</div>`;
