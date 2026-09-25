@@ -29,7 +29,7 @@ function body(ctx) {
   const roots = s?.library_roots || [];
   const minimum = local.minimum ?? s?.recovery_minimum_percent ?? '';
   const tokenValue = local.token ?? getToken();
-  const conn = connected === false ? ['dot-bad', 'Can’t reach server'] : connected ? ['dot-ok', 'Connected'] : ['dot-muted', 'Checking…'];
+  const conn = connected === false ? ['dot-bad', 'Can’t reach server'] : state.authNeeded ? ['dot-warn', 'Access token needed'] : connected ? ['dot-ok', 'Connected'] : ['dot-muted', 'Checking…'];
   const row = (label, desc, control) => settingRow({ label, desc, control, stack: st });
 
   return html`
@@ -56,7 +56,7 @@ function body(ctx) {
   ${section('server', 'Server', html`
     ${row('ChapterKeeparr server', 'This app is a front end for the service on your server.', html`<span class="row" style="gap:8px;font-size:14px;font-weight:600"><span class="dot lg ${conn[0]}"></span>${conn[1]}</span>`)}
     ${row('Version', 'Reported by the server.', html`<span class="val">— <span class="meta mono">(G-024)</span></span>`)}
-    ${row('Access token', s?.auth_required ? 'This server requires a token. It’s stored in this browser and sent only to this server.' : 'Only needed if the server sets CHAPTERKEEPER_API_TOKEN. Stored in this browser.', html`<form class="col gap8" data-form="token" style="align-items:${ctx.phone ? 'stretch' : 'flex-end'}"><div class="row gap8"><label for="set-token" class="sr">Access token</label><input id="set-token" class="input" type="password" autocomplete="off" placeholder="Optional access token" value="${tokenValue}" style="width:${ctx.phone ? '100%' : '240px'}"><button type="submit" class="btn btn-md">Save</button></div>${local.tokenMsg ? html`<span class="meta" role="status">${local.tokenMsg}</span>` : ''}</form>`)}
+    ${row('Access token', s?.auth_required || state.authNeeded ? 'This server requires a token. It’s stored in this browser and sent only to this server.' : 'Only needed if the server sets CHAPTERKEEPER_API_TOKEN. Stored in this browser.', html`<form class="col gap8" data-form="token" style="align-items:${ctx.phone ? 'stretch' : 'flex-end'}"><div class="row gap8"><label for="set-token" class="sr">Access token</label><input id="set-token" class="input" type="password" autocomplete="off" placeholder="Optional access token" value="${tokenValue}" style="width:${ctx.phone ? '100%' : '240px'}"><button type="submit" class="btn btn-md">Save</button></div>${local.tokenMsg ? html`<span class="meta" role="status">${local.tokenMsg}</span>` : ''}</form>`)}
     ${row('Workers', 'Books processed at the same time.', html`<span class="val">${dash(s?.workers)}</span>`)}
     ${row('CPU threads', 'Speech recognition threads per book.', html`<span class="val">${dash(s?.cpu_threads)}</span>`)}
     ${row('Cache budget', 'Retained conversions and transcripts.', html`<span class="val">${s?.work_cache_budget_gb != null ? `${s.work_cache_budget_gb} GB` : '—'}</span>`)}
@@ -70,7 +70,7 @@ export default {
   detail: true,
 
   signature(ctx) {
-    return [state.connected, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section].join('|');
+    return [state.connected, state.authNeeded, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section].join('|');
   },
 
   render(ctx) {
@@ -86,7 +86,7 @@ export default {
   },
 
   mount(root, ctx) {
-    if (ctx.enter && ctx.route.section) requestAnimationFrame(() => document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }));
+    if (ctx.enter && ctx.route.section) setTimeout(() => document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }));
     const min = root.querySelector('#set-min');
     min?.addEventListener('change', async () => {
       const value = Number(min.value);

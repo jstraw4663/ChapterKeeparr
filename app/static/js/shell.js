@@ -279,7 +279,8 @@ function openSettingsSheet() {
     actions: {
       theme: el => { setPrefs({ theme: el.dataset.arg }); applyAppearance(); h.update(); },
       notif: () => { setPrefs({ notifications: !getPrefs().notifications }); h.update(); },
-      'all-settings': () => h.close(),
+      // The sheet's action handler cancels the link, so navigate explicitly.
+      'all-settings': () => { h.close(); location.hash = '#/settings'; },
     },
   });
 }

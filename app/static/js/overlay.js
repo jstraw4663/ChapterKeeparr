@@ -122,11 +122,12 @@ export function actionSheet(label, items) {
       ? html`<a class="actrow ${item.danger ? 'danger' : ''}" href="${item.href}" data-act="pick" data-arg="${i}">${icon(item.icon, 22)}${item.label}</a>`
       : html`<button type="button" class="actrow ${item.danger ? 'danger' : ''}" data-act="pick" data-arg="${i}" ${item.disabled ? raw('disabled') : ''} ${item.reason ? html`title="${item.reason}"` : ''}>${icon(item.icon, 22)}<span class="col"><span>${item.label}</span>${item.disabled && item.reason ? html`<span class="meta">${item.reason}</span>` : ''}</span></button>`)}`,
     actions: {
-      pick: (el, event) => {
+      pick: el => {
         const item = items[Number(el.dataset.arg)];
         if (!item || item.disabled) return;
-        if (!item.href) event.preventDefault();
         h.close();
+        // The sheet's click handler cancels link navigation, so follow href here.
+        if (item.href) location.href = item.href;
         item.onSelect?.();
       },
     },

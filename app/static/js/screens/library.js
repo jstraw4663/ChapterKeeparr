@@ -69,7 +69,7 @@ export default {
 
   signature(ctx) {
     const p = viewPrefs();
-    return [state.loaded, state.connected, state.sig, JSON.stringify(p), ctx.ui.limit, ctx.route.query.toString(), Boolean(state.settings)].join('|');
+    return [state.loaded, state.connected, state.authNeeded, state.sig, JSON.stringify(p), ctx.ui.limit, ctx.route.query.toString(), Boolean(state.settings)].join('|');
   },
 
   render(ctx) {
@@ -105,6 +105,7 @@ export default {
 
     let body;
     if (!state.loaded) body = skeletonGrid(phone ? 9 : 12);
+    else if (!all.length && state.authNeeded) body = emptyState({ title: 'Access token needed', body: 'This server requires an access token. Add it in Settings → Server; it’s stored in this browser.', action: button({ label: 'Add access token', kind: 'primary', href: '#/settings/server' }) });
     else if (!all.length && state.connected === false) body = emptyState({ title: 'Can’t reach the server', body: 'Your library will appear once the connection is back.', action: button({ label: 'Retry now', act: 'retry-now' }) });
     else if (!all.length && roots && !roots.length) body = emptyState({ title: 'No library folder is set up', body: 'Set LIBRARY_ROOTS on the server to point at your audiobooks.', action: button({ label: 'Open Settings', href: '#/settings/library' }) });
     else if (!all.length) body = emptyState({ title: 'Your library is empty', body: 'Start a job from a folder of MP3s or an existing M4B on your server.', action: button({ label: 'New job', kind: 'primary', href: '#/new', icon: 'plus' }) });

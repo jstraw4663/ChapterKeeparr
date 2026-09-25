@@ -125,6 +125,8 @@ const commonActions = {
 };
 
 function boot() {
+  // Screens set their own scroll position; don't let a reload restore the old one over it.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   document.body.innerHTML = String(shellMarkup());
   applyAppearance();
   initShell();

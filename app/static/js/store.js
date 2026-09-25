@@ -15,6 +15,7 @@ export const state = {
   loaded: false,
   connected: null,        // null = not checked yet
   lastError: '',
+  authNeeded: false,       // the server rejected our token (401)
   lastSync: 0,
   settings: null,
   suggestions: null,      // filled by the Suggestions screen (partial, G-020)
@@ -79,12 +80,13 @@ export async function refresh() {
       for (const event of events) if (expected.get(event.jobId)) expected.delete(event.jobId);
       previous = snapshot(jobs);
       apply(jobs);
-      state.loaded = true; state.connected = true; state.lastError = ''; state.lastSync = Date.now();
+      state.loaded = true; state.connected = true; state.lastError = ''; state.authNeeded = false; state.lastSync = Date.now();
       emit();
       if (events.length) eventListeners.forEach(fn => fn(events));
     } catch (error) {
       state.connected = error.offline ? false : state.connected ?? true;
       state.lastError = error.message;
+      state.authNeeded = error.status === 401;
       if (!error.offline) state.loaded = true;
       emit();
     } finally {
