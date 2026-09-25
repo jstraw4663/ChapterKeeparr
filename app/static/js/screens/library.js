@@ -4,11 +4,10 @@
 import { html, bool } from '../format.js';
 import { icon } from '../icons.js';
 import { FILTERS, countFor, passes, sortBooks, groupBooks, hasSeriesData, routeFor, STANDALONE } from '../books.js';
-import { cover, tabs, segmented, button, emptyState, statusPill, skeletonGrid } from '../ui.js';
+import { cover, tabs, segmented, button, emptyState, statusPill, skeletonGrid, reviewBanner } from '../ui.js';
 import { getPrefs, setPrefs } from '../prefs.js';
 import { open as openOverlay, head } from '../overlay.js';
 import { state } from '../store.js';
-import { reviewTitle } from '../status.js';
 
 const PAGE = 120;
 const GROUPS = [['none', 'No grouping', 'None'], ['series', 'Group: Series', 'Series'], ['author', 'Group: Author', 'Author'], ['status', 'Group: Status', 'Status']];
@@ -49,18 +48,6 @@ function phoneCard(book, view) {
     <span class="ct clamp2">${book.title}</span><span class="cs ell">${book.status.detail}</span></a>`;
 }
 
-function banner(waiting, enter, phone) {
-  if (!waiting.length) return '';
-  const n = waiting.length;
-  const identityOnly = waiting.every(b => reviewTitle(b.job) === 'Edition not confirmed');
-  const why = identityOnly ? 'Each paused because its edition couldn’t be confirmed. Nothing is saved until you decide.'
-    : 'Each paused because something couldn’t be confirmed. Nothing is saved until you decide.';
-  const stack = waiting.slice(0, 4).map((b, i) => html`<span class="${enter ? 'stack-in' : ''}" style="animation-delay:${0.15 + i * 0.08}s;display:flex">${cover(b, { size: phone ? 40 : 54, radius: phone ? 8 : 10 })}</span>`);
-  if (phone) {
-    return html`<a class="mbanner page-inset ${enter ? 'rise' : ''}" href="#/review"><span class="stack">${stack}</span><span class="col gap4 grow"><span class="row" style="gap:7px;font-size:16px;font-weight:750"><span class="dot dot-warn pulse"></span>${n} ${n === 1 ? 'book needs' : 'books need'} you</span><span class="meta">Tap to start reviewing</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
-  }
-  return html`<section class="panel banner ${enter ? 'rise' : ''}" aria-label="Waiting for review"><span class="stack">${stack}</span><span class="col gap4 grow"><span class="t"><span class="dot lg dot-warn pulse"></span>${n} ${n === 1 ? 'book is' : 'books are'} waiting on you</span><span class="lede" style="font-size:15px">${why}</span></span>${button({ label: 'Start reviewing', kind: 'primary', href: '#/review', iconEnd: 'arrowRight' })}</section>`;
-}
 
 export default {
   title: 'Library',
@@ -125,7 +112,7 @@ export default {
       ${state.capped ? html`<p class="meta center">Showing the latest 1,000 jobs. Older books need server paging (G-008).</p>` : ''}`;
     }
 
-    return html`${heading}${banner(waiting, enter, phone)}
+    return html`${heading}${reviewBanner(waiting, enter, phone)}
       <section class="col gap14 ${phone ? '' : enter ? 'rise' : ''}" style="animation-delay:.12s">
         ${toolbar}
         ${phone ? '' : html`<span class="meta">${state.loaded ? countLine : 'Loading your library…'}</span>`}

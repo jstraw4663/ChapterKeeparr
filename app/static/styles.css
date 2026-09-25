@@ -447,6 +447,9 @@ details.tech.plain>summary{color:var(--muted);font-size:14px}
 .choice.on .radio{border-color:var(--ink);border-width:6px}
 .choicebody{display:flex;flex-direction:column;gap:14px;padding:0 18px 18px 52px}
 @media (max-width:767px){.choicebody{padding:0 16px 16px}.choicehead{padding:16px}}
+.jumpwrap{position:sticky;top:0;z-index:6;background:var(--bg);padding-top:8px;margin-top:-8px}
+.jumptarget{scroll-margin-top:72px}
+@media (max-width:767px){.jumpwrap{top:calc(60px + env(safe-area-inset-top))}.jumptarget{scroll-margin-top:calc(120px + env(safe-area-inset-top))}}
 .menuwrap{position:relative;flex-shrink:0}
 .menu{position:absolute;z-index:30;top:calc(100% + 6px);right:0;min-width:200px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;animation:dropin .28s var(--ease-out) both;transform-origin:top right}
 .menuitem{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;font-size:15px;font-weight:600;text-align:left;white-space:nowrap;cursor:pointer}
@@ -530,8 +533,12 @@ html.collapsed .offline{left:calc(50% + var(--sidebar-collapsed) / 2)}
   .mres{display:block;position:fixed;left:0;right:0;top:calc(60px + env(safe-area-inset-top));bottom:0;z-index:11;padding:4px 12px 120px;overflow-y:auto;background:var(--bg);animation:dropin .28s var(--ease-out) both}
   .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:8;padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;background:var(--bar);border-top:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
   .ptab{flex:1 1 0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);text-decoration:none}
-  .ptab[aria-current="page"]{color:var(--ink)}
+  .ptab[aria-current="page"]{color:var(--ink);font-weight:750}
   .ptab .glyph{position:relative;display:inline-flex}
+  /* Current tab: a pill behind the icon, so the active screen reads at a glance (not colour alone). */
+  .ptab .glyph::before{content:'';position:absolute;top:-4px;bottom:-4px;left:-16px;right:-16px;border-radius:var(--radius-pill);background:var(--track);opacity:0;transform:scaleX(.5);transition:opacity .3s ease,transform .35s var(--ease)}
+  .ptab[aria-current="page"] .glyph::before{opacity:1;transform:none}
+  .ptab .glyph>svg:not(.pring){position:relative}
   .pring{position:absolute;left:-5px;top:-5px;opacity:0;transition:opacity .4s ease;pointer-events:none}
   .pring.on{opacity:1}
   .pring circle{fill:none;stroke-width:2}

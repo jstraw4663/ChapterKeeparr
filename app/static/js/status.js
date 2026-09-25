@@ -157,5 +157,6 @@ function verifiedKey(job) {
 }
 
 export const isAttention = key => key === 'review' || key === 'failed';
-export const isActive = key => key === 'converting' || key === 'review' || key === 'failed';
+/** In the Queue: converting now or waiting for a worker. Review and failed books live elsewhere. */
+export const isActive = key => key === 'converting' || key === 'queued';
 export const isDone = key => key === 'verified' || key === 'optimized';

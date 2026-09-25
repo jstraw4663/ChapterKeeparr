@@ -4,7 +4,7 @@
 
 import { html, raw, esc, bool, dash, relative, timeOfDay, dayLabel } from './format.js';
 import { icon, countdownRing, ICON_FOR_KIND } from './icons.js';
-import { STEPS } from './status.js';
+import { STEPS, reviewTitle } from './status.js';
 import { coverColor, coverMark } from './books.js';
 
 const attrs = obj => raw(Object.entries(obj || {})
@@ -54,6 +54,20 @@ export function choices({ label, act, open, items }) {
       ${on ? html`<div class="choicebody opened" id="choice-${item.id}-body">${item.body}</div>` : ''}
     </section>`;
   })}</div>`;
+}
+
+/** "N books need you": the way into Needs review from Library and Queue. */
+export function reviewBanner(waiting, enter, phone) {
+  if (!waiting.length) return '';
+  const n = waiting.length;
+  const identityOnly = waiting.every(b => reviewTitle(b.job) === 'Edition not confirmed');
+  const why = identityOnly ? 'Each paused because its edition couldn’t be confirmed. Nothing is saved until you decide.'
+    : 'Each paused because something couldn’t be confirmed. Nothing is saved until you decide.';
+  const stack = waiting.slice(0, 4).map((b, i) => html`<span class="${enter ? 'stack-in' : ''}" style="animation-delay:${0.15 + i * 0.08}s;display:flex">${cover(b, { size: phone ? 40 : 54, radius: phone ? 8 : 10 })}</span>`);
+  if (phone) {
+    return html`<a class="mbanner page-inset ${enter ? 'rise' : ''}" href="#/review"><span class="stack">${stack}</span><span class="col gap4 grow"><span class="row" style="gap:7px;font-size:16px;font-weight:750"><span class="dot dot-warn pulse"></span>${n} ${n === 1 ? 'book needs' : 'books need'} you</span><span class="meta">Tap to start reviewing</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
+  }
+  return html`<section class="panel banner ${enter ? 'rise' : ''}" aria-label="Waiting for review"><span class="stack">${stack}</span><span class="col gap4 grow"><span class="t"><span class="dot lg dot-warn pulse"></span>${n} ${n === 1 ? 'book is' : 'books are'} waiting on you</span><span class="lede" style="font-size:15px">${why}</span></span>${button({ label: 'Start reviewing', kind: 'primary', href: '#/review', iconEnd: 'arrowRight' })}</section>`;
 }
 
 /** Destructive actions never fire on one click: first click shows this row (desktop) or a sheet (phone). */
