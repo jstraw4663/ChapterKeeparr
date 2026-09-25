@@ -9,6 +9,7 @@ import { cover, stepTracker, progressBar, tabs, button, iconButton, emptyState, 
 import { reportOf } from '../status.js';
 import { routeFor } from '../books.js';
 import { ACTIVITY_FILTERS, passesActivity } from '../events.js';
+import { syncInks } from '../transitions.js';
 import { cancelControl, cancelActions, serverButton, activityRows, offline, OFFLINE_REASON, askCancel } from './common.js';
 
 const LOG_PAGE = 30;
@@ -133,6 +134,7 @@ export default {
         const part = entry.isIntersecting || entry.boundingClientRect.top < 0 ? 'activity' : 'queue';
         ctx.ui.jump = part;
         root.querySelectorAll('.jumpbar .tab').forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.arg === part)));
+        syncInks(root);
       }, { rootMargin: '0px 0px -55% 0px' });
       io.observe(target);
     }
@@ -147,6 +149,7 @@ export default {
       const part = el.dataset.arg;
       ctx.ui.jump = part;
       document.querySelectorAll('.jumpbar .tab').forEach(tab => tab.setAttribute('aria-pressed', String(tab.dataset.arg === part)));
+      syncInks(document.getElementById('view'));
       if (part === 'activity' && !(ctx.ui.open?.activity ?? true)) { ctx.ui.open = { ...(ctx.ui.open || {}), activity: true }; ctx.rerender(); }
       const smooth = document.documentElement.dataset.motion === 'reduce' ? 'auto' : 'smooth';
       if (part === 'activity') document.getElementById('q-activity')?.scrollIntoView({ behavior: smooth, block: 'start' });

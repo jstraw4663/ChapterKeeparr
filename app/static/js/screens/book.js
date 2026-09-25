@@ -5,7 +5,7 @@
 import { html, clock, shortDate, bool } from '../format.js';
 import { icon } from '../icons.js';
 import { api, needsServer } from '../api.js';
-import { state, bookById } from '../store.js';
+import { state, bookById, touch } from '../store.js';
 import { reportOf } from '../status.js';
 import { cover, button, iconButton, collapsible, checklistRow, kv, historyList, statusPill, spotButton, field, selectField, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
 import { open as openOverlay, head, actionSheet, confirmSheet, isPhone } from '../overlay.js';
@@ -193,6 +193,12 @@ async function cleanUp(ctx) {
 
 export default {
   title: ctx => bookOf(ctx)?.title || 'Book',
+
+  /** Start the chapter request as soon as a link to this book is pressed. */
+  prefetch(route) {
+    const book = route.id && bookById(route.id);
+    if (book) loadChapters(book, { rerender: () => touch() });
+  },
   topbar: true,
   detail: true,
 
@@ -217,14 +223,14 @@ export default {
     if (phone) {
       return html`<div class="back-head"><a class="textlink" href="#/" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Library</a><div class="row" style="gap:0">${iconButton({ icon: 'edit', label: 'Edit details', act: 'edit', cls: 'picon' })}<button type="button" class="picon" data-act="more" aria-label="More actions" aria-haspopup="dialog">${icon('more', 22)}</button></div></div>
         <section class="col gap12 page-pad ${enter ? 'rise' : ''}">
-          <div class="bookhero">${cover(book, { size: 128, radius: 16, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 tabindex="-1">${book.title}</h1><span class="meta" style="font-size:14px">${book.author}</span></div></div>
+          <div class="bookhero">${cover(book, { size: 128, radius: 16, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta" style="font-size:14px">${book.author}</span></div></div>
           <div class="row gap8 wrap">${statusPill(book.status)}<span class="meta">${[chapterCount != null ? `${chapterCount} chapters` : '', rows.length ? `${passed}/${rows.length} checks` : ''].filter(Boolean).join(' · ')}</span></div>
           ${actionsRow(book, ctx)}</section>
         <div class="page-inset">${chaptersPanel(book, ctx)}</div>
         <div class="page-inset col gap12">${statusCard(book, ctx)}${filesPanel(book, ctx)}${historyPanel(book, ctx)}${detailsPanel(book, ctx)}</div>`;
     }
     return html`<a class="textlink" href="#/" style="align-self:flex-start;margin-bottom:-8px">${icon('chevronLeft', 18)}Library</a>
-      <section class="bookhero ${enter ? 'rise' : ''}">${cover(book, { size: 220, radius: 16, cls: 'shadow' })}<div class="col gap12 grow"><span class="eyebrow">${eyebrow}</span><h1 tabindex="-1">${book.title}</h1><p class="lede">${book.author}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p><div class="row gap12 wrap">${statusPill(book.status)}<span class="meta" style="font-size:14px">${line}</span></div>${actionsRow(book, ctx)}</div></section>
+      <section class="bookhero ${enter ? 'rise' : ''}">${cover(book, { size: 220, radius: 16, cls: 'shadow' })}<div class="col gap12 grow"><span class="eyebrow">${eyebrow}</span><h1 tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><p class="lede">${book.author}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p><div class="row gap12 wrap">${statusPill(book.status)}<span class="meta" style="font-size:14px">${line}</span></div>${actionsRow(book, ctx)}</div></section>
       <div class="twocol"><div class="${enter ? 'rise' : ''}" style="animation-delay:.08s">${chaptersPanel(book, ctx)}</div>
         <div class="col gap16 ${enter ? 'rise' : ''}" style="animation-delay:.14s">${statusCard(book, ctx)}${filesPanel(book, ctx)}${historyPanel(book, ctx)}${detailsPanel(book, ctx)}</div></div>`;
   },

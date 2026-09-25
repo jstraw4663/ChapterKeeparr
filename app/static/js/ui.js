@@ -110,7 +110,7 @@ export function cover(book, { size = 48, radius = 8, variant = 'thumb', pill = f
   const art = book.coverUrl ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${book.coverUrl}" data-cover-fallback="${book.id}" data-art="${book.id}:${book.coverUrl}">`
     : book.id ? html`<img alt="" loading="lazy" data-cover-id="${book.id}" data-art="${book.id}">` : '';
   const showTitle = variant !== 'thumb' || size >= 84;
-  return html`<div class="cover ${(variant === 'thumb' || variant === 'list') && size < 84 ? 'corner' : ''} ${cls}" style="${style}" aria-hidden="true">
+  return html`<div class="cover ${(variant === 'thumb' || variant === 'list') && size < 84 ? 'corner' : ''} ${cls}" style="${style}" aria-hidden="true" data-vt-cover="${book.id || ''}">
     ${art}<span class="mark">${mark}</span>
     ${showTitle ? html`<span class="ctitle">${variant === 'large' ? html`<span class="ceyebrow">${book.series ? `${book.series}${book.seriesPos ? ` · ${book.seriesPos}` : ''}` : book.author || ''}</span>` : ''}${book.title}</span>` : ''}
     ${pill ? html`<span class="cpill ${book.status.key}">${book.status.label}</span>` : ''}
@@ -161,12 +161,12 @@ export function toggle({ label, checked, act, arg, disabled = false, disabledRea
 
 /** options: [[value, label, disabledReason?]] */
 export function segmented({ label, options, value, act, full = false, iconOnly = false }) {
-  return html`<div class="segctl ${full ? 'full' : ''}" role="group" aria-label="${label}">${options.map(([v, text, reason, ic]) => html`<button type="button" class="sgb ${iconOnly ? 'icon-only' : ''}" data-act="${act}" data-arg="${v}" aria-pressed="${v === value ? 'true' : 'false'}"${attrs({ disabled: Boolean(reason), title: reason || (iconOnly ? text : undefined), 'aria-label': iconOnly ? text : undefined })}>${ic ? icon(ic, 18) : text}</button>`)}</div>`;
+  return html`<div class="segctl ${full ? 'full' : ''}" role="group" aria-label="${label}">${options.map(([v, text, reason, ic]) => html`<button type="button" class="sgb ${iconOnly ? 'icon-only' : ''}" data-act="${act}" data-arg="${v}" aria-pressed="${v === value ? 'true' : 'false'}"${attrs({ disabled: Boolean(reason), title: reason || (iconOnly ? text : undefined), 'aria-label': iconOnly ? text : undefined })}>${ic ? icon(ic, 18) : text}</button>`)}<span class="ink" aria-hidden="true"></span></div>`;
 }
 
 /** options: [[value, label, count]] */
 export function tabs({ label, options, value, act, scroll = false, cls = '' }) {
-  return html`<div class="tabs ${scroll ? 'scroll' : ''} ${cls}" role="group" aria-label="${label}">${options.map(([v, text, n]) => html`<button type="button" class="tab" data-act="${act}" data-arg="${v}" aria-pressed="${v === value ? 'true' : 'false'}">${text}${n != null ? html` <span class="n">${n}</span>` : ''}</button>`)}</div>`;
+  return html`<div class="tabs ${scroll ? 'scroll' : ''} ${cls}" role="group" aria-label="${label}">${options.map(([v, text, n]) => html`<button type="button" class="tab" data-act="${act}" data-arg="${v}" aria-pressed="${v === value ? 'true' : 'false'}">${text}${n != null ? html` <span class="n">${n}</span>` : ''}</button>`)}<span class="ink" aria-hidden="true"></span></div>`;
 }
 
 export function settingRow({ label, desc = '', control, stack = false }) {

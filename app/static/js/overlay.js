@@ -5,6 +5,7 @@ import { html, raw } from './format.js';
 import { icon } from './icons.js';
 import { button } from './ui.js';
 import { morphInto } from './morph.js';
+import { syncInks } from './transitions.js';
 
 export const isPhone = () => window.matchMedia('(max-width: 767px)').matches;
 
@@ -45,7 +46,7 @@ export function open({ label, kind = 'auto', render, actions = {}, onClose, tall
     el: box,
     asSheet,
     actions,
-    update() { morphInto(box, String(render({ asSheet, close: handle.close }))); },
+    update() { morphInto(box, String(render({ asSheet, close: handle.close }))); syncInks(box); },
     close(reason) {
       const i = stack.indexOf(handle);
       if (i < 0) return;

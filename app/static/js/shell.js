@@ -11,6 +11,7 @@ import { searchLibrary } from './search.js';
 import { routeFor } from './books.js';
 import { cover, segmented, toggle } from './ui.js';
 import { morphInto } from './morph.js';
+import { syncTabbarInk, syncInks } from './transitions.js';
 import { open as openOverlay, head } from './overlay.js';
 import { hydrateCovers } from './covers.js';
 
@@ -123,6 +124,7 @@ export function updateShell(route) {
     const on = a.dataset.nav === nav;
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
+  syncTabbarInk();
   const qLabel = `Queue, ${c.active} active`;
   document.querySelectorAll('[data-nav="queue"]').forEach(a => a.setAttribute('aria-label', qLabel));
   document.querySelectorAll('.rail [data-nav="review"]').forEach(a => a.setAttribute('aria-label', `Needs review, ${c.review}`));

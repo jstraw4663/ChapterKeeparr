@@ -7,8 +7,8 @@
 // position and tag. Cover images with the same data-art are left untouched.
 // Pure DOM; no framework.
 
-/** Classes added at runtime (cover art loaded, disclosure opened) that markup never contains. */
-const RUNTIME_CLASSES = ['loaded', 'has-art', 'opened'];
+/** Classes added at runtime (cover art loaded, disclosure opened, ink placed) that markup never contains. */
+const RUNTIME_CLASSES = ['loaded', 'has-art', 'opened', 'ink-ready'];
 
 const keyOf = node => {
   if (node.nodeType !== 1) return '';
@@ -66,6 +66,8 @@ function morphNode(from, to) {
   }
   // A cover image already showing the same art: leave it (src was set at runtime).
   if (from.tagName === 'IMG' && from.dataset.art && from.dataset.art === to.dataset.art) return;
+  // Sliding ink is positioned at runtime (transitions.js); keep it where it is.
+  if (from.classList?.contains('ink') && to.classList?.contains('ink')) return;
   syncAttributes(from, to);
   syncFormState(from, to);
   morphChildren(from, to);

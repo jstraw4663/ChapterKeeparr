@@ -12,6 +12,7 @@ import * as audio from './audio.js';
 import { playerBar } from './player.js';
 import { emptyState } from './ui.js';
 import { morphInto } from './morph.js';
+import { transition, kindOf, stripEntrance, syncInks, syncTabbarInk } from './transitions.js';
 
 import library from './screens/library.js';
 import queue from './screens/queue.js';
@@ -31,12 +32,19 @@ const uiByRoute = new Map();
 let lastSig = '';
 let unmount = null;
 let firstRender = true;
+let currentKey = '';
+const scrollByKey = new Map(); // route key → scroll position, for returning to a tab or list
 
 function ctx(enter = false) {
   return { route, state, ui, enter, phone: phoneQuery.matches, rerender: () => render(false, true) };
 }
 
-function render(enter = false, force = false) {
+/**
+ * enter: first render of this route (mount may scroll or focus).
+ * patch: update the existing DOM even on enter (same screen, different route).
+ * still: drop per-element entrance animations (a view transition animates instead).
+ */
+function render(enter = false, force = false, { patch = false, still = false } = {}) {
   if (!screen) return;
   const view = document.getElementById('view');
   const c = ctx(enter);
@@ -53,9 +61,11 @@ function render(enter = false, force = false) {
   if (typeof screen.title === 'function') document.title = `${screen.title(c)} · ChapterKeeparr`;
   try {
     // A new screen renders fresh (with its entrance); updates patch in place.
-    if (enter) view.innerHTML = String(screen.render(c));
+    if (enter && !patch) view.innerHTML = String(screen.render(c));
     else morphInto(view, String(screen.render(c)));
+    if (still) stripEntrance(view);
     hydrateCovers(view);
+    syncInks(view);
     unmount = screen.mount?.(view, c) || null;
   } catch (error) {
     // Keep the shell usable and say what broke instead of leaving a blank page.
@@ -84,19 +94,30 @@ function go() {
     return;
   }
   const key = location.hash.split('?')[0] || '#/';
-  if (!uiByRoute.has(key)) uiByRoute.set(key, {});
-  ui = uiByRoute.get(key);
-  ui.menu = null;
-  route = { ...parsed, nav: navFor(parsed) };
-  screen = SCREENS[route.name];
+  if (currentKey) scrollByKey.set(currentKey, window.scrollY);
+  const from = route;
+  const next = { ...parsed, nav: navFor(parsed) };
   const phone = phoneQuery.matches;
-  setScreenChrome({ topbar: screen.topbar !== false, detail: typeof screen.detail === 'function' ? screen.detail(ctx()) : Boolean(screen.detail && phone) });
-  document.title = `${typeof screen.title === 'function' ? screen.title(ctx()) : screen.title} · ChapterKeeparr`;
-  updateShell(route);
-  lastSig = '';
-  render(true);
-  window.scrollTo(0, 0);
-  if (!firstRender) document.querySelector('#view h1')?.focus({ preventScroll: true });
+  const kind = firstRender ? 'none' : kindOf(from, next, phone);
+  // Tabs and lists come back where you left them; details open at the top.
+  const restore = !next.id && (kind === 'pop' || kind.startsWith('tab')) ? scrollByKey.get(key) || 0 : 0;
+  const swap = () => {
+    currentKey = key;
+    if (!uiByRoute.has(key)) uiByRoute.set(key, {});
+    ui = uiByRoute.get(key);
+    ui.menu = null;
+    route = next;
+    screen = SCREENS[route.name];
+    setScreenChrome({ topbar: screen.topbar !== false, detail: typeof screen.detail === 'function' ? screen.detail(ctx()) : Boolean(screen.detail && phone) });
+    document.title = `${typeof screen.title === 'function' ? screen.title(ctx()) : screen.title} · ChapterKeeparr`;
+    updateShell(route);
+    lastSig = '';
+    // First load keeps the designed entrance; later navigation is animated by the transition.
+    render(true, false, { patch: kind === 'same', still: kind !== 'none' });
+    window.scrollTo(0, restore);
+    if (kind !== 'none') document.querySelector('#view h1')?.focus({ preventScroll: true });
+  };
+  transition(kind, swap, { bookId: kind === 'push' ? next.id : kind === 'pop' ? from?.id : '' });
   firstRender = false;
 }
 
@@ -154,6 +175,16 @@ function boot() {
   applyAppearance();
   initShell();
   document.addEventListener('click', dispatch);
+  // Start loading a screen's data as soon as a finger or pointer goes down on a link to it.
+  document.addEventListener('pointerdown', event => {
+    const a = event.target.closest?.('a[href^="#/"]');
+    if (!a) return;
+    const target = parse(a.getAttribute('href'));
+    if (target.name) SCREENS[target.name]?.prefetch?.(target);
+  }, { passive: true });
+  const reink = () => { syncInks(document); syncTabbarInk(); };
+  window.addEventListener('resize', reink);
+  document.fonts?.ready.then(reink);
   document.addEventListener('keydown', event => {
     if (!ui.menu || document.querySelector('.layer')) return;
     if (event.key === 'Escape') { event.preventDefault(); closeMenu({ focusToggle: true }); return; }

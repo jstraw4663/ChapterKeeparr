@@ -5,7 +5,7 @@
 import { html, bool, clock, relative, folderName, stripAudioExt, minutes } from '../format.js';
 import { icon } from '../icons.js';
 import { api } from '../api.js';
-import { state, refresh, expect, jobDetail, bookById } from '../store.js';
+import { state, refresh, expect, jobDetail, bookById, touch } from '../store.js';
 import { reportOf, reviewTitle, reviewDetail } from '../status.js';
 import { cover, button, iconButton, menuButton, confirmRow, choices, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
 import { notify } from '../notify.js';
@@ -80,10 +80,10 @@ function header(book, list, idx, ctx) {
     ${iconButton({ icon: 'chevronDown', label: 'Next book', act: 'next', disabled: idx >= list.length - 1, cls: ctx.phone ? 'picon' : 'icb' })}`;
   if (ctx.phone) {
     return html`<div class="back-head"><a class="textlink" href="#/review" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Review</a><div class="row" style="gap:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'phone-cancel', cls: 'picon', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
-      <div class="row gap14 page-pad">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
+      <div class="row gap14 page-pad">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
   }
   const confirming = ctx.ui.confirm === `cancel:${book.id}`;
-  return html`<div class="revhead">${cover(book, { size: 132, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2>${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div><div class="row gap8" style="flex-shrink:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
+  return html`<div class="revhead">${cover(book, { size: 132, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div><div class="row gap8" style="flex-shrink:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
     ${confirming ? confirmRow({ question: 'Cancel this job? Source files stay put.', keepAct: 'confirm-keep', confirmAct: 'confirm-cancel', confirmLabel: 'Cancel job', arg: book.id }) : ''}`;
 }
 
@@ -239,8 +239,8 @@ function detail(book, list, idx, ctx) {
 
 function listItem(book, current, ctx) {
   const reason = reviewTitle(book.job);
-  if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
-  return html`<a class="irow" role="listitem" href="#/review/${encodeURIComponent(book.id)}" aria-current="${bool(current)}">${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular" style="font-size:12px;flex-shrink:0">${relative(book.updatedAt)}</span></a>`;
+  if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
+  return html`<a class="irow" role="listitem" href="#/review/${encodeURIComponent(book.id)}" aria-current="${bool(current)}">${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular" style="font-size:12px;flex-shrink:0">${relative(book.updatedAt)}</span></a>`;
 }
 
 function allClear(ctx) {
@@ -319,6 +319,12 @@ const move = (ctx, delta) => {
 
 export default {
   title: 'Needs review',
+
+  /** Start loading the full record and file length as soon as a link to this book is pressed. */
+  prefetch(route) {
+    const book = route.id && bookById(route.id);
+    if (book) ensureLoaded(book, { rerender: () => touch() });
+  },
   topbar: true,
   detail: ctx => Boolean(ctx.phone && ctx.route.id),
 

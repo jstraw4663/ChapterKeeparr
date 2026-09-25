@@ -28,24 +28,24 @@ function cardMarkup(book, view, i, enter) {
   if (view === 'list') {
     return html`<a class="lrow ${enter ? 'rise' : ''}" style="${delay}" href="${href}" data-book="${book.id}">
       ${cover(book, { size: 48, radius: 8 })}
-      <span class="col gap4"><span class="t ell">${book.title}</span><span class="meta ell">${book.author || 'Author unknown'} · ${book.status.detail}</span></span>
+      <span class="col gap4"><span class="t ell" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${book.author || 'Author unknown'} · ${book.status.detail}</span></span>
       <span class="meta ell">${book.series ? `${book.series}${book.seriesPos ? ` #${book.seriesPos}` : ''}` : '—'}</span>
       <span>${statusPill(book.status, { size: 'sm' })}</span>
       <span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
   }
   return html`<a class="card ${enter ? 'rise' : ''}" style="${delay}" href="${href}" data-book="${book.id}" aria-label="${book.title}, ${book.status.label}">
     ${cover(book, { variant: view === 'large' ? 'large' : 'grid', radius: view === 'large' ? 14 : 12, pill: true })}
-    <span class="ct clamp2">${book.title}</span><span class="cs ell">${book.status.detail}</span></a>`;
+    <span class="ct clamp2" data-vt-title="${book.id}">${book.title}</span><span class="cs ell">${book.status.detail}</span></a>`;
 }
 
 function phoneCard(book, view) {
   const href = routeFor(book);
   if (view === 'list') {
-    return html`<a class="mrow" href="${href}" style="min-height:64px" data-book="${book.id}">${cover(book, { size: 48, radius: 8 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700">${book.title}</span><span class="statusline"><span class="dot dot-${book.status.tone}"></span><span class="ell">${book.status.label} · ${book.author || 'Author unknown'}</span></span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
+    return html`<a class="mrow" href="${href}" style="min-height:64px" data-book="${book.id}">${cover(book, { size: 48, radius: 8 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="statusline"><span class="dot dot-${book.status.tone}"></span><span class="ell">${book.status.label} · ${book.author || 'Author unknown'}</span></span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
   }
   return html`<a class="card" href="${href}" data-book="${book.id}" aria-label="${book.title}, ${book.status.label}">
     ${cover(book, { variant: view === 'large' ? 'large' : 'grid-sm', radius: view === 'large' ? 12 : 10, pill: view === 'large', dot: view !== 'large' })}
-    <span class="ct clamp2">${book.title}</span><span class="cs ell">${book.status.detail}</span></a>`;
+    <span class="ct clamp2" data-vt-title="${book.id}">${book.title}</span><span class="cs ell">${book.status.detail}</span></a>`;
 }
 
 
