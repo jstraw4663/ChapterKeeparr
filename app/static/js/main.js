@@ -6,7 +6,7 @@ import { state, start, subscribe, onEvents, bookById, refresh } from './store.js
 import { shellMarkup, applyAppearance, initShell, updateShell, setScreenChrome, shellActions, closeSearch, refreshSearch } from './shell.js';
 import { notify } from './notify.js';
 import { onPrefs } from './prefs.js';
-import { hydrateCovers } from './covers.js';
+import { hydrateCovers, settleCovers } from './covers.js';
 import { top as topOverlay } from './overlay.js';
 import * as audio from './audio.js';
 import { playerBar } from './player.js';
@@ -116,6 +116,7 @@ function go() {
     render(true, false, { patch: kind === 'same', still: kind !== 'none' });
     window.scrollTo(0, restore);
     if (kind !== 'none') document.querySelector('#view h1')?.focus({ preventScroll: true });
+    return settleCovers(document.getElementById('view'));
   };
   transition(kind, swap, { bookId: kind === 'push' ? next.id : kind === 'pop' ? from?.id : '' });
   firstRender = false;

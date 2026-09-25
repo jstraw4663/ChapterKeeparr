@@ -67,10 +67,12 @@ export function transition(kind, update, { bookId = '' } = {}) {
   const before = nameShared(bookId);
   root.dataset.vt = reduced() ? 'fade' : kind;
   let after = [];
-  const vt = document.startViewTransition(() => {
+  // `update` may return a promise (e.g. covers decoding); the new state is captured when it settles.
+  const vt = document.startViewTransition(async () => {
     unname(before);
-    update();
+    const settling = update();
     after = nameShared(bookId);
+    await settling;
   });
   running = vt;
   // A skipped or aborted animation still swaps the page; nothing to report.
