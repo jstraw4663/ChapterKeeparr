@@ -10,6 +10,7 @@ import { hydrateCovers } from './covers.js';
 import { top as topOverlay } from './overlay.js';
 import * as audio from './audio.js';
 import { playerBar } from './player.js';
+import { emptyState } from './ui.js';
 
 import library from './screens/library.js';
 import queue from './screens/queue.js';
@@ -49,9 +50,17 @@ function render(enter = false, force = false) {
   const scroll = window.scrollY;
   unmount?.();
   if (typeof screen.title === 'function') document.title = `${screen.title(c)} · ChapterKeeparr`;
-  view.innerHTML = String(screen.render(c));
-  hydrateCovers(view);
-  unmount = screen.mount?.(view, c) || null;
+  try {
+    view.innerHTML = String(screen.render(c));
+    hydrateCovers(view);
+    unmount = screen.mount?.(view, c) || null;
+  } catch (error) {
+    // Keep the shell usable and say what broke instead of leaving a blank page.
+    console.error(error);
+    unmount = null;
+    view.innerHTML = String(html`<div class="page-inset">${emptyState({ title: 'This screen couldn’t be shown', body: error?.message || 'Unexpected error', action: html`<button type="button" class="btn btn-md" onclick="location.reload()">Reload</button>` })}</div>`);
+    return;
+  }
   if (focusId) {
     const el = document.getElementById(focusId);
     if (el) { el.focus({ preventScroll: true }); if (selection && 'setSelectionRange' in el) { try { el.setSelectionRange(...selection); } catch { /* not a text input */ } } }

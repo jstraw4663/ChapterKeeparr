@@ -44,7 +44,12 @@ export function deriveLibrary(jobs) {
     const seen = latest.get(job.path);
     if (!seen || toMillis(job.created_at) > toMillis(seen.created_at)) latest.set(job.path, job);
   }
-  return [...latest.values()].map(bookFromJob).sort((a, b) => b.updatedAt - a.updatedAt);
+  const books = [];
+  for (const job of latest.values()) {
+    // One unexpected report shape must not take the whole library down.
+    try { books.push(bookFromJob(job)); } catch (error) { console.error(`Couldn't read job ${job.id}`, error); }
+  }
+  return books.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export const FILTERS = [
