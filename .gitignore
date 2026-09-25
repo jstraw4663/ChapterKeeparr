@@ -4,3 +4,4 @@ __pycache__/
 config/
 work/
 .DS_Store
+.claude/worktrees/

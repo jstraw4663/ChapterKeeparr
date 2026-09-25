@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>ChapterKeeparr</Name>
-  <Repository>chapterkeeparr:latest</Repository>
-  <Registry>https://hub.docker.com/</Registry>
+  <Repository>ghcr.io/jstraw4663/chapterkeeparr:latest</Repository>
+  <Registry>https://github.com/jstraw4663/ChapterKeeparr/pkgs/container/chapterkeeparr</Registry>
   <Network>bridge</Network>
   <MyIP></MyIP>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support></Support>
-  <Project></Project>
+  <Project>https://github.com/jstraw4663/ChapterKeeparr</Project>
   <Overview>Local audiobook chapter repair workbench with a manually submitted queue and human review.</Overview>
   <Category>MediaApp:Other</Category>
   <WebUI>http://[IP]:[PORT:8000]/</WebUI>
