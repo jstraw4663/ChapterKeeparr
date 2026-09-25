@@ -126,7 +126,7 @@ export default {
     const f = ctx.ui.filter || 'all';
     const open = items.filter(x => !scan.done[x.id]);
     const count = k => open.filter(x => x.kind === k).length;
-    const scanLabel = scan.running ? 'Scanning your library…' : scan.at ? `Last scan ${relative(scan.at)}` : 'Not scanned yet';
+    const scanLabel = scan.running ? 'Scanning your library…' : scan.at ? `Last scan ${relative(scan.at).replace(/^Just now$/, 'just now')}` : 'Not scanned yet';
     const heading = phone
       ? html`<div class="page-pad ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">Suggestions</h1><p class="meta" style="margin-top:4px;font-size:14px">${scanLabel}</p></div>`
       : html`<div class="page-head split ${enter ? 'rise' : ''}"><div class="col gap4"><h1 class="h1" tabindex="-1">Suggestions</h1><p class="lede">The goal: one verified M4B and one EPUB, paired, for every book. Nothing changes until you act.</p></div><div class="row gap14"><span class="meta">${scanLabel}</span>${serverButton({ label: scan.running ? 'Scanning…' : 'Scan again', icon: 'refresh', act: 'scan', disabled: scan.running, disabledReason: 'Scanning…' })}</div></div>`;
