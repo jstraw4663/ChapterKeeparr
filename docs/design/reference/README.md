@@ -20,5 +20,6 @@ How to read a `.dc.html` file:
 | New job | `NewJob.dc.html` | `NewJob-Mobile.dc.html` |
 | New job, folder browser open | `NewJob-Browse.dc.html` | `NewJob-Browse-Mobile.dc.html` |
 | Settings | `Settings.dc.html` | `Settings-Mobile.dc.html` |
+| Needs review · chapter draft review (spec: `../CHAPTER_REVIEW.md`) | `ChapterReview.dc.html` | `ChapterReview-Mobile.dc.html` |
 
 Screenshots: if `screens/png/` exists, the PNGs there were exported from the design canvas and show the intended rendering in dark theme.

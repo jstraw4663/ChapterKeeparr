@@ -14,6 +14,18 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 
 ## Summary
 
+### Chapter draft review — 2026-10-03
+
+The marker editor, section picker, filter, pagination and removal checkbox described in the two entries below (and G-049) are replaced by the ordered card list in `CHAPTER_REVIEW.md`. The decision contract is unchanged: `{index, action: published|keep|rename|remove, section_id?, override_order?, title?, confirmed: true}` plus `optional_sections`. Removal is chosen explicitly on its card and sent with `confirmed: true`; the phone confirmation sheet at save time is gone (the gap checkbox stays the commit point). Client-side derivations: kind tags, between-neighbours, likely extra boundaries, and which `sections` count as missing (one an open marker already offers as its nearest choice isn't shown as missing until that marker is decided). New gap: G-050 (book length).
+
+### Review conveniences — 2026-10-01
+
+Acceptance preview markers now include the saved `transcript`. The editor displays up to two sentences (360-character maximum, with an ellipsis for long speech), adds All/Unconfirmed/Confirmed filtering based on original speech support, and preserves all hidden decisions. Published exceptions have Select All with mixed-selection state; bulk selection still sends every individual reference ID through existing server validation. No publication rules change.
+
+### Marker decision editor — 2026-10-01
+
+User-authorized frontend/backend change. Recovery preview now includes `markers` (index, original title/time, suggested title, supported, excerpt, removable). Acceptance optionally accepts `marker_decisions`, one per original marker: `{index, action: keep|suggested|rename|remove, title?, confirmed?}`. Legacy approvals remain supported. Removal requires confirmation and cannot remove the first marker. No timestamps move and no audio is deleted. Recognition percentage retains the original denominator, independent of edits. Decisions and resulting marker counts are recorded in the acceptance report. The UI defaults to identified names for supported markers and original names otherwise, displays a save summary, exposes saved excerpts with a 15-second playback limit, and confirms removal in a phone sheet. Unlocated references have no fabricated preview or inferred mapping to local markers. Changing drafts clears unsaved decisions.
+
 | ID | Area | Build today | Owner | Status | Blocks |
 |---|---|---|---|---|---|
 | G-001 | Status vocabulary | partial | frontend | done | — |
@@ -63,6 +75,7 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 | G-046 | Worker activity line | exists | frontend | done | — |
 | G-047 | No stable book id | missing | backend | open | — |
 | G-048 | Chapter playback reduced to 15 s | — | Jeremy | open | — |
+| G-050 | Book length in the draft preview | partial | backend | placeholder in UI | — |
 
 ---
 
@@ -339,3 +352,17 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Build: tapping a chapter plays until the chapter ends. The design (RULES: "no media-player features") limits playback to a 15-second spot check.
 - Proposal: follow the design (a 15 s stop). This reduces an existing feature, so it's logged here for sign-off.
 - Owner: Jeremy · Status: open
+
+### G-049 · Manual published-section assignment (implemented 2026-10-02)
+- Recovery preview includes `published_sections` with stable draft-local IDs, and each speech-supported marker's `reference_id`.
+- Acceptance `marker_decisions` supports `{index, action: "published", section_id}`. Backend resolves the canonical title, rejects unknown/duplicate/out-of-order assignments, and records manual provenance separately from recognition.
+- Explicit assignments resolve corresponding missing-section acknowledgments. Removing/changing an assignment restores that requirement. Custom names alone never imply published identity. Original speech percentage and publication safeguards are unchanged.
+- UI uses shared modal/sheet, fields, buttons and spot playback in both directions; compact outstanding-section summary, manual badge/filter and unresolved navigation. Browser drafts preserve IDs with the existing evidence-token binding.
+- 2026-10-03: that UI is replaced by the chapter draft review (CHAPTER_REVIEW.md); same contract.
+- Owner: backend/frontend · Status: done under user's explicit UI authorization.
+
+### G-050 · Book length in the draft preview
+- Build today: **partial.** The chapter draft review's colour timeline (CHAPTER_REVIEW.md §2.3) places every marker and published section across the whole book, but `recovery_acceptance_preview` has no length. The draft itself stores `duration_seconds`.
+- UI now: uses the file duration from `GET /api/jobs/{id}/source` (G-042) when it has loaded, otherwise the latest known marker or section time, so ticks near the end can sit slightly too far right until the duration arrives. Marked `// DESIGN-GAP: G-050` in `chapter-review.js`.
+- Proposed contract: add `duration_seconds` (number, or null when unknown) to `recovery_acceptance_preview`, copied from `recovery_draft.duration_seconds`. No other change.
+- Owner: backend · Status: placeholder in UI
