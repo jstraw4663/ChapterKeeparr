@@ -325,7 +325,7 @@ function markerBody(book, item, chosen, ui) {
       ${item.showKeep ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="keep">Keep “${item.original}”</button>` : ''}
       <button type="button" class="textlink ink" data-act="cr-rename" data-arg="${item.id}" aria-expanded="${bool(ui.rename)}">Rename</button>
       ${item.canRemove ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="remove">Remove marker</button>` : ''}
-      <button type="button" class="textlink ink" data-act="cr-all" data-arg="${item.id}" aria-expanded="${bool(ui.search)}">All chapters</button>
+      <button type="button" class="textlink ink" data-act="cr-all" data-arg="${item.id}" aria-expanded="${bool(ui.search)}">${icon('search', 16)}All chapters</button>
     </div>
     ${ui.rename ? html`<div class="cr-rename opened"><label for="cr-rn-${item.id}" class="sr">Chapter name</label><input id="cr-rn-${item.id}" class="input" type="text" maxlength="200" value="${ui.name ?? item.original}" data-cr-name="${item.id}" autocomplete="off" enterkeyhint="done">${button({ label: 'Use name', kind: 'primary', act: 'cr-use-name', arg: item.id })}</div>` : ''}
     ${ui.search ? allChapters(item, ui) : ''}`;
