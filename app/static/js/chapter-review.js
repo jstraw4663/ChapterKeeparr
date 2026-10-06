@@ -69,7 +69,7 @@ export function decisionFor(choice) {
     case 'keep': return { index: choice.index, action: 'keep' };
     case 'rename': return { index: choice.index, action: 'rename', title: String(choice.title || '').trim() };
     case 'remove': return { index: choice.index, action: 'remove', confirmed: true };
-    case 'start': return { index: choice.markerIndex, action: 'published', section_id: choice.sectionId };
+    case 'start': return { index: choice.markerIndex, action: 'published', section_id: choice.sectionId, ...(choice.outOfOrder ? { override_order: true } : {}) };
     default: return null;
   }
 }
@@ -79,7 +79,11 @@ export function decisionFor(choice) {
  * join the optional sections; anything assigning a section takes it out of them.
  */
 export function applyChoice(f, choice) {
-  if (choice.type === 'skip') return { ...f, sections: [...new Set([...(f.sections || []), choice.sectionId])], message: '' };
+  if (choice.type === 'skip') {
+    // From a missing chapter's bar: also keep, rename or remove the marker nearest to it.
+    const skipped = { ...f, sections: [...new Set([...(f.sections || []), choice.sectionId])], message: '' };
+    return choice.marker ? applyChoice(skipped, choice.marker) : skipped;
+  }
   const d = decisionFor(choice);
   const sections = d.action === 'published' ? (f.sections || []).filter(id => id !== d.section_id) : f.sections || [];
   const placed = choice.type === 'start' ? [...new Set([...(f.placed || []), choice.sectionId])] : f.placed;
@@ -290,9 +294,26 @@ function missingItem(p, f, s, ctx) {
       choice: { type: 'start', markerIndex: m.index, sectionId: s.id },
     })),
   ];
+  // The unconfirmed marker in your file nearest this chapter, between the same neighbours:
+  // what the card's Keep / Rename / Remove act on.
+  const lo = prev ? prev.seconds : -Infinity, hi = next ? next.seconds : Infinity;
+  const near = decided ? null : ctx.markers.filter(m => !m.supported && m.seconds > lo && m.seconds < hi)
+    .sort((a, b) => Math.abs(a.seconds - t) - Math.abs(b.seconds - t) || a.index - b.index)[0] || null;
+  const markerChoice = (m, outOfOrder) => ({
+    key: `${outOfOrder ? 'mko' : 'mk'}:${m.index}`, label: `${hms(m.seconds)} · ${m.title || 'Untitled marker'}`,
+    sub: `${relTime(m.seconds, t)}${isDecided(f.decisions?.[m.index]) ? ' · replaces your decision' : ''}${outOfOrder ? ' · outside the usual order' : ''}`,
+    choice: { type: 'start', markerIndex: m.index, sectionId: s.id, outOfOrder },
+  });
   return {
     id: `s${s.id}`, type: 'missing', sectionId: s.id, title: s.title, seconds: t, decided,
     between: between(prev, next, true), options,
+    near: near && { index: near.index, title: near.title || 'Untitled marker', removable: Boolean(near.removable), seconds: near.seconds },
+    prevName: prev?.title || 'the previous chapter',
+    // Every unconfirmed marker this chapter could start at, nearest first. Only built when the search opens.
+    allMarkers: () => {
+      const all = ctx.markers.filter(m => !m.supported).sort((a, b) => Math.abs(a.seconds - t) - Math.abs(b.seconds - t) || a.index - b.index);
+      return { inOrder: all.filter(m => ctx.fits(m, s)).map(m => markerChoice(m, false)), outOrder: all.filter(m => !ctx.fits(m, s)).map(m => markerChoice(m, true)) };
+    },
     final: s.title, note: decided ? (skipped ? 'Saved without its own chapter' : `Starts at ${hms(at?.seconds)}`) : '',
   };
 }

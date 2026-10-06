@@ -207,3 +207,29 @@ test('the complex fixture and a Bedlam-sized book build quickly and in book orde
   assert.equal(bm.items.length, n - Math.ceil(n / 3));
   assert.ok(ms < 2000, `reviewModel took ${ms.toFixed(0)}ms for ${n} markers`);
 });
+
+test('a missing chapter can act on the nearest marker or start at any unconfirmed marker', () => {
+  const p = preview({
+    markers: [{ at: 0, ref: 0 }, { at: 30 }, { at: 140 }, { at: 400, ref: 400 }, { at: 500 }],
+    published: [{ at: 0, title: 'Opening' }, { at: 28, title: 'Early' }, { at: 120, title: 'Lost' }, { at: 145, title: 'Mid' }, { at: 400, title: 'End' }, { at: 520, title: 'After' }],
+    missing: [28, 120, 145, 520],
+  });
+  const card = item(reviewModel(p, {}), 's120');
+  assert.deepEqual(card.near, { index: 3, title: 'Original marker 3', removable: true, seconds: 140 }, 'nearest unconfirmed marker between the neighbours');
+  const all = card.allMarkers();
+  assert.deepEqual(all.inOrder.map(o => o.choice.markerIndex), [3, 2]);
+  assert.deepEqual(all.outOrder.map(o => o.choice.markerIndex), [5]);
+  assert.deepEqual(decisionFor(all.outOrder[0].choice), { index: 5, action: 'published', section_id: '120', override_order: true });
+
+  // Remove marker: the marker's audio merges into the chapter before, and the chapter is saved without its own marker.
+  const removed = applyChoice({}, { type: 'skip', sectionId: '120', marker: { type: 'remove', index: 3 } });
+  assert.deepEqual(removed.sections, ['120']);
+  assert.deepEqual(removed.decisions[3], { index: 3, action: 'remove', confirmed: true });
+  const m = reviewModel(p, removed);
+  assert.equal(item(m, 's120').note, 'Saved without its own chapter');
+  assert.equal(item(m, 'm3').final, 'Marker removed');
+  const renamed = applyChoice({}, { type: 'skip', sectionId: '120', marker: { type: 'rename', index: 3, title: 'Lost' } });
+  assert.deepEqual(renamed.decisions[3], { index: 3, action: 'rename', title: 'Lost' });
+  const kept = applyChoice({}, { type: 'skip', sectionId: '120', marker: { type: 'keep', index: 3 } });
+  assert.deepEqual(kept.decisions[3], { index: 3, action: 'keep' });
+});

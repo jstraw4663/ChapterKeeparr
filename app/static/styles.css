@@ -751,7 +751,7 @@ html.overlay-open{overflow:hidden}
 .opt.chosen .rd{box-shadow:inset 0 0 0 5px var(--bg)}
 .opt.chosen .tag{background:var(--bg);color:var(--ink)}
 .opts.picking .opt:not(.chosen){opacity:.4;transition:opacity .12s ease}
-.alts{display:flex;flex-wrap:wrap;gap:0 14px;align-items:center}
+.alts{display:flex;flex-wrap:wrap;gap:0 14px;align-items:center;justify-content:space-evenly}
 .cr-rename{display:flex;gap:8px}
 .cr-rename .input{flex:1 1 auto;min-width:0;height:48px}
 .cr-rename .btn{height:48px}
@@ -777,13 +777,17 @@ html.overlay-open{overflow:hidden}
 .bk-in{animation:open .3s var(--ease-out) both}
 @media (max-width:767px){
   .cr-pbar{flex-direction:column;gap:10px;padding:10px 16px 12px}
-  .cr-pbar .cr-next{width:48px;height:48px}
+  .cr-pbar .cr-next{width:48px;height:48px;-webkit-touch-callout:none;user-select:none;touch-action:manipulation}
+  /* The Accept and save button opens in once it's relevant (box ticked, all decided, or scrolled to the end). */
+  .cr-savewrap{display:grid;grid-template-rows:0fr;opacity:0;margin-top:-10px;transition:grid-template-rows .26s var(--ease-out),opacity .2s ease,margin-top .26s var(--ease-out)}
+  .cr-savewrap>div{min-height:0;overflow:hidden}
+  .cr-savewrap.on{grid-template-rows:1fr;opacity:1;margin-top:0}
   .cr.with-pbar{padding-bottom:140px}
   .cr-blocked{flex-direction:column;align-items:stretch}
   .cr-blocked .btn{width:100%}
   .cr-lane{grid-template-columns:64px minmax(0,1fr)}
 }
-html[data-motion="reduce"] .cc,html[data-motion="reduce"] .cc-body,html[data-motion="reduce"] .cc-sum,html[data-motion="reduce"] .bk{transition:none!important}
+html[data-motion="reduce"] .cr-savewrap,html[data-motion="reduce"] .cc,html[data-motion="reduce"] .cc-body,html[data-motion="reduce"] .cc-sum,html[data-motion="reduce"] .bk{transition:none!important}
 html[data-motion="reduce"] .cc.grow .cc-body,html[data-motion="reduce"] .cc.focus,html[data-motion="reduce"] .bk-in{animation:none!important}
 .bookhero{display:flex;gap:36px;align-items:flex-end}
 .bookhero h1{font-size:48px;line-height:1.02;font-weight:800;letter-spacing:-.035em}

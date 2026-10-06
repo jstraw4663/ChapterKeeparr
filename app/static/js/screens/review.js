@@ -218,6 +218,9 @@ const closing = new Map();   // item id → { book, choice, key } while collapsi
 const cardUi = new Map();    // `${book}:${item}` → { rename, name, search, q, out }
 const shown = new Map();     // book id → open cards rendered so far (very large books)
 const phoneBars = new Map(); // book id → phone save bar, while the draft choice is open
+const revealed = new Set();   // books whose phone Accept and save button has been shown
+let heldArrow = false;        // a long press on the arrow already moved up; swallow its click
+let holdTimer = 0;
 let focusedItem = null;      // highlighted by auto-advance, a timeline tick or Next open
 let growing = null;          // reopening via Change
 let moreObserver = null;
@@ -300,20 +303,26 @@ function listenBar(book, m) {
   return html`<button type="button" class="listen ${playing ? 'on' : ''}" data-act="cr-play" data-arg="${m.index}" aria-pressed="${bool(playing)}" ${m.excerpt ? '' : raw('disabled')}><span class="pb" aria-hidden="true">${playing ? html`<span class="eq"><span></span><span></span><span></span></span>` : icon('play', 16)}</span><span class="sr">${!m.excerpt ? 'No audio saved for this marker. ' : playing ? 'Stop listening. ' : `Listen to 15 seconds at ${hms(m.seconds)}. `}</span><q>${quote || 'No spoken text saved for this marker.'}</q></button>`;
 }
 
-function allChapters(item, ui) {
+/** "All chapters" on a marker card (published sections), "All markers" on a missing chapter (markers in your file). */
+function searchPanel(item, ui) {
+  const missing = item.type === 'missing';
+  const noun = missing ? 'marker' : 'chapter';
   const q = (ui.q || '').trim().toLowerCase();
   const match = o => !q || o.label.toLowerCase().includes(q);
   const pick = o => html`<button type="button" class="pick" data-act="cr-pick" data-arg="${item.id}" data-choice="${o.key}"><span class="ell">${o.label}</span><span class="meta">${o.sub}</span></button>`;
-  const all = item.allChoices();
+  const all = missing ? item.allMarkers() : item.allChoices();
   const inOrder = all.inOrder.filter(match);
+  const outCount = all.outOrder.length;
   return html`<div class="more opened">
-    <div class="inputwrap"><label for="cr-q-${item.id}" class="sr">Find a chapter</label><span class="icon">${icon('search', 18)}</span><input id="cr-q-${item.id}" class="input" type="search" placeholder="Find a chapter" value="${ui.q || ''}" data-cr-q="${item.id}" autocomplete="off" enterkeyhint="search"></div>
+    <div class="inputwrap"><label for="cr-q-${item.id}" class="sr">Find a ${noun}</label><span class="icon">${icon('search', 18)}</span><input id="cr-q-${item.id}" class="input" type="search" placeholder="Find a ${noun}" value="${ui.q || ''}" data-cr-q="${item.id}" autocomplete="off" enterkeyhint="search"></div>
     <span class="eyebrow" style="padding:6px 10px 0">In order here</span>
-    ${inOrder.length ? inOrder.map(pick) : html`<span class="meta" style="padding:4px 10px">${q ? 'No chapters here match your search.' : 'No unassigned chapters fit between the neighbours.'}</span>`}
-    ${item.outCount ? html`<button type="button" class="textlink ink" data-act="cr-out" data-arg="${item.id}" aria-expanded="${bool(ui.out)}" style="align-self:flex-start;margin-left:8px">${ui.out ? 'Hide' : 'Show'} ${item.outCount} ${item.outCount === 1 ? 'chapter' : 'chapters'} outside the usual order</button>` : ''}
+    ${inOrder.length ? inOrder.map(pick) : html`<span class="meta" style="padding:4px 10px">${q ? `No ${noun}s here match your search.` : missing ? 'No unconfirmed markers sit between the neighbours.' : 'No unassigned chapters fit between the neighbours.'}</span>`}
+    ${outCount ? html`<button type="button" class="textlink ink" data-act="cr-out" data-arg="${item.id}" aria-expanded="${bool(ui.out)}" style="align-self:flex-start;margin-left:8px">${ui.out ? 'Hide' : 'Show'} ${outCount} ${outCount === 1 ? noun : `${noun}s`} outside the usual order</button>` : ''}
     ${ui.out ? html`<p class="cr-outwarn">These break the published order. Only use one if you’ve listened and you’re sure.</p>${all.outOrder.filter(match).map(pick)}` : ''}
   </div>`;
 }
+
+const renamePanel = (item, value) => html`<div class="cr-rename opened"><label for="cr-rn-${item.id}" class="sr">Chapter name</label><input id="cr-rn-${item.id}" class="input" type="text" maxlength="200" value="${value}" data-cr-name="${item.id}" autocomplete="off" enterkeyhint="done">${button({ label: 'Use name', kind: 'primary', act: 'cr-use-name', arg: item.id })}</div>`;
 
 function markerBody(book, item, chosen, ui) {
   const [kind, tone] = KIND[item.kind];
@@ -327,22 +336,31 @@ function markerBody(book, item, chosen, ui) {
       ${item.canRemove ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="remove">Remove marker</button>` : ''}
       <button type="button" class="textlink ink" data-act="cr-all" data-arg="${item.id}" aria-expanded="${bool(ui.search)}">${icon('search', 16)}All chapters</button>
     </div>
-    ${ui.rename ? html`<div class="cr-rename opened"><label for="cr-rn-${item.id}" class="sr">Chapter name</label><input id="cr-rn-${item.id}" class="input" type="text" maxlength="200" value="${ui.name ?? item.original}" data-cr-name="${item.id}" autocomplete="off" enterkeyhint="done">${button({ label: 'Use name', kind: 'primary', act: 'cr-use-name', arg: item.id })}</div>` : ''}
-    ${ui.search ? allChapters(item, ui) : ''}`;
+    ${ui.rename ? renamePanel(item, ui.name ?? item.original) : ''}
+    ${ui.search ? searchPanel(item, ui) : ''}`;
 }
 
-function missingBody(item, chosen) {
+function missingBody(item, chosen, ui) {
+  const near = item.near;
   return html`<div class="cr-head"><span class="cr-time">${hms(item.seconds)}</span><span class="cr-kind bad">In the edition, not in your file</span></div>
     <span class="cr-title">${item.title}</span>
     ${betweenLine(item.between)}
-    ${optionRows(item, chosen)}`;
+    ${optionRows(item, chosen)}
+    <div class="alts" ${near ? html`aria-label="Or change the marker nearest this chapter, “${near.title}” at ${hms(near.seconds)}"` : ''} role="group">
+      ${near ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="near-keep">Keep “${near.title}”</button>
+        <button type="button" class="textlink ink" data-act="cr-rename" data-arg="${item.id}" aria-expanded="${bool(ui.rename)}">Rename</button>
+        ${near.removable ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="near-remove">Remove marker</button>` : ''}` : ''}
+      <button type="button" class="textlink ink" data-act="cr-all" data-arg="${item.id}" aria-expanded="${bool(ui.search)}">${icon('search', 16)}All markers</button>
+    </div>
+    ${ui.rename && near ? renamePanel(item, ui.name ?? item.title) : ''}
+    ${ui.search ? searchPanel(item, ui) : ''}`;
 }
 
 function card(book, item, after) {
   const c = closing.get(item.id);
   const sum = c && after?.items.find(i => i.id === item.id);
   const cls = ['cc', item.type === 'missing' && 'missing', c && 'closing', !c && focusedItem === item.id && 'focus', !c && growing === item.id && 'grow'].filter(Boolean).join(' ');
-  const body = item.type === 'missing' ? missingBody(item, c?.key) : markerBody(book, item, c?.key, uiFor(book, item.id));
+  const body = item.type === 'missing' ? missingBody(item, c?.key, uiFor(book, item.id)) : markerBody(book, item, c?.key, uiFor(book, item.id));
   return html`<div class="${cls}" id="cr-item-${item.id}" data-item="${item.id}">
     <div class="cc-sum" aria-hidden="true"><div><div class="cc-row">${sum ? rowInner(sum, true) : ''}</div></div></div>
     <div class="cc-body"${c ? raw(' inert') : ''}><div><div class="cc-in">${body}</div></div></div>
@@ -386,7 +404,11 @@ function finalizeBody(book, p, ctx) {
     <p class="meta">The audio must be unchanged and the output must validate. An existing M4B is backed up first. Source MP3s are kept.</p>
   </div>`;
   // Phone: the bar is fixed above the tab bar, so it renders outside the animated page column (see render()).
-  if (ctx.phone) phoneBars.set(book.id, html`<div class="pbar cr-pbar" role="region" aria-label="Save chapters"><div class="row gap10"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${segbar(model, true)}</div>${model.need ? iconButton({ icon: 'chevronDown', label: 'Next open marker', act: 'cr-next', cls: 'icb cr-next' }) : ''}</div>${gapBox}${save}</div>`);
+  // The big button stays tucked away until it matters: the box is ticked, every item is decided,
+  // or the reader has scrolled to the bottom. Once shown it stays.
+  if (ctx.phone && (f.gap || !model.need)) revealed.add(book.id);
+  const showSave = revealed.has(book.id);
+  if (ctx.phone) phoneBars.set(book.id, html`<div class="pbar cr-pbar" role="region" aria-label="Save chapters"><div class="row gap10"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${segbar(model, true)}</div>${model.items.length ? iconButton({ icon: 'chevronDown', label: 'Next open marker. Press and hold for the previous item.', act: 'cr-next', cls: 'icb cr-next' }) : ''}</div>${gapBox}<div class="cr-savewrap ${showSave ? 'on' : ''}"${showSave ? '' : raw(' inert aria-hidden="true"')}><div>${save}</div></div></div>`);
   return html`<form class="accept cr ${ctx.phone ? 'with-pbar' : ''}" data-form="accept" novalidate>
     <div class="cr-summary"><div class="col gap4"><span class="cr-headline">${model.headline}</span><span class="meta" style="font-size:14px">${model.subline}</span></div>
       ${model.recs.length && !f.bulkNote ? button({ label: `Accept ${model.recs.length} suggestions`, icon: 'check', act: 'cr-accept-recs' }) : ''}</div>
@@ -407,6 +429,12 @@ function finalizeBody(book, p, ctx) {
 
 /** Turn a rendered option key into the choice it stands for. */
 function choiceFor(item, key) {
+  // A missing chapter's bar: keep or remove the nearest marker, and save the chapter without its own marker.
+  if (key === 'near-keep' || key === 'near-remove') {
+    if (!item.near || (key === 'near-remove' && !item.near.removable)) return null;
+    return { type: 'skip', sectionId: item.sectionId, marker: { type: key === 'near-keep' ? 'keep' : 'remove', index: item.near.index } };
+  }
+  if (item.type === 'missing' && /^mko?:/.test(key)) return item.allMarkers().inOrder.concat(item.allMarkers().outOrder).find(o => o.key === key)?.choice || null;
   if (key === 'keep') return { type: 'keep', index: item.index };
   if (key === 'remove') return { type: 'remove', index: item.index };
   const option = (item.options || []).find(o => o.key === key);
@@ -511,6 +539,7 @@ const draftActions = {
   },
   'cr-jump': (el, ev, ctx) => { const { book } = current(ctx); if (book) jumpTo(book, ctx, el.dataset.arg); },
   'cr-next': (el, ev, ctx) => {
+    if (heldArrow) { heldArrow = false; return; }
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
     const from = focusedItem || document.activeElement?.closest?.('[data-item]')?.dataset.item || null;
     const next = nextOpen(modelFor(p, draftFor(book, p, ctx)).items, from);
@@ -542,12 +571,31 @@ const draftActions = {
   },
 };
 
+/** Long press on the phone arrow: up one item (open or decided) from the highlighted one, or from the top of the screen. */
+function previousItem(ctx) {
+  const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
+  const items = modelFor(p, draftFor(book, p, ctx)).items;
+  let at = items.findIndex(i => i.id === focusedItem);
+  if (at < 0) {
+    const top = glideOpts(ctx).top;
+    at = items.findIndex(i => (itemEl(i.id)?.getBoundingClientRect().top ?? -Infinity) >= top - 4);
+    if (at < 0) at = items.length;
+  }
+  const target = items[at - 1];
+  if (target) jumpTo(book, ctx, target.id);
+}
+
 function useName(ctx, id) {
   const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
   const title = (document.getElementById(`cr-rn-${id}`)?.value ?? uiFor(book, id).name ?? '').trim();
   if (!title) { document.getElementById(`cr-rn-${id}`)?.focus(); return; }
   const item = modelFor(p, draftFor(book, p, ctx)).items.find(i => i.id === id);
-  if (item && !item.decided) decide(book, ctx, [[id, { type: 'rename', index: item.index, title }, 'rename']]);
+  if (!item || item.decided) return;
+  if (item.type === 'missing') {
+    if (item.near) decide(book, ctx, [[id, { type: 'skip', sectionId: item.sectionId, marker: { type: 'rename', index: item.near.index, title } }, 'rename']]);
+    return;
+  }
+  decide(book, ctx, [[id, { type: 'rename', index: item.index, title }, 'rename']]);
 }
 
 function checksSection(book, ctx) {
@@ -748,6 +796,23 @@ export default {
     root.querySelectorAll('[data-cr-q]').forEach(input => {
       input.onkeydown = ev => { if (ev.key === 'Enter') ev.preventDefault(); };
     });
+    const arrow = root.querySelector('.cr-next');
+    if (arrow) {
+      const cancel = () => clearTimeout(holdTimer);
+      arrow.onpointerdown = () => { heldArrow = false; cancel(); holdTimer = setTimeout(() => { heldArrow = true; navigator.vibrate?.(10); previousItem(ctx); }, 500); };
+      arrow.onpointerup = arrow.onpointercancel = arrow.onpointerleave = cancel;
+      arrow.oncontextmenu = ev => ev.preventDefault();
+    }
+    let onScroll = null;
+    const { book } = current(ctx);
+    if (ctx.phone && book && root.querySelector('.cr-pbar') && !revealed.has(book.id)) {
+      onScroll = () => {
+        if (innerHeight + scrollY < document.documentElement.scrollHeight - 8) return;
+        revealed.add(book.id);
+        ctx.rerender();
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+    }
     // Very large books: the next batch of cards loads as the "N more" row scrolls into view.
     moreObserver?.disconnect();
     moreObserver = null;
@@ -760,6 +825,7 @@ export default {
       }, { rootMargin: '600px 0px' });
       moreObserver.observe(more);
     }
+    return () => { if (onScroll) window.removeEventListener('scroll', onScroll); };
   },
 
   actions: {
