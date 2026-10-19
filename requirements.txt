@@ -1,4 +1,7 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
 faster-whisper==1.1.1
+# faster-whisper 1.1.1 uses av.open(metadata_errors=...), removed in PyAV 19.
+# Keep the decoder paired with the speech runtime; tests/test_runtime.py decodes WAVs.
+av==18.1.0
 requests==2.32.5

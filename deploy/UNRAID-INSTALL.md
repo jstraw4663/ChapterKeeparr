@@ -264,6 +264,15 @@ migration steps above. Never use `down --volumes` as a migration step.
 
 ## Updates and troubleshooting
 
+- **`open() got an unexpected keyword argument 'metadata_errors'`:** the
+  faster-whisper decoder was installed with incompatible PyAV 19. The fix pins
+  PyAV 18.1.0 and adds real mono/stereo decode checks to CI and image construction.
+  Run **CI and release** on `feat/responsive-review-workspace` after the fix is
+  pushed; wait for both test and image jobs to succeed. In Unraid, force-update
+  the preview tag, or replace a pinned digest with the new build's digest.
+  Preserve the config/library mappings and `ENABLE_WORKERS=1`, then click
+  **Retry** on the failed job. Repeated retries on the old image cannot fix this
+  dependency error. Do not install packages manually inside the running container.
 - **Successful build with Node 20 deprecation warnings:** these refer to the
   JavaScript runtime embedded in GitHub Actions, not a failed audiobook runtime.
   The workflow now pins supported Node 24 Actions versions. The successful older

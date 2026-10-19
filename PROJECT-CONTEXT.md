@@ -120,3 +120,22 @@ and select linux/amd64 through CI/Compose rather than the Dockerfile FROM line.
 Install documentation now includes an authenticated direct XML download link,
 MacBook SSH/SCP commands and a clear workspace-versus-host distinction. No new
 release/image workflow or deployment was triggered by the agent.
+
+## Speech decoder dependency regression (2026-10-19)
+
+The owner installed the preview and enabled its paused worker. A later book failed
+at Check audio with `open() got an unexpected keyword argument 'metadata_errors'`.
+Reproduced exactly with generated mono/stereo WAVs: faster-whisper 1.1.1 calls
+`av.open(metadata_errors='ignore')`, which PyAV 19 removed. Its unconstrained
+`av>=11` dependency allowed the incompatible PyAV 19.0.1 install. PyAV upstream's
+19.0.0 release notes confirm removal; upgrading to faster-whisper 1.2.1 alone
+would retain the same call.
+
+Pin PyAV 18.1.0, the latest release before that removal, without changing the
+speech model, inference options or publication policy. A real decoder regression
+now checks mono/stereo WAV decoding, 48-to-16 kHz resampling, float32 shape and
+signal validity, and unchanged source bytes. The Docker build runs these runtime
+tests before downloading the model. No model or external service is needed for
+the regression. Existing verified receipts can skip decoding, so the first book's
+unchanged result did not establish decoder compatibility. See VALIDATION.md for
+results. The owner must build/pull the updated preview before retrying the job.

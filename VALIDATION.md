@@ -130,3 +130,27 @@ See `docs/plans/ui-ux-implementation-validation-2026-10-19.json` for the compact
   JavaScript syntax and unit tests. Diff whitespace check passed. No app code,
   runtime dependency, processing policy or media file changed. The updated workflow
   and Dockerfile require a subsequent owner-run image build for dynamic validation.
+
+## Speech decoder compatibility fix — 2026-10-19
+
+- Reproduced the owner's exact `metadata_errors` TypeError with faster-whisper
+  1.1.1 / PyAV 19.0.1 on generated 16 kHz mono and 48 kHz stereo PCM WAVs.
+  The existing fresh-process import check passed on that broken combination.
+  PyAV's v19.0.0 notes confirm removal of `av.open` metadata arguments.
+- Pinned `av==18.1.0`. The same regression then passed: real decode and stereo
+  downmix/resampling produce 4,000 finite float32 samples at 16 kHz from a
+  quarter-second signal, within amplitude bounds, with input SHA-256 unchanged.
+  Tests use no speech model, service, real book or mocked decoder.
+- **78 Python regression tests passed** with the corrected decoder, including
+  generated-media publication/audio-preservation/backup and JavaScript
+  syntax/design/unit checks. No publication thresholds or inference settings
+  changed.
+- A fresh Python 3.12 virtual environment installed production requirements
+  successfully; `pip check` reported **No broken requirements found**, and both
+  runtime tests passed there. An earlier pip check in the shared-platform test
+  environment reported an unrelated inherited sse-starlette/Starlette conflict;
+  it was not present in this clean production-only environment.
+- Dockerfile now runs the same runtime tests after installing requirements,
+  before model download, and removes the temporary test source. Actual updated
+  Docker image construction and the owner's retry remain pending. No release
+  workflow, server configuration or real audiobook was changed by the agent.
