@@ -87,3 +87,26 @@ See [the UI/UX plan](docs/plans/ui-ux-optimization.md), [audit evidence](docs/pl
 - Remaining release checks: identify/reconcile the deployed container commit (its supplied sticky editor is not in GitHub main), actual iPhone/Safari/software keyboard, VoiceOver plus desktop screen reader, native zoom, actual container build and PWA upgrade/reload behavior. No merge, tag, image publication, production deployment or real audiobook changes were performed.
 
 See `docs/plans/ui-ux-implementation-validation-2026-10-19.json` for the compact record. The backend optimization roadmap remains deferred.
+
+## Unraid installation preparation — 2026-10-19
+
+- Parsed both Docker Manager XML templates and checked unique config targets,
+  host port 8787 → container port 8000, separate test/production config and library
+  paths, nonprivileged mode, paused initial workers, one book worker, four speech
+  threads and four-CPU/4 GB limits. Test template omits downloads; production's
+  optional downloads mount remains read-only.
+- Docker Compose **v2.40.3** successfully rendered `deploy/compose.registry.yaml`
+  with the example env and an explicit validation image reference (not pulled).
+  Verified no `build`, correct resource limits, loopback binding, port 8787,
+  separate test mounts, and paused workers. An empty image variable correctly
+  fails configuration. These checks did not contact the Docker daemon.
+- Relevant frontend/design/syntax regression suite: **7 tests passed**, including
+  its JavaScript syntax checks and seven JavaScript unit-test files. No frontend
+  or processing code changed in this installation-preparation increment.
+- `git diff --check` passed. Reviewed instructions for stopped-state complete
+  config backup, retained old image, single-instance config/port ownership,
+  image-plus-database rollback and copied/test-library validation before cutover.
+- Still pending: owner-triggered image build/public GHCR package setup, anonymous
+  image pull, real Docker Manager import, container startup/inference/resource
+  measurements, and on-device UI/PWA checks. No release, production deployment
+  or real-library modification was performed.

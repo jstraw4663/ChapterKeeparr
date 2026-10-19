@@ -87,3 +87,24 @@ The review workspace now gives selected books a compact expandable cover rail, r
 Settings now shows server build identity and client/frontend identity, a manual cached release check and redacted diagnostics. Docker/release builds embed their version/channel/commit/date; source checkouts remain development builds. Figtree ships locally. Hidden tabs poll more slowly; PWA updates wait for a user-confirmed reload. No conversion/matching backend optimization, real-media publication, merge, tag, release or production deployment was performed.
 
 See VALIDATION.md for actual regression evidence and remaining physical-device/accessibility/PWA checks.
+
+## Public-image installation preparation (2026-10-19)
+
+The owner chose public GHCR pulls while keeping the GitHub source repository
+private. `deploy/UNRAID-INSTALL.md` documents the owner-run branch-preview build,
+one-time package visibility change, anonymous-pull verification, Docker Manager
+template import, copied/test-library checks, stopped-state migration and rollback.
+No public image availability is established by preparing these files.
+
+Both Unraid templates use host port 8787 per the owner's latest instruction;
+stop the existing container before starting the test replacement. The test template
+uses a separate config and dedicated test-library mapping. The production template
+requires preserving the existing actual mappings. Workers start paused, with one
+book slot, four speech threads, a four-CPU quota and 4 GB memory cap. Pull-only
+Compose and an example env file provide equivalent test defaults and require an
+explicit published image reference. The prior instructions to save registry
+credentials to flash were removed for the public-pull workflow.
+
+XML and Compose configuration validation does not validate an actual image build,
+Unraid import, inference performance or deployment. No release workflow was
+triggered, no image pushed, and no running installation changed during this work.
