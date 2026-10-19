@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 python:3.12-slim-bookworm
+# Deployment platform is selected by Compose or the CI build's platforms input.
+FROM python:3.12-slim-bookworm
 
 ARG MODEL_REVISION=d1d751a5f8271d482d14ca55d9e2deeebbae577f
 ENV DEBIAN_FRONTEND=noninteractive \

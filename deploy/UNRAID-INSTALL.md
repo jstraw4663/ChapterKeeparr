@@ -7,10 +7,14 @@ image for rollback. Neither installation builds source on Unraid.
 
 ## 1. Publish the first image (repository owner, once)
 
-**Preparation status:** these files do not establish that a public image exists.
-No image publication or Unraid deployment was performed while preparing this kit.
-Complete this section before trying to pull an image. A Git tag or an open PR
-alone does not mean a corresponding container image is available.
+**Build status (2026-10-19):** the owner's preview workflow
+[39290834143](https://github.com/jstraw4663/ChapterKeeparr/actions/runs/39290834143)
+completed both `test` and `image` jobs successfully for commit `94ee511`.
+If you already built that preview, use its image tag/digest and continue with the
+public-package/pull checks below. Build-tool deprecation/lint warnings do not
+invalidate that successful build. Public access and your Unraid installation
+still need verification. A source Git tag or an open PR alone does not mean an
+image is available.
 
 1. Review PR #3 and its checks. In GitHub, open **Actions → CI and release → Run
    workflow**, select `feat/responsive-review-workspace`, and run it. This is an
@@ -66,10 +70,29 @@ are not a reliable installation method.
 \* Production paths are examples. Preserve the **actual existing mappings** when
 migrating; do not assume the examples match the manually deployed container.
 
-1. Copy the test XML to the Unraid flash drive as
+1. While signed into GitHub, open
+   [the test XML](https://github.com/jstraw4663/ChapterKeeparr/blob/feat/responsive-review-workspace/deploy/unraid-test-template.xml)
+   and click **Download raw file** near the top right of the file view. This
+   downloads `unraid-test-template.xml` to your computer (usually Downloads).
+   Alternatively, extract it from the installation ZIP. The repository path is
+   `deploy/unraid-test-template.xml`; a `/workspace/...` path in this chat is on
+   the development workspace, not your MacBook or Unraid server.
+
+   Copy the downloaded XML to the Unraid flash drive as
    `/boot/config/plugins/dockerMan/templates-user/my-ChapterKeeparr-Test.xml`.
-   Create `templates-user` if it is absent. Use your usual file transfer method
-   or the Unraid terminal. Later, copy the production XML as
+   Create `templates-user` if it is absent. If SSH is enabled on Unraid, run these
+   commands in **Terminal on your MacBook**, adjusting the downloaded filename if
+   your browser renamed it:
+
+   ```sh
+   ssh root@192.168.4.51 'mkdir -p /boot/config/plugins/dockerMan/templates-user'
+   scp ~/Downloads/unraid-test-template.xml root@192.168.4.51:/boot/config/plugins/dockerMan/templates-user/my-ChapterKeeparr-Test.xml
+   ```
+
+   Alternatively, if you already expose the Unraid `flash` share over SMB, copy
+   it into `config/plugins/dockerMan/templates-user` there using Finder. Do not
+   enable a flash share just for this if your existing file-transfer method works.
+   Later, copy the production XML as
    `my-ChapterKeeparr.xml`. These are template files, not Docker images.
 2. In **Docker → Add Container → Template**, select **ChapterKeeparr-Test**.
 3. Replace **Repository** with the published preview tag or digest from section
@@ -241,6 +264,15 @@ migration steps above. Never use `down --volumes` as a migration step.
 
 ## Updates and troubleshooting
 
+- **Successful build with Node 20 deprecation warnings:** these refer to the
+  JavaScript runtime embedded in GitHub Actions, not a failed audiobook runtime.
+  The workflow now pins supported Node 24 Actions versions. The successful older
+  image can still be tested; only a future workflow run uses the updated actions.
+- **`FromPlatformFlagConstDisallowed`:** the Dockerfile no longer hardcodes
+  `FROM --platform=linux/amd64`. CI's `platforms` input and both Compose files
+  retain `linux/amd64`. If building with plain Docker rather than Compose, specify
+  `docker build --platform linux/amd64 ...` explicitly. This change does not
+  establish support for other architectures.
 - **Immutable digest/version:** edit Repository (or `CHAPTERKEEPARR_IMAGE`) to
   the tested next reference. A pinned digest does not follow newer builds.
 - **Stable `:latest`:** after stable releases are published, Unraid Update/Force

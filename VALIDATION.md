@@ -110,3 +110,23 @@ See `docs/plans/ui-ux-implementation-validation-2026-10-19.json` for the compact
   image pull, real Docker Manager import, container startup/inference/resource
   measurements, and on-device UI/PWA checks. No release, production deployment
   or real-library modification was performed.
+
+## Build warnings and template access — 2026-10-19
+
+- Verified owner-triggered GitHub Actions run `39290834143` for `94ee511`:
+  both `test` and `image` completed successfully. The previous pending-image
+  status above describes preparation time; actual public pulls/Unraid behavior
+  remain unverified.
+- Checked upstream release metadata and `action.yml` at the exact pinned
+  versions: checkout 7.0.1, setup-python 7.0.0, setup-node 7.1.0,
+  upload-artifact 7.0.2, setup-buildx 4.4.1, login 4.6.0, metadata 6.2.0 and
+  build-push 7.4.0. All declare `node24`, and all current supplied inputs remain
+  supported. Workflow YAML parses; the PR image-publish exclusion and permissions
+  remain unchanged. These static checks do not execute the upgraded actions.
+- Removed the constant platform flag from FROM; verified CI and both Compose
+  files still select linux/amd64. Both Unraid XML templates still parse and use
+  host port 8787. Added concrete XML download and MacBook-to-Unraid copy steps.
+- Relevant frontend/design/syntax regression suite: **7 tests passed**, including
+  JavaScript syntax and unit tests. Diff whitespace check passed. No app code,
+  runtime dependency, processing policy or media file changed. The updated workflow
+  and Dockerfile require a subsequent owner-run image build for dynamic validation.

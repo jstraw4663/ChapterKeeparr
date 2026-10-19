@@ -108,3 +108,15 @@ credentials to flash were removed for the public-pull workflow.
 XML and Compose configuration validation does not validate an actual image build,
 Unraid import, inference performance or deployment. No release workflow was
 triggered, no image pushed, and no running installation changed during this work.
+
+## Build warning follow-up (2026-10-19)
+
+The owner subsequently ran workflow `39290834143` on commit `94ee511`;
+GitHub reports both test and image jobs succeeded. This establishes a successful
+owner-run image build/push, not public anonymous access or an Unraid installation.
+Its Node 20 action-runtime warnings and constant FROM platform lint warning were
+nonfatal. Follow-up changes pin verified Node 24 versions of all workflow actions
+and select linux/amd64 through CI/Compose rather than the Dockerfile FROM line.
+Install documentation now includes an authenticated direct XML download link,
+MacBook SSH/SCP commands and a clear workspace-versus-host distinction. No new
+release/image workflow or deployment was triggered by the agent.
