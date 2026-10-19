@@ -7,11 +7,10 @@ image for rollback. Neither installation builds source on Unraid.
 
 ## 1. Publish the first image (repository owner, once)
 
-**Build status (2026-10-19):** the owner's preview workflow
+**Earlier image history (2026-10-19):** the owner's preview workflow
 [39290834143](https://github.com/jstraw4663/ChapterKeeparr/actions/runs/39290834143)
 completed both `test` and `image` jobs successfully for commit `94ee511`.
-If you already built that preview, use its image tag/digest and continue with the
-public-package/pull checks below. Build-tool deprecation/lint warnings do not
+That earlier image does not contain subsequent source-reconciliation/review/notification fixes. For those changes, run a new workflow on the current branch, then force-update its image (or replace a pinned digest) and confirm Settings shows the new commit. Re-running an old PR check does not publish an image. Build-tool deprecation/lint warnings do not
 invalidate that successful build. Public access and your Unraid installation
 still need verification. A source Git tag or an open PR alone does not mean an
 image is available.

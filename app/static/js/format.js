@@ -89,3 +89,14 @@ export const stripAudioExt = name => String(name || '').replace(/\.(m4b|m4a|mp3)
 
 /** Sort key that ignores a leading article: "The Hound…" sorts under H. */
 export const sortTitle = title => String(title || '').replace(/^(the|a|an)\s+/i, '').toLocaleLowerCase();
+
+/** Brief verbatim speech evidence, never an invented summary. */
+export function transcriptPreview(value) {
+  const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  if (!text) return '';
+  const sentences = typeof Intl.Segmenter === 'function'
+    ? [...new Intl.Segmenter('en', { granularity: 'sentence' }).segment(text)].map(s => s.segment)
+    : text.match(/[^.!?]+[.!?]*(?:\s|$)/g) || [text];
+  const brief = sentences.slice(0, 2).join('').trim();
+  return brief.length > 360 ? brief.slice(0, 357).replace(/\s+\S*$/, '') + '…' : brief;
+}

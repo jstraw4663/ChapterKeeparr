@@ -22,11 +22,12 @@ RUN apt-get update \
 WORKDIR /app
 COPY requirements.txt ./requirements.txt
 # Test the real speech decoder during image construction, before model download.
-COPY tests/test_runtime.py /tmp/chapterkeeparr-runtime-check/test_runtime.py
+COPY tests/test_runtime.py ./tests/test_runtime.py
+COPY scripts/check_speech_runtime.py ./scripts/check_speech_runtime.py
 RUN python -m pip install -r requirements.txt \
     && python -m pip check \
-    && python -m unittest discover -s /tmp/chapterkeeparr-runtime-check -p test_runtime.py \
-    && rm -rf /tmp/chapterkeeparr-runtime-check
+    && python -m unittest discover -s tests -p test_runtime.py \
+    && rm -rf ./tests
 
 # Resolve the model revision at build time. Override MODEL_REVISION with a
 # Hugging Face commit ID for a reproducible model snapshot. The default is

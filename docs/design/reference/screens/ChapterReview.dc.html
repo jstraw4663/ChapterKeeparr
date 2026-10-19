@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ChapterKeeparr — Chapter review · ordered list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+.ck{--bg:#FAFAF8;--surface:#FFFFFF;--raised:#F2F2EF;--ink:#121211;--muted:#62625D;--line:#E5E5E0;--hover:#EFEFEB;--track:#E3E3DE;--field:#FBFBF9;--primary:#121211;--primary-ink:#FFFFFF;--warn:#8F5E00;--warn-bg:#F7EACB;--warn-line:#EAD3A0;--ok:#2B6A39;--ok-bg:#E2EFE4;--bad:#B23A1C;--bad-bg:#FBE4DC;--shadow:0 16px 40px rgba(0,0,0,.14);--bar:rgba(250,250,248,.88);--ease:cubic-bezier(.32,.72,0,1);font-family:'Figtree',ui-sans-serif,system-ui,-apple-system,sans-serif;transition:background-color .45s ease,color .45s ease}
+.ck.dark{--bg:#0F0F0E;--surface:#171716;--raised:#1F1F1D;--ink:#F4F4F1;--muted:#9D9D97;--line:#292927;--hover:#222220;--track:#2C2C2A;--field:#141413;--primary:#F4F4F1;--primary-ink:#0F0F0E;--warn:#E9B34E;--warn-bg:#2E2513;--warn-line:#4A3A18;--ok:#7FC98C;--ok-bg:#16291B;--bad:#F08A6C;--bad-bg:#33180F;--shadow:0 20px 50px rgba(0,0,0,.6);--bar:rgba(15,15,14,.86)}
+.ck *{transition:background-color .45s ease,border-color .45s ease,color .45s ease}
+.ck button{font-family:inherit;cursor:pointer}
+.ck .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.ck .rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+@keyframes slidein{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.ck .stack{animation:slidein .6s cubic-bezier(.2,.7,.2,1) both}
+@keyframes pushin{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+.ck .pushin{animation:pushin .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.ck .fill{transform-origin:left center;animation:grow 1.4s cubic-bezier(.2,.7,.2,1) .5s both}
+@keyframes sweep{from{transform:translateX(-120%)}to{transform:translateX(320%)}}
+.ck .live{position:relative;overflow:hidden}
+.ck .live::after{content:"";position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sweep 2s ease-in-out 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ck .pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(0)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.ck .tick{animation:pop .45s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes open{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.ck .opened{animation:open .35s cubic-bezier(.2,.7,.2,1) both}
+@keyframes eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.ck .eq span{display:block;width:3px;height:14px;border-radius:2px;background:currentColor;transform-origin:bottom;animation:eq .9s ease-in-out infinite}
+
+/* sidebar */
+.ck .rail{position:relative;z-index:2;width:248px;flex-shrink:0;box-sizing:border-box;padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:28px;overflow:hidden;transition:width .55s var(--ease),background-color .45s ease,border-color .45s ease}
+.ck.collapsed .rail{width:76px}
+.ck .lbl{white-space:nowrap;opacity:1;transition:opacity .25s ease .2s}
+.ck.collapsed .lbl{opacity:0;transition-delay:0s}
+.ck .side{position:relative;display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;border:0;background:transparent;font-size:15px;font-weight:600;color:var(--muted);text-decoration:none;text-align:left;flex-shrink:0}
+.ck .side svg{flex-shrink:0}
+.ck .side:hover{background:var(--hover);color:var(--ink)}
+.ck .side.on{background:var(--raised);color:var(--ink)}
+.ck .side:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.ck .flip{transition:transform .55s var(--ease)}
+.ck.collapsed .flip{transform:rotate(180deg)}
+.ck .badge{position:absolute;right:12px;top:11px;min-width:22px;height:22px;padding:0 7px;box-sizing:border-box;border-radius:999px;background:var(--raised);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);font-size:12px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;transition:right .55s var(--ease),top .55s var(--ease),min-width .4s ease,height .4s ease,padding .4s ease,font-size .3s ease,background-color .45s ease,color .45s ease}
+.ck .badge.amber{background:var(--warn-bg);color:var(--warn);box-shadow:none}
+.ck.collapsed .badge{right:2px;top:4px;min-width:18px;height:18px;padding:0 5px;font-size:11px;background:var(--ink);color:var(--bg);box-shadow:none}
+.ck.collapsed .badge.amber{background:var(--warn);color:var(--bg)}
+@keyframes bumpA{0%{transform:scale(1)}35%{transform:scale(1.7)}65%{transform:scale(.9)}100%{transform:scale(1)}}
+@keyframes bumpB{0%{transform:scale(1)}35%{transform:scale(1.7)}65%{transform:scale(.9)}100%{transform:scale(1)}}
+.ck .bumpA{animation:bumpA .55s cubic-bezier(.3,1.4,.5,1)}
+.ck .bumpB{animation:bumpB .55s cubic-bezier(.3,1.4,.5,1)}
+@keyframes haloA{0%{opacity:.6;transform:scale(.6)}100%{opacity:0;transform:scale(2.2)}}
+@keyframes haloB{0%{opacity:.6;transform:scale(.6)}100%{opacity:0;transform:scale(2.2)}}
+.ck .halo{position:absolute;inset:0;border-radius:999px;background:currentColor;opacity:0;pointer-events:none}
+.ck .halo.bumpA{animation:haloA .7s ease-out}
+.ck .halo.bumpB{animation:haloB .7s ease-out}
+.ck .qring{position:absolute;left:5px;top:5px;opacity:0;transition:opacity .4s ease}
+.ck.collapsed .qring.live{opacity:1;transition-delay:.35s}
+
+/* activity card */
+.ck .act{position:absolute;z-index:5;left:16px;bottom:84px;width:216px;box-sizing:border-box;padding:14px;border-radius:14px;background:var(--raised);text-decoration:none;color:var(--ink);opacity:1;transform:none;transform-origin:center;transition:transform .6s var(--ease),opacity .45s ease,background-color .45s ease}
+.ck.collapsed .act{transform:translate(-86px,var(--ady)) scale(.08);opacity:0;pointer-events:none}
+.ck .act:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* notifications */
+@keyframes toastIn{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes flyOut{0%{transform:none;opacity:1}25%{transform:scale(.94);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.05);opacity:.2;border-radius:120px}}
+.ck .toast{position:absolute;z-index:10;left:100px;bottom:24px;width:400px;box-sizing:border-box;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.ck .toast.in,.ck .ptoast.in{animation:toastIn .55s cubic-bezier(.2,.8,.2,1) both}
+.ck .toast.out,.ck .ptoast.out,.ck .snote.out{animation:flyOut .72s cubic-bezier(.55,0,.25,1) forwards;pointer-events:none}
+.ck .snote{position:absolute;z-index:6;left:16px;top:392px;width:216px;box-sizing:border-box;padding:14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.14);overflow:hidden}
+@keyframes snoteIn{from{opacity:0;transform:translateY(-16px) scale(.97);clip-path:inset(0 0 100% 0 round 14px)}to{opacity:1;transform:none;clip-path:inset(0 0 0 0 round 14px)}}
+.ck .snote.in{animation:snoteIn .6s cubic-bezier(.2,.8,.2,1) both}
+.ck .ptoast{position:absolute;z-index:10;left:12px;right:12px;box-sizing:border-box;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+@keyframes hold{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.ck .holdbar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ink);opacity:.35;transform-origin:left center;animation:hold 3.6s linear .55s both}
+.ck .tbtn{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;font-weight:650;text-decoration:none;display:inline-flex;align-items:center;flex-shrink:0}
+.ck .tbtn:hover{background:var(--hover)}
+.ck .tclose{width:44px;height:44px;margin:-6px -8px -6px 0;border-radius:999px;border:0;background:transparent;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ck .tclose:hover{background:var(--hover);color:var(--ink)}
+
+/* controls */
+.ck .primary{height:44px;padding:0 20px;border-radius:999px;border:0;background:var(--primary);color:var(--primary-ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;flex-shrink:0;transition:transform .2s ease,opacity .2s ease}
+.ck .primary:hover{opacity:.88;color:var(--primary-ink)}
+.ck .primary:active{transform:scale(.97)}
+.ck .ghost{height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;flex-shrink:0}
+.ck .ghost:hover{background:var(--hover)}
+.ck .icb{width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ck .icb:hover{background:var(--hover)}
+.ck .icb:disabled{opacity:.35;cursor:default}
+.ck .search{height:44px;width:360px;box-sizing:border-box;padding:0 16px 0 44px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:15px}
+.ck .search::placeholder{color:var(--muted)}
+.ck .search:focus{outline:2px solid var(--ink);outline-offset:1px}
+.ck .tab{height:40px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-size:15px;font-weight:600;flex-shrink:0;white-space:nowrap;transition:color .25s ease,border-color .35s ease}
+.ck .tab:hover{color:var(--ink)}
+.ck .tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.ck .segctl{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:var(--raised)}
+.ck .sgb{height:36px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:14px;font-weight:600;white-space:nowrap;transition:background-color .3s ease,color .3s ease,box-shadow .3s ease}
+.ck .sgb:hover{color:var(--ink)}
+.ck .sgb.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.ck .switch{position:relative;width:48px;height:28px;flex-shrink:0;border-radius:999px;border:0;padding:0;background:var(--track);transition:background-color .3s ease}
+.ck .switch::after{content:"";position:absolute;inset:-8px}
+.ck .switch .knob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .35s var(--ease),background-color .3s ease}
+.ck .switch.on{background:var(--ink)}
+.ck .switch.on .knob{transform:translateX(20px);background:var(--bg)}
+.ck .switch:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ck .fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ck .fld label{font-size:13px;font-weight:600;color:var(--muted)}
+.ck .fld input,.ck .fld select{height:46px;width:100%;box-sizing:border-box;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--ink);font-family:inherit;font-size:15px}
+.ck .fld input::placeholder{color:var(--muted)}
+.ck .fld input:focus,.ck .fld select:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:transparent}
+.ck .minichip{height:36px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:13px;font-weight:600}
+.ck .minichip:hover{border-color:var(--ink)}
+.ck .warnbtn{height:40px;padding:0 15px;border-radius:999px;border:1px solid var(--warn-line);background:transparent;color:var(--ink);font-size:14px;font-weight:600}
+.ck .warnbtn:hover{background:rgba(128,128,128,.08)}
+.ck details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--warn);list-style:none}
+.ck details summary::-webkit-details-marker{display:none}
+.ck .card{text-decoration:none;color:inherit;display:flex;flex-direction:column;border-radius:14px}
+.ck .card .cover{transition:transform .45s cubic-bezier(.2,.7,.2,1),box-shadow .45s ease}
+.ck .card:hover .cover{transform:translateY(-5px) scale(1.03);box-shadow:var(--shadow)}
+.ck .card:focus-visible{outline:2px solid var(--ink);outline-offset:6px}
+.ck .pillswap{transition:background-color .4s ease,color .4s ease}
+.ck .panel{border-radius:20px;background:var(--surface);border:1px solid var(--line)}
+.ck .h2{margin:0;font-size:20px;font-weight:750;letter-spacing:-0.015em}
+.ck .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* step tracker */
+.ck .steps{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.ck .steps .track{position:absolute;left:5px;right:calc(25% - 5px);top:5px;height:2px;border-radius:2px;background:var(--track)}
+.ck .steps .trackfill{position:absolute;left:0;top:0;bottom:0;border-radius:2px;transform-origin:left center;animation:grow 1.1s cubic-bezier(.2,.7,.2,1) .3s both}
+.ck .st{position:relative;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ck .st-dot{width:12px;height:12px;box-sizing:border-box;border-radius:999px;border:2px solid var(--track);background:var(--surface)}
+.ck .st-dot.done{background:var(--ink);border-color:var(--ink)}
+.ck .st-dot.cur{border-color:var(--ink);box-shadow:0 0 0 4px rgba(128,128,128,.18);animation:pulse 1.6s ease-in-out infinite}
+.ck .st-dot.paused{background:var(--warn);border-color:var(--warn);box-shadow:0 0 0 4px rgba(233,179,78,.2)}
+.ck .st-lbl{font-size:12px;color:var(--muted);white-space:nowrap}
+.ck .st-lbl.on{color:var(--ink);font-weight:650}
+
+/* lists */
+.ck .qrow{display:grid;grid-template-columns:56px minmax(0,1fr) 300px 90px auto;align-items:center;gap:22px;padding:14px 16px;border-radius:14px;text-decoration:none;color:inherit;transition:background-color .2s ease}
+.ck .qrow:hover{background:var(--hover)}
+.ck .irow{width:100%;display:flex;align-items:center;gap:14px;padding:12px;border:0;border-radius:14px;background:transparent;color:var(--ink);text-align:left;transition:background-color .25s ease,box-shadow .25s ease}
+.ck .irow:hover{background:var(--hover)}
+.ck .irow.on{background:var(--surface);box-shadow:0 0 0 1px var(--line),0 6px 18px rgba(0,0,0,.08)}
+.ck .irow:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ck .crow{width:100%;display:grid;grid-template-columns:28px minmax(0,1fr) 96px 88px;align-items:center;gap:14px;padding:14px 4px;border:0;background:transparent;color:var(--ink);text-align:left;font-size:15px;border-radius:10px}
+.ck .crow:hover{background:var(--hover)}
+.ck .playbtn{width:44px;height:44px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;transition:transform .2s ease,background-color .2s ease}
+.ck .playbtn:hover{background:var(--hover)}
+.ck .playbtn:active{transform:scale(.92)}
+.ck .playbtn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ck .srow{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;border-top:1px solid var(--line)}
+.ck .srow:first-of-type{border-top:0}
+.ck .snav{display:flex;align-items:center;height:40px;padding:0 12px;border-radius:10px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none}
+.ck .snav:hover{background:var(--hover);color:var(--ink)}
+.ck .snav.on{color:var(--ink);background:var(--raised)}
+
+/* mobile */
+.ck .stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--raised)}
+.ck .phone{position:relative;width:390px;height:844px;border-radius:44px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--line),0 40px 90px rgba(0,0,0,.35)}
+.ck .stage.bare{background:var(--bg)}
+.ck .stage.bare .phone{border-radius:0;box-shadow:none}
+.ck .pscroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.ck .pscroll::-webkit-scrollbar,.ck .hscroll::-webkit-scrollbar{display:none}
+.ck .hscroll{scrollbar-width:none}
+.ck .ptab{flex:1 1 0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);text-decoration:none}
+.ck .ptab.on{color:var(--ink)}
+.ck .picon{width:44px;height:44px;border-radius:999px;border:0;background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;text-decoration:none}
+.ck .picon:active{background:var(--hover);transform:scale(.92)}
+.ck .pbadge{position:absolute;right:-10px;top:-5px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:750;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+.ck .pbadge.amber{background:var(--warn);color:var(--bg)}
+.ck .pring{position:absolute;left:-5px;top:-5px;opacity:0;transition:opacity .4s ease}
+.ck .pring.live{opacity:1}
+.ck .pcard .cover{transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.ck .pcard:active .cover{transform:scale(.96)}
+.ck .mrow{display:flex;align-items:center;gap:14px;min-height:72px;padding:10px 0;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;text-decoration:none;width:100%}
+.ck .pbar{position:absolute;left:0;right:0;bottom:88px;box-sizing:border-box;padding:12px 16px;display:flex;gap:10px;background:var(--bar);border-top:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.ck .up{animation:up .55s cubic-bezier(.2,.8,.2,1) .2s both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.ck .scrim{position:absolute;inset:0;z-index:20;border:0;padding:0;background:rgba(0,0,0,.45);animation:fadein .3s ease both;cursor:default}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+.ck .sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;box-sizing:border-box;padding:10px 20px 40px;border-radius:26px 26px 0 0;background:var(--surface);box-shadow:0 -10px 40px rgba(0,0,0,.25);animation:sheetUp .5s cubic-bezier(.2,.9,.2,1) both}
+.ck .sheetrow{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;border-top:1px solid var(--line)}
+
+/* search: desktop */
+.ck .sbox{position:relative;display:flex;align-items:center}
+.ck .sdrop{position:absolute;z-index:30;top:54px;left:0;width:540px;box-sizing:border-box;padding:8px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+@keyframes dropin{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+.ck .sdrop,.ck .mres{animation:dropin .28s cubic-bezier(.2,.8,.2,1) both;transform-origin:top left}
+.ck .sres{display:flex;align-items:center;gap:14px;min-height:56px;padding:8px 10px;border-radius:12px;text-decoration:none;color:var(--ink)}
+.ck .sres:hover,.ck .sres:focus-visible{background:var(--hover);outline:none}
+.ck .sres .t{font-size:15px;font-weight:500;color:var(--muted)}
+.ck .sres .t b{font-weight:750;color:var(--ink)}
+.ck .shead{padding:10px 10px 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ck .kbd{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:6px;background:var(--raised);box-shadow:inset 0 0 0 1px var(--line);font-size:11px;font-weight:700;color:var(--muted)}
+
+/* search: mobile header */
+.ck .mh{position:absolute;left:0;right:0;top:0;z-index:12;height:60px;box-sizing:border-box;padding:0 12px 0 20px;display:flex;align-items:center;gap:8px;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.ck .mh-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);flex-shrink:0}
+.ck .mh-logo{display:flex;transition:transform .45s var(--ease)}
+.ck .mh.searching .mh-logo{transform:scale(.8)}
+.ck .mh-word{font-size:17px;font-weight:750;letter-spacing:-0.015em;white-space:nowrap;max-width:160px;overflow:hidden;opacity:1;transition:max-width .45s var(--ease),opacity .25s ease .1s}
+.ck .mh.searching .mh-word{max-width:0;opacity:0;transition:max-width .45s var(--ease),opacity .15s ease}
+.ck .mh-search{margin-left:auto;height:44px;width:44px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;overflow:hidden;transition:width .45s var(--ease),background-color .3s ease}
+.ck .mh.searching .mh-search{width:242px;background:var(--raised)}
+.ck .mh-sbtn{width:44px;height:44px;flex-shrink:0;border:0;border-radius:999px;background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0}
+.ck .mh-search input{flex:1 1 auto;min-width:0;height:44px;border:0;background:transparent;color:var(--ink);font-family:inherit;font-size:16px;outline:none;padding:0 12px 0 0;opacity:0;transition:opacity .2s ease}
+.ck .mh-search input::placeholder{color:var(--muted)}
+.ck .mh.searching .mh-search input{opacity:1;transition-delay:.2s}
+.ck .mh-gear{transition:width .35s var(--ease),opacity .2s ease}
+.ck .mh.searching .mh-gear{width:0;opacity:0;overflow:hidden;pointer-events:none}
+.ck .mh-cancel{height:44px;max-width:0;padding:0;border:0;background:transparent;color:var(--ink);font-size:15px;font-weight:650;white-space:nowrap;overflow:hidden;opacity:0;transition:max-width .45s var(--ease),opacity .25s ease}
+.ck .mh.searching .mh-cancel{max-width:70px;opacity:1}
+.ck .mres{position:absolute;left:0;right:0;top:60px;bottom:0;z-index:11;box-sizing:border-box;padding:4px 12px 120px;overflow-y:auto;background:var(--bg)}
+
+/* floating new-job button (mobile) */
+.ck .fab{position:absolute;right:16px;bottom:104px;z-index:9;width:58px;height:58px;border-radius:999px;background:var(--primary);color:var(--primary-ink);display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.3);transition:transform .25s var(--ease),opacity .25s ease}
+@keyframes fabin{from{opacity:0;transform:scale(.4) rotate(-90deg)}to{opacity:1;transform:none}}
+.ck .fab{animation:fabin .6s cubic-bezier(.3,1.3,.5,1) .35s both}
+.ck .fab:active{transform:scale(.92)}
+.ck .fab.hide{opacity:0;transform:scale(.6);pointer-events:none}
+
+/* book */
+.ck .chrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:0 6px;min-height:56px;border-top:1px solid var(--line);border-radius:0;transition:background-color .2s ease}
+.ck .chrow:hover{background:var(--hover)}
+.ck .chrow.on{background:var(--raised)}
+.ck .chplay{width:44px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
+.ck .chplay:hover{background:var(--surface)}
+.ck .disc{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:0;border:0;background:transparent;color:var(--ink);text-align:left;font-size:15px;font-weight:650}
+.ck .disc .chev{display:inline-flex;color:var(--muted);transition:transform .35s var(--ease)}
+.ck .disc[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.ck .kv{display:grid;grid-template-columns:120px minmax(0,1fr);row-gap:12px;column-gap:14px;margin:0;font-size:14px}
+.ck .kv dt{color:var(--muted)}
+.ck .kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+@keyframes playerIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.ck .player{animation:playerIn .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes prog{from{width:0}to{width:100%}}
+.ck .progline{animation:prog 30s linear both}
+
+/* suggestions */
+.ck .sgrow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:16px;padding:14px 4px;border-top:1px solid var(--line)}
+@keyframes rowout{to{opacity:0;transform:translateX(24px)}}
+.ck .sgrow.leaving{animation:rowout .35s ease forwards}
+.ck .done-chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;background:var(--ok-bg);color:var(--ok);font-size:13px;font-weight:700;animation:dropin .3s ease both}
+
+.ck .sres.on{background:var(--hover)}
+.ck .offline{position:absolute;z-index:25;top:14px;left:calc(50% + 124px);transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:8px 8px 8px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:14px;white-space:nowrap;animation:dropin .35s ease both;transition:left .55s var(--ease)}
+.ck.collapsed .offline{left:calc(50% + 38px)}
+.ck .moffline{position:absolute;z-index:11;left:12px;right:12px;top:64px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;animation:dropin .35s ease both}
+.ck .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.ck .modal-scrim{position:absolute;inset:0;z-index:40;border:0;padding:0;background:rgba(0,0,0,.5);animation:fadein .3s ease both;cursor:default}
+@keyframes modalIn{from{opacity:0;transform:translate(-50%,-46%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%)}}
+.ck .modal{position:absolute;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);width:620px;max-height:86%;overflow-y:auto;box-sizing:border-box;padding:28px;border-radius:24px;background:var(--surface);box-shadow:0 30px 80px rgba(0,0,0,.45);animation:modalIn .4s cubic-bezier(.2,.8,.2,1) both}
+.ck .msheet{position:absolute;left:0;right:0;bottom:0;z-index:41;max-height:92%;overflow-y:auto;box-sizing:border-box;padding:10px 20px 36px;border-radius:26px 26px 0 0;background:var(--surface);box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:sheetUp .5s cubic-bezier(.2,.9,.2,1) both}
+.ck .grab{width:40px;height:5px;margin:0 auto 12px;border-radius:999px;background:var(--track)}
+.ck .actrow{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:0 4px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);font-size:16px;font-weight:600;text-align:left;text-decoration:none}
+.ck .actrow:first-of-type{border-top:0}
+.ck .actrow.danger{color:var(--bad)}
+.ck .sel{height:40px;box-sizing:border-box;padding:0 34px 0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 17px) 17px,calc(100% - 12px) 17px;background-size:5px 5px;background-repeat:no-repeat}
+.ck .sel:focus{outline:2px solid var(--ink);outline-offset:1px}
+.ck .gh{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0;border:0;background:transparent;color:var(--ink);text-align:left}
+.ck .gh .chev{display:inline-flex;color:var(--muted);transition:transform .35s var(--ease)}
+.ck .gh[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.ck .lrow{display:grid;grid-template-columns:48px minmax(0,1fr) 220px 150px 24px;align-items:center;gap:18px;padding:10px 12px;border-radius:12px;text-decoration:none;color:inherit;transition:background-color .2s ease}
+.ck .lrow:hover{background:var(--hover)}
+.ck .logrow{display:grid;grid-template-columns:72px 28px minmax(0,1fr);align-items:start;gap:12px;padding:12px 4px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.ck .logrow:hover{background:var(--hover)}
+.ck .ldot{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.ck .fbrow{display:flex;align-items:center;gap:14px;width:100%;min-height:58px;padding:8px 12px;border:0;border-radius:12px;background:transparent;color:var(--ink);text-align:left}
+.ck .fbrow:hover{background:var(--hover)}
+.ck .fbrow.on{background:var(--raised);box-shadow:inset 0 0 0 2px var(--ink)}
+.ck .fbrow:disabled{opacity:.5;cursor:default}
+.ck .crumb{border:0;background:transparent;color:var(--muted);font-size:14px;font-weight:600;padding:6px 4px;border-radius:8px}
+.ck .crumb:hover{color:var(--ink)}
+.ck .crumb.on{color:var(--ink)}
+.ck .chk{display:flex;align-items:center;gap:12px;min-height:40px;font-size:14px}
+.ck .chk .b{width:22px;height:22px;flex-shrink:0;border-radius:999px;display:flex;align-items:center;justify-content:center}
+.ck .chk .b.y{background:var(--ok);color:var(--bg)}
+.ck .chk .b.n{box-shadow:inset 0 0 0 2px var(--track)}
+@keyframes countdown{from{stroke-dashoffset:0}to{stroke-dashoffset:100.5}}
+.ck .cd{animation:countdown 15s linear both}
+
+.ck .slim{display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-radius:16px;background:var(--warn-bg);border:1px solid var(--warn-line)}
+.ck .slim summary{color:var(--ink);font-weight:650}
+.ck .segbar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--track);gap:2px}
+.ck .segbar span{display:block;height:100%;transition:width .5s var(--ease)}
+.ck .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.ck .legend i{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:6px;vertical-align:1px}
+.ck .cr{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:background-color .3s ease,border-color .3s ease}
+.ck .cr.open{border-color:var(--warn-line);box-shadow:0 1px 0 rgba(0,0,0,.02)}
+.ck .cr.missing{border:1.5px dashed var(--line)}
+.ck .cr.done{flex-direction:row;align-items:center;gap:12px;padding:10px 12px 10px 14px;background:transparent}
+.ck .cr-time{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);min-width:58px}
+.ck .cr-kind{font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+.ck .cr-quote{margin:0;font-size:14px;line-height:1.5;color:var(--muted);font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ck .cr-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.ck .btn-sm{height:40px;padding:0 14px;font-size:14px}
+.ck .choice{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;min-height:44px;padding:4px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:14px;font-weight:650;text-align:left}
+.ck .choice span{font-size:12px;font-weight:500;color:var(--muted)}
+.ck .choice:hover{border-color:var(--ink)}
+.ck .chip-note{font-size:12px;color:var(--muted)}
+.ck .chip-note.warn{color:var(--warn);font-weight:650}
+.ck .more{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:var(--raised)}
+.ck .more .pick{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:4px 10px;border:0;border-radius:10px;background:transparent;color:var(--ink);text-align:left;font-size:14px;font-weight:600}
+.ck .more .pick:hover{background:var(--surface)}
+.ck .more .pick span{margin-left:auto;font-size:12px;font-weight:500;color:var(--muted)}
+.ck .savebar{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;gap:16px;padding:14px 16px 14px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.ck .ck-box{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.45;color:var(--ink);cursor:pointer}
+.ck .ck-box input{width:20px;height:20px;margin:0;flex-shrink:0;accent-color:var(--ink)}
+.ck .textbtn{border:0;background:transparent;color:var(--ink);font-size:14px;font-weight:650;text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--line);padding:10px 2px;min-height:44px}
+.ck .textbtn:hover{text-decoration-color:var(--ink)}
+/* alignment (B) */
+.ck .lane{position:relative;height:18px}
+.ck .lane i{position:absolute;top:3px;width:3px;height:12px;border-radius:2px;transform:translateX(-50%)}
+.ck .al-head,.ck .al-row{display:grid;grid-template-columns:64px minmax(0,1fr) 40px minmax(0,1fr) 64px 44px;align-items:center;gap:10px}
+.ck .al-head{padding:0 12px 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+.ck .al-row{width:100%;min-height:52px;padding:6px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left;font-size:14px}
+.ck .al-row.prob{background:var(--warn-bg)}
+.ck .al-row.prob:hover{filter:brightness(.98)}
+.ck .al-row.decided{background:transparent}
+.ck .al-row .t{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ck .al-row .nm{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck .al-row .nm.dim{font-weight:500;color:var(--muted)}
+.ck .al-row .nm.none{font-weight:500;color:var(--muted);font-style:italic}
+.ck .conn{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;justify-self:center}
+.ck .run{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:6px 12px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--muted);text-align:left;font-size:14px}
+.ck .run:hover{background:var(--hover)}
+.ck .run .chev{display:inline-flex;transition:transform .35s var(--ease)}
+.ck .run[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.ck .al-dec{padding:12px 16px 16px;border-bottom:1px solid var(--line);background:var(--warn-bg)}
+.ck .pair{display:grid;grid-template-columns:28px minmax(0,1fr) 44px;gap:10px;align-items:center;width:100%;padding:10px 4px;border:0;border-top:1px solid var(--line);background:transparent;color:var(--ink);text-align:left}
+.ck .pair.prob{background:var(--warn-bg);border-radius:12px;padding:10px 8px;border-top-color:transparent;margin-top:4px}
+
+.ck .cc{--cc-e:cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-sizing:border-box;padding:16px;border-radius:18px;background:var(--surface);border:1px solid var(--warn-line);scroll-margin:120px;transition:padding .26s var(--cc-e) .06s,border-radius .26s var(--cc-e) .06s,border-color .2s ease,background-color .2s ease,box-shadow .3s ease}
+.ck .cc-in{display:flex;flex-direction:column;gap:12px}
+.ck .cc-body{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .26s var(--cc-e) .06s,opacity .14s ease .04s}
+.ck .cc-body>div,.ck .cc-sum>div{min-height:0;overflow:hidden}
+.ck .cc-sum{display:grid;grid-template-rows:0fr;opacity:0;pointer-events:none;transition:grid-template-rows .26s var(--cc-e) .06s,opacity .16s ease .12s}
+.ck .cc-row{display:flex;align-items:center;gap:12px;min-height:40px}
+.ck .cc.closing{padding:6px 6px 6px 12px;border-radius:14px;border-color:var(--line);border-style:solid;border-width:1px;background:transparent;box-shadow:none;animation:none}
+.ck .cc.closing .cc-body{grid-template-rows:0fr;opacity:0}
+.ck .cc.closing .cc-sum{grid-template-rows:1fr;opacity:1}
+@keyframes ccgrow{from{grid-template-rows:0fr;opacity:0}to{grid-template-rows:1fr;opacity:1}}
+.ck .cc.grow .cc-body{animation:ccgrow .28s cubic-bezier(.2,.8,.2,1) both}
+.ck .opt:active{transform:scale(.985)}
+.ck .opt.chosen{border-color:var(--ink);background:var(--ink);color:var(--bg);transition:background-color .12s ease,color .12s ease,border-color .12s ease}
+.ck .opt.chosen .sub,.ck .opt.chosen .sub.warn{color:var(--bg);opacity:.75}
+.ck .opt.chosen .rd{box-shadow:inset 0 0 0 5px var(--bg)}
+.ck .opt.chosen .tag{background:var(--bg);color:var(--ink)}
+.ck .opts.picking .opt:not(.chosen){opacity:.4;transition:opacity .12s ease}
+@media (prefers-reduced-motion: reduce){.ck .cc,.ck .cc-body,.ck .cc-sum{transition:none}.ck .cc.grow .cc-body,.ck .cc-done{animation:none}}
+.ck .cc.missing{border:1.5px dashed var(--bad)}
+.ck .cc.focus{box-shadow:0 0 0 3px var(--ink)}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(128,128,128,0)}30%{box-shadow:0 0 0 4px var(--ink)}100%{box-shadow:0 0 0 3px var(--ink)}}
+.ck .cc.focus{animation:flash .6s ease both}
+.ck .cc-done{display:flex;align-items:center;gap:12px;box-sizing:border-box;min-height:54px;padding:6px 6px 6px 12px;border-radius:14px;border:1px solid var(--line);background:transparent;animation:open .35s cubic-bezier(.2,.7,.2,1) both}
+.ck .cc-done.settled{animation:none}
+.ck .btw{display:flex;align-items:center;gap:10px;min-height:22px;font-size:13px}
+.ck .btw b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.ck .btw .ln{position:relative;flex:1 1 auto;min-width:36px;height:12px}
+.ck .btw .ln::before{content:"";position:absolute;left:0;right:0;top:5px;height:2px;border-radius:2px;background:var(--track)}
+.ck .btw .ln i{position:absolute;left:50%;top:0;width:12px;height:12px;border-radius:999px;transform:translateX(-50%);box-shadow:0 0 0 3px var(--surface)}
+.ck .cc,.ck .cc-done{overflow-anchor:none}
+.ck .bk{transition:opacity .18s ease,transform .18s ease}
+.ck .bk.out{opacity:0;transform:translateY(-6px)}
+.ck .bk.in{animation:open .3s cubic-bezier(.2,.8,.2,1) both}
+@media (prefers-reduced-motion: reduce){.ck .bk{transition:none}.ck .bk.in{animation:none}}
+.ck .listen{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 14px 6px 6px;border-radius:14px;border:1px solid var(--line);background:var(--raised);color:var(--ink);text-align:left}
+.ck .listen .pb{width:40px;height:40px;flex-shrink:0;border-radius:999px;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center}
+.ck .listen q{flex-grow:1;min-width:0;font-size:14px;line-height:1.4;font-style:italic;color:var(--muted);quotes:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ck .listen.on{border-color:var(--ink)}
+.ck .listen:disabled{opacity:.6}
+.ck .opts{display:flex;flex-direction:column;gap:6px}
+.ck .opt{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;transition:border-color .2s ease,background-color .2s ease}
+.ck .opt:hover{border-color:var(--ink)}
+.ck .opt .rd{width:18px;height:18px;border-radius:999px;box-shadow:inset 0 0 0 2px var(--line)}
+.ck .opt.rec{border-color:var(--ink);background:var(--raised)}
+.ck .opt.rec .rd{box-shadow:inset 0 0 0 5px var(--ink)}
+.ck .opt .nm{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ck .opt .sub{font-size:12px;color:var(--muted)}
+.ck .opt .sub.warn{color:var(--warn);font-weight:650}
+.ck .opt .tag{font-size:11px;font-weight:750;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--ink);color:var(--bg)}
+.ck .alts{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}
+.ck .stripbtn{position:absolute;top:0;width:18px;height:22px;transform:translateX(-50%);border:0;padding:0;background:transparent;cursor:pointer}
+.ck .stripbtn i{position:absolute;left:50%;top:3px;width:4px;height:16px;border-radius:2px;transform:translateX(-50%)}
+.ck .stripbtn:hover i,.ck .stripbtn:focus-visible i{width:6px}
+.ck .stage-h{display:flex;align-items:center;gap:10px;padding:6px 2px 2px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ck .bulknote{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:12px;background:var(--raised);font-size:14px;animation:open .35s ease both}
+</style>
+</helmet>
+<div class="ck {{themeCls}}" style="position: relative; width: 1440px; height: 3600px; box-sizing: border-box; background: var(--bg); color: var(--ink); overflow: hidden; --ady: -3246px">
+<sc-if value="{{isDesktop}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; width: 1440px; height: 3600px; display: flex">
+<aside class="rail" aria-label="Sidebar">
+<a href="Home-Combined.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 7px; text-decoration: none; color: var(--ink); flex-shrink: 0"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" style="flex-shrink: 0"><rect width="30" height="30" rx="8" style="fill: var(--ink)"></rect><path d="M9.5 8.5h7.5a3 3 0 0 1 3 3v10h-7.5a3 3 0 0 1-3-3z" style="fill: none; stroke: var(--bg); stroke-width: 1.8"></path><path d="M13.5 12.8h3.2M13.5 16.3h3.2" style="stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round"></path></svg><span class="lbl" style="font-size: 18px; font-weight: 750; letter-spacing: -0.015em">ChapterKeeparr</span></a>
+<nav aria-label="Primary" style="display: flex; flex-direction: column; gap: 4px">
+<a class="side" href="Home-Combined.dc.html" aria-label="Library"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg><span class="lbl">Library</span></a>
+<a class="side" href="Suggestions.dc.html" aria-label="Suggestions"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"></path></svg><span class="lbl">Suggestions</span><span class="badge">{{suggCount}}</span></a>
+<a class="side" href="Queue.dc.html" aria-label="{{queueLabel}}"><svg class="{{qringCls}}" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" style="fill: none; stroke: var(--track); stroke-width: 2"></circle><circle cx="17" cy="17" r="15" transform="rotate(-90 17 17)" style="fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 94.2; stroke-dashoffset: 36"></circle></svg><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span class="lbl">Queue</span><span class="{{qBadgeCls}}"><span class="{{qHaloCls}}"></span>{{activeCount}}</span></a>
+<a class="side on" href="Review.dc.html" aria-current="page" aria-label="{{reviewLabel}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.6 6h10.8L20 13.5V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M4 13.5h4.5l1.2 2.2h4.6l1.2-2.2H20"></path></svg><span class="lbl">Needs review</span><span class="{{rBadgeCls}}"><span class="{{rHaloCls}}"></span>{{reviewCount}}</span></a>
+<a class="side" href="NewJob.dc.html" aria-label="New job"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span class="lbl">New job</span></a>
+<a class="side" href="Settings.dc.html" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg><span class="lbl">Settings</span></a>
+</nav>
+<div style="flex-grow: 1"></div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<button class="side" onClick="{{toggleRail}}" aria-expanded="{{railOpen}}" aria-label="{{railLabel}}"><svg class="flip" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M9 4.5v15M15.5 10l-2 2 2 2"></path></svg><span class="lbl">Collapse sidebar</span></button>
+</div>
+</aside>
+
+<a class="act" href="Queue.dc.html" aria-label="{{actLabel}}">
+<span class="eyebrow" style="display: block; margin-bottom: 12px">Activity</span>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 7px; background: {{act.color}}; transition: background-color .5s ease"></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{act.title}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap"><sc-if value="{{act.live}}" hint-placeholder-val="{{ true }}"><span class="pulse" style="width: 6px; height: 6px; border-radius: 999px; background: var(--ink); flex-shrink: 0"></span></sc-if>{{act.sub}}</span>
+</div>
+</div>
+<div style="height: 4px; margin-top: 12px; border-radius: 999px; background: var(--track); overflow: hidden"><div class="fill" style="width: {{act.pct}}; height: 100%; border-radius: 999px; background: var(--ink); transition: width .8s var(--ease)"></div></div>
+</a>
+<main style="flex-grow: 1; min-width: 0; height: 100%; overflow-y: auto; box-sizing: border-box; padding: 24px 48px 48px; display: flex; flex-direction: column; gap: 28px"><div style="position: relative; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 24px"><div class="sbox">
+<label for="top-search" class="sr">Search library</label>
+<span style="position: absolute; left: 16px; color: var(--muted); display: inline-flex; pointer-events: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span>
+<input id="top-search" class="search" type="search" placeholder="Search title, series, or ASIN" value="{{q}}" onChange="{{onQuery}}" onFocus="{{openSearch}}" onBlur="{{blurSearch}}" onKeyDown="{{searchKey}}" autoComplete="off" aria-expanded="{{dOpenStr}}" aria-controls="top-results">
+<span class="kbd" style="position: absolute; right: 14px; pointer-events: none">/</span>
+<sc-if value="{{dOpen}}" hint-placeholder-val="{{ false }}">
+<div class="sdrop" id="top-results" role="listbox">
+<sc-if value="{{hasSearchHead}}" hint-placeholder-val="{{ true }}"><div class="shead">{{searchHead}}</div></sc-if>
+<sc-for list="{{searchList}}" as="r" hint-placeholder-count="3">
+<a class="{{r.cls}}" id="{{r.id}}" href="{{r.href}}" role="option" aria-selected="{{r.sel}}">
+<span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; background: {{r.color}}; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px; box-sizing: border-box; font-size: 15px; font-weight: 900; line-height: 0.8; color: rgba(255,255,255,0.4)">{{r.badge}}</span>
+<span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span class="t" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.pre}}<b>{{r.mid}}</b>{{r.post}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted)"><span style="width: 6px; height: 6px; border-radius: 999px; background: {{r.dot}}"></span>{{r.sub}}</span>
+</span>
+</a>
+</sc-for>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}"><p style="margin: 14px 10px; font-size: 14px; color: var(--muted)">No books match “{{q}}”. Try a series or ASIN.</p></sc-if>
+<div style="display: flex; gap: 14px; padding: 10px 10px 4px; margin-top: 6px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted)"><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">↑</span><span class="kbd">↓</span>move</span><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">Enter</span>open</span><span style="display: inline-flex; align-items: center; gap: 6px"><span class="kbd">Esc</span>close</span></div>
+</div>
+</sc-if>
+</div><a class="primary" href="NewJob.dc.html" style="padding: 0 20px 0 16px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New job</a></div><div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px"><div class="rise" style="display: flex; flex-direction: column; gap: 6px"><h1 style="margin: 0; font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.03em">Needs review</h1><p style="margin: 0; font-size: 16px; color: var(--muted)">Ordered: cards stay in book order and shrink when decided; the page moves you to the next open one.</p></div><div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Sample:</span><div class="segctl" role="group" aria-label="Sample scenario"><sc-for list="{{scOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for></div></div></div>
+<div id="bk-top" style="display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 32px; align-items: start; scroll-margin-top: 24px"><div role="list" style="display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0">
+<sc-for list="{{leftRows}}" as="b" hint-placeholder-count="2"><button class="{{b.cls}}" role="listitem" aria-current="{{b.cur}}"><div style="width: 52px; height: 52px; flex-shrink: 0; border-radius: 9px; background: {{b.color}}"></div><div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.title}}</span><span style="font-size: 13px; color: var(--muted)">Chapter draft ready</span></div><span style="font-size: 12px; color: var(--muted)">{{b.when}}</span></button></sc-for>
+<sc-if value="{{finished}}" hint-placeholder-val="{{ false }}"><span style="padding: 12px 4px; font-size: 14px; color: var(--muted)">Nothing waiting</span></sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 18px; min-width: 0"><sc-if value="{{finished}}" hint-placeholder-val="{{ false }}"><section class="panel bk in" style="padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center"><span style="width: 52px; height: 52px; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.015em">Nothing left to review</span><span style="font-size: 14px; color: var(--muted); max-width: 320px">Both books went back to the queue to save their chapters.</span><div style="display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center"><a class="primary" href="{{queueHref}}" style="text-decoration: none">Open queue</a><button class="ghost" onClick="{{restart}}">Replay this mock</button></div></section></sc-if><sc-if value="{{hasBook}}" hint-placeholder-val="{{ true }}"><div class="{{bkCls}}" style="display: flex; flex-direction: column; gap: 18px"><div style="display: flex; gap: 20px; align-items: flex-end">
+<div style="width: 104px; height: 104px; flex-shrink: 0; border-radius: 14px; background: {{bookColor}}; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; padding: 10px; box-sizing: border-box"><span style="font-size: 48px; font-weight: 850; line-height: .78; color: rgba(255,255,255,.15); align-self: flex-end">{{bookInitial}}</span><span style="font-size: 12px; font-weight: 800; color: #FFFFFF">{{bookTitle}}</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span class="eyebrow">{{bookAuthor}}</span><h2 style="margin: 0; font-size: 30px; line-height: 1.05; font-weight: 800; letter-spacing: -0.025em">{{bookTitle}}</h2><span style="font-size: 14px; color: var(--muted)">{{bookAuthor}} · Narrated by [Narrator]</span></div>
+<div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0"><span style="font-size: 14px; color: var(--muted)">{{bookPos}}</span><button class="icb" disabled="{{isFirstBook}}" aria-label="Previous book"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button><button class="icb" disabled="{{isLastBook}}" aria-label="Next book"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button class="icb" aria-label="Cancel job"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path><path d="M9 7V4h6v3"></path></svg></button></div>
+</div><section class="slim" style="" role="note">
+<span style="color: var(--warn); display: inline-flex; flex-shrink: 0; margin-top: 1px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0"><span style="font-size: 15px; font-weight: 750">A chapter draft is ready for you</span><span style="font-size: 14px; line-height: 1.5">We listened at every marker in your file. Nothing is saved, and your file hasn’t changed, until you accept.</span>
+<details class="tech"><summary style="font-size: 13px">Edition and server details</summary><p style="margin: 6px 0 0; font-size: 13px; color: var(--muted)">{{bookTitle}} · [ASIN] · United States · sample timings</p></details></div>
+</section><section class="panel" style="padding: 22px 22px 14px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.015em">{{headline}}</span><span style="font-size: 14px; color: var(--muted)">{{subline}}</span></div>
+<sc-if value="{{hasRecs}}" hint-placeholder-val="{{ true }}"><button class="ghost" onClick="{{acceptRecs}}" style="flex-shrink: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Accept {{recCount}} suggestions</button></sc-if>
+</div>
+<sc-if value="{{hasBulk}}" hint-placeholder-val="{{ false }}"><div class="bulknote" role="status"><span style="flex-grow: 1">{{bulkLine}}. Each one is marked in the list.</span><button class="ghost btn-sm" onClick="{{undoBulk}}">Undo</button></div></sc-if>
+<div class="segbar" role="img" aria-label="{{subline}}"><span style="width: {{barOk}}; background: var(--ok)"></span><span style="width: {{barDone}}; background: var(--ink)"></span><span style="width: {{barNeed}}; background: var(--warn)"></span></div>
+<div class="legend"><span><i style="background: var(--ok)"></i>Confirmed by audio</span><span><i style="background: var(--ink)"></i>Decided by you</span><span><i style="background: var(--warn)"></i>Needs you</span><span><i style="background: var(--bad)"></i>Missing from your file</span></div><div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Edition</span><div class="lane" style="height: 22px"><div style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--track)"></div><sc-for list="{{pubTicks}}" as="k" hint-placeholder-count="20"><i style="left: {{k.left}}; top: 6px; height: 10px; background: var(--muted)"></i></sc-for><sc-for list="{{missTicks}}" as="k" hint-placeholder-count="1"><button class="stripbtn" style="left: {{k.left}}" onClick="{{k.go}}" aria-label="{{k.label}}"><i style="background: {{k.color}}"></i></button></sc-for></div></div>
+<div style="display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Your file</span><div class="lane" style="height: 22px"><div style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--track)"></div><sc-for list="{{fileOk}}" as="k" hint-placeholder-count="20"><i style="left: {{k.left}}; top: 6px; height: 10px; background: var(--ok)"></i></sc-for><sc-for list="{{probTicks}}" as="k" hint-placeholder-count="5"><button class="stripbtn" style="left: {{k.left}}" onClick="{{k.go}}" aria-label="{{k.label}}"><i style="background: {{k.color}}"></i></button></sc-for></div></div>
+<div style="display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px"><span></span><div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>Start</span><span>Tap a mark to jump to it</span><span>End</span></div></div>
+</div><sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}"><div class="opened" role="alert" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--bad-bg); color: var(--ink)"><span style="color: var(--bad); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg></span><span style="flex-grow: 1; font-size: 14px; line-height: 1.45"><strong>{{pctLine}}.</strong> Saving is blocked until you lower the minimum for this book.</span><button class="ghost btn-sm" onClick="{{lowerMin}}" style="flex-shrink: 0">Lower for this book</button></div></sc-if><div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{items}}" as="r" hint-placeholder-count="3">
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}"><div class="{{r.focusCls}}" id="{{r.domId}}"><div class="cc-sum" aria-hidden="true"><div><div class="cc-row"><span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time">{{r.time}}</span><span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.finalName}}</span><span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.doneNote}}</span></span><button class="textbtn" onClick="{{r.change}}">Change</button></div></div></div><div class="cc-body"><div><div class="cc-in"><sc-if value="{{r.kindIsMarker}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><span class="cr-time">{{r.time}}</span><span class="cr-kind" style="color: {{r.kindColor}}">{{r.kindTag}}</span><span style="margin-left: auto; font-size: 14px">In your file: <strong>{{r.fileName}}</strong></span></div>
+<div class="btw" role="img" aria-label="{{r.btlAria}}"><b>{{r.btlPrev}}</b><span class="ln"><i style="background: {{r.btlColor}}"></i></span><b>{{r.btlNext}}</b></div>
+<button class="{{r.listenCls}}" onClick="{{r.play}}" disabled="{{r.noAudio}}" aria-label="{{r.listenLabel}}"><span class="pb"><sc-if value="{{r.playing}}" hint-placeholder-val="{{ false }}"><span class="eq" style="display: flex; gap: 3px; align-items: flex-end; height: 14px"><span style="animation-delay: 0s"></span><span style="animation-delay: .2s"></span><span style="animation-delay: .4s"></span></span></sc-if><sc-if value="{{r.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if></span><q>{{r.quote}}</q></button>
+<div class="{{r.optsCls}}" role="group" aria-label="Choose what this marker becomes">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" onClick="{{o.pick}}"><span class="rd"></span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span class="nm">{{o.label}}</span><span class="{{o.subCls}}">{{o.sub}}</span></span><sc-if value="{{o.rec}}" hint-placeholder-val="{{ false }}"><span class="tag">Suggested</span></sc-if></button></sc-for>
+</div>
+<div class="alts">
+<sc-if value="{{r.showKeep}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.keep}}">{{r.keepLabel}}</button></sc-if>
+<button class="textbtn" onClick="{{r.toggleRename}}" aria-expanded="{{r.renameOpen}}">Rename</button>
+<sc-if value="{{r.canRemove}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.remove}}">Remove marker</button></sc-if>
+<button class="textbtn" onClick="{{r.toggleSearch}}" aria-expanded="{{r.searchOpen}}">All chapters</button>
+</div>
+<sc-if value="{{r.renameOpen}}" hint-placeholder-val="{{ false }}"><div class="opened" style="display: flex; gap: 8px"><label for="rn-{{r.id}}" class="sr">Chapter name</label><input id="rn-{{r.id}}" type="text" value="{{r.renameVal}}" onChange="{{r.onRename}}" style="flex-grow: 1; min-width: 0; height: 48px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-family: inherit; font-size: 16px"><button class="primary" onClick="{{r.saveRename}}" style="height: 48px">Use name</button></div></sc-if>
+<sc-if value="{{r.searchOpen}}" hint-placeholder-val="{{ false }}"><div class="more opened">
+<div style="position: relative; display: flex; align-items: center"><label for="sq-{{r.id}}" class="sr">Find a chapter</label><span style="position: absolute; left: 12px; color: var(--muted); display: inline-flex; pointer-events: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input id="sq-{{r.id}}" type="search" placeholder="Find a chapter" value="{{r.q}}" onChange="{{r.onQ}}" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 12px 0 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-family: inherit; font-size: 16px"></div>
+<span class="eyebrow" style="padding: 6px 10px 0">In order here</span>
+<sc-for list="{{r.allIn}}" as="o" hint-placeholder-count="3"><button class="pick" onClick="{{o.pick}}">{{o.label}}<span>{{o.sub}}</span></button></sc-for>
+<sc-if value="{{r.noneIn}}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 10px; font-size: 13px; color: var(--muted)">No unassigned chapters fit between the neighbours.</span></sc-if>
+<sc-if value="{{r.hasOut}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.toggleOut}}" style="align-self: flex-start; margin-left: 8px">Show {{r.outCount}} chapters outside the usual order</button></sc-if>
+<sc-if value="{{r.showOut}}" hint-placeholder-val="{{ false }}"><p style="margin: 0 10px; font-size: 13px; color: var(--warn); font-weight: 650">These break the published order. Only use one if you’ve listened and you’re sure.</p><sc-for list="{{r.allOut}}" as="o" hint-placeholder-count="3"><button class="pick" onClick="{{o.pick}}">{{o.label}}<span>{{o.sub}}</span></button></sc-for></sc-if>
+</div></sc-if>
+</sc-if><sc-if value="{{r.kindIsMissing}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><span class="cr-time">{{r.time}}</span><span class="cr-kind" style="color: var(--bad)">In the edition, not in your file</span></div>
+<span style="font-size: 17px; font-weight: 750">{{r.title}}</span>
+<div class="btw" role="img" aria-label="{{r.btlAria}}"><b>{{r.btlPrev}}</b><span class="ln"><i style="background: {{r.btlColor}}"></i></span><b>{{r.btlNext}}</b></div><div class="{{r.optsCls}}" role="group" aria-label="Choose what this marker becomes">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" onClick="{{o.pick}}"><span class="rd"></span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span class="nm">{{o.label}}</span><span class="{{o.subCls}}">{{o.sub}}</span></span><sc-if value="{{o.rec}}" hint-placeholder-val="{{ false }}"><span class="tag">Suggested</span></sc-if></button></sc-for>
+</div>
+</sc-if></div></div></div></div></sc-if>
+<sc-if value="{{r.done}}" hint-placeholder-val="{{ false }}"><div class="{{r.doneCls}}" id="{{r.domId}}"><span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time">{{r.time}}</span><span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.finalName}}</span><span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.doneNote}}</span></span><button class="textbtn" onClick="{{r.change}}">Change</button></div></sc-if>
+</sc-for>
+</div><button class="gh" onClick="{{confDisc.toggle}}" aria-expanded="{{confDisc.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">{{confirmed}} markers confirmed by audio</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">No action needed</span></button>
+<sc-if value="{{confDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; padding-bottom: 8px"><sc-for list="{{confirmedRows}}" as="c" hint-placeholder-count="6"><div style="display: flex; align-items: center; gap: 12px; min-height: 40px; border-top: 1px solid var(--line); font-size: 14px"><span style="color: var(--ok); display: inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time" style="min-width: 64px">{{c.time}}</span><span>{{c.name}}</span></div></sc-for></div></div></sc-if><button class="gh" onClick="{{advDisc.toggle}}" aria-expanded="{{advDisc.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">Advanced</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">{{pctLine}}</span></button>
+<sc-if value="{{advDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px"><p style="margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5">The minimum share of markers that must be confirmed by audio before this book can be saved. Your decisions don’t count toward it. Default comes from Settings.</p><div style="display: flex; gap: 10px; align-items: center"><span style="font-size: 14px; font-weight: 650">Minimum for this book</span><button class="ghost btn-sm" onClick="{{lowerMin}}">Lower to what was identified</button></div></div></div></sc-if></section><div class="savebar" role="region" aria-label="Save chapters">
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 750">{{saveStatus}}</span><label class="ck-box"><input type="checkbox" checked="{{gapChecked}}" onChange="{{onGap}}"><span>I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</span></label></div>
+<sc-if value="{{hasNextOpen}}" hint-placeholder-val="{{ true }}"><button class="ghost" onClick="{{nextOpen}}" style="flex-shrink: 0">Next open<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button></sc-if>
+<button class="primary" onClick="{{save}}" disabled="{{saveDisabled}}" style="opacity: {{saveOpacity}}; flex-shrink: 0">Accept and save</button>
+</div><section class="panel" style="padding: 4px 22px"><button class="gh" onClick="{{otherDisc.toggle}}" aria-expanded="{{otherDisc.openStr}}" style=""><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">Not the right fix?</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">Draft again · different edition · run checks again</span></button>
+<sc-if value="{{otherDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; padding-bottom: 8px">
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Draft the chapters again</span><span style="font-size: 13px; color: var(--muted)">Right edition, but the markers are off. Listens at each marker again.</span></div><button class="ghost btn-sm">Draft again</button></div>
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Choose a different edition</span><span style="font-size: 13px; color: var(--muted)">If this isn’t the edition you have. The checks run again.</span></div><button class="ghost btn-sm">Choose edition</button></div>
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Run the checks again</span><span style="font-size: 13px; color: var(--muted)">Only if something changed outside ChapterKeeparr.</span></div><button class="ghost btn-sm">Run again</button></div>
+</div></div></sc-if></section><div style="display: flex; flex-direction: column; gap: 10px"><span class="eyebrow" style="padding: 0 4px">Evidence</span>
+<section class="panel" style="padding: 4px 22px"><button class="gh"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">Chapter checks</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">{{confirmed}} of {{total}} heard</span></button></section>
+<section class="panel" style="padding: 4px 22px"><button class="gh"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">History</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">Everything recorded for this book</span></button></section></div></div></sc-if></div></div></main>
+<sc-if value="{{cornerShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{toastCls}}" role="status" aria-live="polite" style="--dx: {{cornerDx}}; --dy: {{cornerDy}}">
+<div style="display: flex; align-items: center; gap: 14px; padding: 14px 16px 14px 14px">
+<div style="position: relative; width: 48px; height: 48px; flex-shrink: 0; border-radius: 9px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.title}}</span>
+<span style="font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.body}}</span>
+</div>
+<sc-if value="{{toast.hasAction}}" hint-placeholder-val="{{ true }}"><a class="tbtn" href="{{toast.href}}">{{toast.action}}</a></sc-if>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<sc-if value="{{sideShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{snoteCls}}" role="status" aria-live="polite" style="--dx: {{sideDx}}; --dy: {{sideDy}}">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0; border-radius: 8px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{toast.title}}</span>
+</div>
+<p style="margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--muted)">{{toast.body}}</p>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px">
+<sc-if value="{{toast.hasAction}}" hint-placeholder-val="{{ true }}"><a class="tbtn" href="{{toast.href}}">{{toast.action}}</a></sc-if>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification" style="margin: 0 -10px 0 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div class="offline" role="alert"><span class="pulse" style="width: 8px; height: 8px; border-radius: 999px; background: var(--bad)"></span><span><strong>Can’t reach the server.</strong> Showing the last known state.</span><button class="tbtn" onClick="{{retryNow}}">Retry now</button></div></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{isMobile}}" hint-placeholder-val="{{ false }}">
+<div class="stage ">
+<div class="phone">
+<div class="pscroll">
+<div id="bk-top" style="box-sizing: border-box; padding: 16px 0 340px; display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px"><sc-if value="{{finished}}" hint-placeholder-val="{{ false }}"><section class="panel bk in" style="margin: 0 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center"><span style="width: 52px; height: 52px; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.015em">Nothing left to review</span><span style="font-size: 14px; color: var(--muted); max-width: 320px">Both books went back to the queue to save their chapters.</span><div style="display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center"><a class="primary" href="{{queueHref}}" style="text-decoration: none">Open queue</a><button class="ghost" onClick="{{restart}}">Replay this mock</button></div></section></sc-if><sc-if value="{{hasBook}}" hint-placeholder-val="{{ true }}"><div class="{{bkCls}}" style="display: flex; flex-direction: column; gap: 14px"><div style="min-height: 52px; padding: 0 4px 0 8px; display: flex; align-items: center; justify-content: space-between"><a href="#" style="height: 44px; padding: 0 8px 0 4px; display: inline-flex; align-items: center; gap: 2px; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Review</a><div style="display: flex; align-items: center"><span style="font-size: 13px; color: var(--muted); margin-right: 2px">{{bookPos}}</span><button class="picon" disabled="{{isLastBook}}" aria-label="Next book"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button><button class="picon" aria-label="Cancel job"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"></path><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path><path d="M9 7V4h6v3"></path></svg></button></div></div>
+<div style="padding: 0 20px; display: flex; gap: 14px; align-items: center"><div style="width: 64px; height: 64px; flex-shrink: 0; border-radius: 12px; background: {{bookColor}}"></div><div style="display: flex; flex-direction: column; gap: 3px"><h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em">{{bookTitle}}</h1><span style="font-size: 13px; color: var(--muted)">{{bookAuthor}}</span></div></div><section class="slim" style="margin: 0 16px; " role="note">
+<span style="color: var(--warn); display: inline-flex; flex-shrink: 0; margin-top: 1px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg></span>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0"><span style="font-size: 15px; font-weight: 750">A chapter draft is ready for you</span><span style="font-size: 14px; line-height: 1.5">We listened at every marker in your file. Nothing is saved, and your file hasn’t changed, until you accept.</span>
+<details class="tech"><summary style="font-size: 13px">Edition and server details</summary><p style="margin: 6px 0 0; font-size: 13px; color: var(--muted)">{{bookTitle}} · [ASIN] · United States · sample timings</p></details></div>
+</section><div style="margin: 0 16px"><div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Sample:</span><div class="segctl" role="group" aria-label="Sample scenario"><sc-for list="{{scOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}">{{o.label}}</button></sc-for></div></div></div><section class="panel" style="margin: 0 16px; padding: 16px 14px 8px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; align-items: flex-start; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 20px; font-weight: 800; letter-spacing: -0.015em">{{headline}}</span><span style="font-size: 14px; color: var(--muted)">{{subline}}</span></div>
+<sc-if value="{{hasRecs}}" hint-placeholder-val="{{ true }}"><button class="ghost" onClick="{{acceptRecs}}" style="width: 100%"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Accept {{recCount}} suggestions</button></sc-if>
+</div>
+<sc-if value="{{hasBulk}}" hint-placeholder-val="{{ false }}"><div class="bulknote" role="status"><span style="flex-grow: 1">{{bulkLine}}. Each one is marked in the list.</span><button class="ghost btn-sm" onClick="{{undoBulk}}">Undo</button></div></sc-if>
+<div class="segbar" role="img" aria-label="{{subline}}"><span style="width: {{barOk}}; background: var(--ok)"></span><span style="width: {{barDone}}; background: var(--ink)"></span><span style="width: {{barNeed}}; background: var(--warn)"></span></div>
+<div class="legend"><span><i style="background: var(--ok)"></i>Confirmed by audio</span><span><i style="background: var(--ink)"></i>Decided by you</span><span><i style="background: var(--warn)"></i>Needs you</span><span><i style="background: var(--bad)"></i>Missing from your file</span></div><div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Edition</span><div class="lane" style="height: 22px"><div style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--track)"></div><sc-for list="{{pubTicks}}" as="k" hint-placeholder-count="20"><i style="left: {{k.left}}; top: 6px; height: 10px; background: var(--muted)"></i></sc-for><sc-for list="{{missTicks}}" as="k" hint-placeholder-count="1"><button class="stripbtn" style="left: {{k.left}}" onClick="{{k.go}}" aria-label="{{k.label}}"><i style="background: {{k.color}}"></i></button></sc-for></div></div>
+<div style="display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px"><span style="font-size: 12px; color: var(--muted)">Your file</span><div class="lane" style="height: 22px"><div style="position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--track)"></div><sc-for list="{{fileOk}}" as="k" hint-placeholder-count="20"><i style="left: {{k.left}}; top: 6px; height: 10px; background: var(--ok)"></i></sc-for><sc-for list="{{probTicks}}" as="k" hint-placeholder-count="5"><button class="stripbtn" style="left: {{k.left}}" onClick="{{k.go}}" aria-label="{{k.label}}"><i style="background: {{k.color}}"></i></button></sc-for></div></div>
+<div style="display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px"><span></span><div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>Start</span><span>Tap a mark to jump to it</span><span>End</span></div></div>
+</div><sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}"><div class="opened" role="alert" style="display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--bad-bg); color: var(--ink)"><div style="display: flex; align-items: flex-start; gap: 10px"><span style="color: var(--bad); display: inline-flex; flex-shrink: 0; margin-top: 1px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></svg></span><span style="flex-grow: 1; font-size: 14px; line-height: 1.45"><strong>{{pctLine}}.</strong> Saving is blocked until you lower the minimum for this book.</span></div><button class="ghost" onClick="{{lowerMin}}" style="width: 100%; justify-content: center">Lower for this book</button></div></sc-if><div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{items}}" as="r" hint-placeholder-count="3">
+<sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}"><div class="{{r.focusCls}}" id="{{r.domId}}"><div class="cc-sum" aria-hidden="true"><div><div class="cc-row"><span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time">{{r.time}}</span><span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.finalName}}</span><span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.doneNote}}</span></span><button class="textbtn" onClick="{{r.change}}">Change</button></div></div></div><div class="cc-body"><div><div class="cc-in"><sc-if value="{{r.kindIsMarker}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><span class="cr-time">{{r.time}}</span><span class="cr-kind" style="color: {{r.kindColor}}">{{r.kindTag}}</span><span style="margin-left: auto; font-size: 14px">In your file: <strong>{{r.fileName}}</strong></span></div>
+<div class="btw" role="img" aria-label="{{r.btlAria}}"><b>{{r.btlPrev}}</b><span class="ln"><i style="background: {{r.btlColor}}"></i></span><b>{{r.btlNext}}</b></div>
+<button class="{{r.listenCls}}" onClick="{{r.play}}" disabled="{{r.noAudio}}" aria-label="{{r.listenLabel}}"><span class="pb"><sc-if value="{{r.playing}}" hint-placeholder-val="{{ false }}"><span class="eq" style="display: flex; gap: 3px; align-items: flex-end; height: 14px"><span style="animation-delay: 0s"></span><span style="animation-delay: .2s"></span><span style="animation-delay: .4s"></span></span></sc-if><sc-if value="{{r.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if></span><q>{{r.quote}}</q></button>
+<div class="{{r.optsCls}}" role="group" aria-label="Choose what this marker becomes">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" onClick="{{o.pick}}"><span class="rd"></span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span class="nm">{{o.label}}</span><span class="{{o.subCls}}">{{o.sub}}</span></span><sc-if value="{{o.rec}}" hint-placeholder-val="{{ false }}"><span class="tag">Suggested</span></sc-if></button></sc-for>
+</div>
+<div class="alts">
+<sc-if value="{{r.showKeep}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.keep}}">{{r.keepLabel}}</button></sc-if>
+<button class="textbtn" onClick="{{r.toggleRename}}" aria-expanded="{{r.renameOpen}}">Rename</button>
+<sc-if value="{{r.canRemove}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.remove}}">Remove marker</button></sc-if>
+<button class="textbtn" onClick="{{r.toggleSearch}}" aria-expanded="{{r.searchOpen}}">All chapters</button>
+</div>
+<sc-if value="{{r.renameOpen}}" hint-placeholder-val="{{ false }}"><div class="opened" style="display: flex; gap: 8px"><label for="rn-{{r.id}}" class="sr">Chapter name</label><input id="rn-{{r.id}}" type="text" value="{{r.renameVal}}" onChange="{{r.onRename}}" style="flex-grow: 1; min-width: 0; height: 48px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-family: inherit; font-size: 16px"><button class="primary" onClick="{{r.saveRename}}" style="height: 48px">Use name</button></div></sc-if>
+<sc-if value="{{r.searchOpen}}" hint-placeholder-val="{{ false }}"><div class="more opened">
+<div style="position: relative; display: flex; align-items: center"><label for="sq-{{r.id}}" class="sr">Find a chapter</label><span style="position: absolute; left: 12px; color: var(--muted); display: inline-flex; pointer-events: none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span><input id="sq-{{r.id}}" type="search" placeholder="Find a chapter" value="{{r.q}}" onChange="{{r.onQ}}" style="width: 100%; height: 46px; box-sizing: border-box; padding: 0 12px 0 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); color: var(--ink); font-family: inherit; font-size: 16px"></div>
+<span class="eyebrow" style="padding: 6px 10px 0">In order here</span>
+<sc-for list="{{r.allIn}}" as="o" hint-placeholder-count="3"><button class="pick" onClick="{{o.pick}}">{{o.label}}<span>{{o.sub}}</span></button></sc-for>
+<sc-if value="{{r.noneIn}}" hint-placeholder-val="{{ false }}"><span style="padding: 4px 10px; font-size: 13px; color: var(--muted)">No unassigned chapters fit between the neighbours.</span></sc-if>
+<sc-if value="{{r.hasOut}}" hint-placeholder-val="{{ true }}"><button class="textbtn" onClick="{{r.toggleOut}}" style="align-self: flex-start; margin-left: 8px">Show {{r.outCount}} chapters outside the usual order</button></sc-if>
+<sc-if value="{{r.showOut}}" hint-placeholder-val="{{ false }}"><p style="margin: 0 10px; font-size: 13px; color: var(--warn); font-weight: 650">These break the published order. Only use one if you’ve listened and you’re sure.</p><sc-for list="{{r.allOut}}" as="o" hint-placeholder-count="3"><button class="pick" onClick="{{o.pick}}">{{o.label}}<span>{{o.sub}}</span></button></sc-for></sc-if>
+</div></sc-if>
+</sc-if><sc-if value="{{r.kindIsMissing}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><span class="cr-time">{{r.time}}</span><span class="cr-kind" style="color: var(--bad)">In the edition, not in your file</span></div>
+<span style="font-size: 17px; font-weight: 750">{{r.title}}</span>
+<div class="btw" role="img" aria-label="{{r.btlAria}}"><b>{{r.btlPrev}}</b><span class="ln"><i style="background: {{r.btlColor}}"></i></span><b>{{r.btlNext}}</b></div><div class="{{r.optsCls}}" role="group" aria-label="Choose what this marker becomes">
+<sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><button class="{{o.cls}}" onClick="{{o.pick}}"><span class="rd"></span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span class="nm">{{o.label}}</span><span class="{{o.subCls}}">{{o.sub}}</span></span><sc-if value="{{o.rec}}" hint-placeholder-val="{{ false }}"><span class="tag">Suggested</span></sc-if></button></sc-for>
+</div>
+</sc-if></div></div></div></div></sc-if>
+<sc-if value="{{r.done}}" hint-placeholder-val="{{ false }}"><div class="{{r.doneCls}}" id="{{r.domId}}"><span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: var(--ink); color: var(--bg); display: flex; align-items: center; justify-content: center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time">{{r.time}}</span><span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.finalName}}</span><span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.doneNote}}</span></span><button class="textbtn" onClick="{{r.change}}">Change</button></div></sc-if>
+</sc-for>
+</div><button class="gh" onClick="{{confDisc.toggle}}" aria-expanded="{{confDisc.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">{{confirmed}} markers confirmed by audio</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">No action needed</span></button>
+<sc-if value="{{confDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; padding-bottom: 8px"><sc-for list="{{confirmedRows}}" as="c" hint-placeholder-count="6"><div style="display: flex; align-items: center; gap: 12px; min-height: 40px; border-top: 1px solid var(--line); font-size: 14px"><span style="color: var(--ok); display: inline-flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span><span class="cr-time" style="min-width: 64px">{{c.time}}</span><span>{{c.name}}</span></div></sc-for></div></div></sc-if><button class="gh" onClick="{{advDisc.toggle}}" aria-expanded="{{advDisc.openStr}}" style="border-top: 1px solid var(--line)"><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">Advanced</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">{{pctLine}}</span></button>
+<sc-if value="{{advDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px"><p style="margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5">The minimum share of markers that must be confirmed by audio before this book can be saved. Your decisions don’t count toward it. Default comes from Settings.</p><div style="display: flex; gap: 10px; align-items: center"><span style="font-size: 14px; font-weight: 650">Minimum for this book</span><button class="ghost btn-sm" onClick="{{lowerMin}}">Lower to what was identified</button></div></div></div></sc-if></section><div style="margin: 0 16px"><section class="panel" style="padding: 4px 22px"><button class="gh" onClick="{{otherDisc.toggle}}" aria-expanded="{{otherDisc.openStr}}" style=""><span class="chev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span><span style="font-size: 15px; font-weight: 700">Not the right fix?</span><span style="margin-left: auto; font-size: 13px; color: var(--muted)">Draft again · different edition · run checks again</span></button>
+<sc-if value="{{otherDisc.open}}" hint-placeholder-val="{{ true }}"><div class="opened" style=""><div style="display: flex; flex-direction: column; padding-bottom: 8px">
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Draft the chapters again</span><span style="font-size: 13px; color: var(--muted)">Right edition, but the markers are off. Listens at each marker again.</span></div><button class="ghost btn-sm">Draft again</button></div>
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Choose a different edition</span><span style="font-size: 13px; color: var(--muted)">If this isn’t the edition you have. The checks run again.</span></div><button class="ghost btn-sm">Choose edition</button></div>
+<div class="srow"><div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 650">Run the checks again</span><span style="font-size: 13px; color: var(--muted)">Only if something changed outside ChapterKeeparr.</span></div><button class="ghost btn-sm">Run again</button></div>
+</div></div></sc-if></section></div></div></sc-if></div>
+</div>
+
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div class="moffline" role="alert"><span class="pulse" style="width: 7px; height: 7px; border-radius: 999px; background: var(--bad); flex-shrink: 0"></span><span style="flex-grow: 1">Can’t reach the server · last known state</span><button class="tbtn" onClick="{{retryNow}}" style="height: 32px">Retry</button></div></sc-if>
+<sc-if value="{{hasBook}}" hint-placeholder-val="{{ true }}"><div class="pbar up" style="z-index: 7; flex-direction: column; gap: 10px; bottom: 88px; padding: 10px 16px 12px">
+<div style="display: flex; align-items: center; gap: 10px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; font-weight: 750">{{saveStatus}}</span><div class="segbar" style="height: 5px"><span style="width: {{barOk}}; background: var(--ok)"></span><span style="width: {{barDone}}; background: var(--ink)"></span><span style="width: {{barNeed}}; background: var(--warn)"></span></div></div>
+<sc-if value="{{hasNextOpen}}" hint-placeholder-val="{{ true }}"><button class="icb" onClick="{{nextOpen}}" aria-label="Next open marker" style="width: 48px; height: 48px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button></sc-if></div>
+<label class="ck-box"><input type="checkbox" checked="{{gapChecked}}" onChange="{{onGap}}"><span>I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</span></label>
+<button class="primary" onClick="{{save}}" disabled="{{saveDisabled}}" style="opacity: {{saveOpacity}}; height: 52px; border-radius: 14px; width: 100%">Accept and save</button>
+</div></sc-if>
+
+<sc-if value="{{phoneShown}}" hint-placeholder-val="{{ false }}">
+<div class="{{ptoastCls}}" role="status" aria-live="polite" style="bottom: 300px; --dx: {{phoneDx}}; --dy: {{phoneDy}}">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 12px">
+<div style="position: relative; width: 44px; height: 44px; flex-shrink: 0; border-radius: 8px; background: {{toast.color}}"><span style="position: absolute; right: -6px; bottom: -6px; width: 22px; height: 22px; border-radius: 999px; background: {{toast.iconBg}}; color: var(--bg); border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{toast.isOk}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></sc-if>
+<sc-if value="{{toast.isWarn}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v8M12 18.5v.01"></path></svg></sc-if>
+<sc-if value="{{toast.isInfo}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" style="fill: currentColor"></path></svg></sc-if>
+</span></div>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.title}}</span>
+<span style="font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{toast.body}}</span>
+</div>
+<button class="tclose" onClick="{{dismiss}}" aria-label="Dismiss notification" style="margin: 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<span class="holdbar"></span>
+</div>
+</sc-if>
+<nav aria-label="Primary" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; box-sizing: border-box; padding: 6px 8px 30px; display: flex; background: var(--bar); border-top: 1px solid var(--line); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px)">
+<a class="ptab" href="Suggestions-Mobile.dc.html"><span style="position: relative; display: inline-flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5M10.5 21h3"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1V16h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3z"></path></svg><span class="pbadge" style="background: var(--raised); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line)">{{suggCount}}</span></span>Suggestions</a>
+<a class="ptab" href="Home-Mobile.dc.html"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect></svg>Library</a>
+<a class="ptab" href="Queue-Mobile.dc.html"><span style="position: relative; display: inline-flex"><svg class="{{pringCls}}" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" transform="rotate(-90 17 17)" style="fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 94.2; stroke-dashoffset: 36; opacity: 0.6"></circle></svg><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span class="{{pqBadgeCls}}">{{activeCount}}</span></span>Queue</a>
+<a class="ptab on" href="Review-Mobile.dc.html" aria-current="page"><span style="position: relative; display: inline-flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13.5L6.6 6h10.8L20 13.5V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M4 13.5h4.5l1.2 2.2h4.6l1.2-2.2H20"></path></svg><span class="{{prBadgeCls}}">{{reviewCount}}</span></span>Needs review</a>
+</nav>
+<sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+<button class="scrim" onClick="{{closeSheet}}" aria-label="Close settings"></button>
+<div class="sheet" role="dialog" aria-label="Settings">
+<div style="width: 40px; height: 5px; margin: 0 auto 10px; border-radius: 999px; background: var(--track)"></div>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+<span style="font-size: 20px; font-weight: 800">Settings</span>
+<button class="tclose" onClick="{{closeSheet}}" aria-label="Close settings" style="margin: 0 -10px 0 0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 8px 0 16px">
+<span style="font-size: 14px; font-weight: 650">Appearance</span>
+<div class="segctl" role="group" aria-label="Appearance" style="display: flex">
+<sc-for list="{{themeOpts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="flex: 1 1 0; height: 40px">{{o.label}}</button></sc-for>
+</div>
+</div>
+<div class="sheetrow">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Status notifications</span><span style="font-size: 13px; color: var(--muted)">Pop up briefly, then tuck into a tab</span></div>
+<button class="{{notifSw.cls}}" role="switch" aria-checked="{{notifSw.on}}" onClick="{{notifSw.toggle}}" aria-label="Status notifications"><span class="knob"></span></button>
+</div>
+<a class="sheetrow" href="Settings-Mobile.dc.html" style="text-decoration: none; color: var(--ink); font-size: 15px; font-weight: 600">All settings<span style="color: var(--muted); display: inline-flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></span></a>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":true},"collapsed":{"editor":"boolean","default":false},"mobile":{"editor":"boolean","default":false},"autoplay":{"editor":"boolean","default":false},"offline":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":3600}}'>
+
+const C = { 1: '#3E4A61', 2: '#7A3B2E', 3: '#56613C', 4: '#5B3F6B', 5: '#8A5A2B', 6: '#6B2F45', 7: '#35505E', 8: '#9A4A1F', 9: '#4B2E3F', 10: '#3C4A5C', 11: '#5A4632', 12: '#6A4B5E', 13: '#445A48', 14: '#6B5238', 15: '#2F3D57', 16: '#51402F', 17: '#3A4A3A', 18: '#27465A', 19: '#6B4A2A', 20: '#4F2F2F' };
+const DCC = 'Dungeon Crawler Carl';
+const BASE = [
+{ n: 1, title: 'Dungeon Crawler Carl', author: 'Matt Dinniman', series: DCC, sn: 1, asin: '', epub: true, mp3: false, rank: 10 },
+{ n: 2, title: 'Carl’s Doomsday Scenario', author: 'Matt Dinniman', series: DCC, sn: 2, asin: '', epub: true, mp3: true, rank: 5 },
+{ n: 3, title: 'The Dungeon Anarchist’s Cookbook', author: 'Matt Dinniman', series: DCC, sn: 3, asin: '', epub: true, mp3: false, rank: 9 },
+{ n: 4, title: 'The Gate of the Feral Gods', author: 'Matt Dinniman', series: DCC, sn: 4, asin: '', epub: true, mp3: true, rank: 1 },
+{ n: 5, title: 'The Butcher’s Masquerade', author: 'Matt Dinniman', series: DCC, sn: 5, asin: 'B09ZJ82C7Y', epub: true, mp3: true, rank: 4 },
+{ n: 6, title: 'The Eye of the Bedlam Bride', author: 'Matt Dinniman', series: DCC, sn: 6, asin: 'B0CDXWSS5D', epub: true, mp3: true, rank: 2 },
+{ n: 7, title: 'This Inevitable Ruin', author: 'Matt Dinniman', series: DCC, sn: 7, asin: '', epub: true, mp3: true, rank: 0 },
+{ n: 8, title: 'A Parade of Horribles', author: 'Matt Dinniman', series: DCC, sn: 8, asin: '', epub: true, mp3: true, rank: 3 },
+{ n: 9, title: 'Dracula', author: 'Bram Stoker', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 14 },
+{ n: 10, title: 'The Invisible Man', author: 'H. G. Wells', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 15 },
+{ n: 11, title: 'The Island of Doctor Moreau', author: 'H. G. Wells', series: '', sn: 0, asin: '', epub: true, mp3: true, rank: 6 },
+{ n: 12, title: 'Emma', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: true, mp3: true, rank: 7 },
+{ n: 13, title: 'Persuasion', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 16 },
+{ n: 14, title: 'Sense and Sensibility', author: 'Jane Austen', series: '', sn: 0, asin: '', epub: false, mp3: false, rank: 11 },
+{ n: 15, title: 'A Study in Scarlet', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 1, asin: '', epub: true, mp3: false, rank: 17 },
+{ n: 16, title: 'The Sign of the Four', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 2, asin: '', epub: true, mp3: false, rank: 18 },
+{ n: 17, title: 'The Hound of the Baskervilles', author: 'Arthur Conan Doyle', series: 'Sherlock Holmes', sn: 5, asin: '', epub: false, mp3: false, rank: 8 },
+{ n: 18, title: 'Twenty Thousand Leagues Under the Seas', author: 'Jules Verne', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 19 },
+{ n: 19, title: 'Around the World in Eighty Days', author: 'Jules Verne', series: '', sn: 0, asin: '', epub: true, mp3: false, rank: 12 },
+{ n: 20, title: 'The Three Musketeers', author: 'Alexandre Dumas', series: 'The d’Artagnan Romances', sn: 1, asin: '', epub: true, mp3: false, rank: 13 }
+];
+const SUGG = [
+{ id: 'lostworld', kind: 'convert', title: 'The Lost World', author: 'Arthur Conan Doyle', detail: '24 MP3 files, no M4B', path: '/library/incoming/The Lost World (Arthur Conan Doyle)/', color: '#4A3B52', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'timemachine', kind: 'convert', title: 'The Time Machine', author: 'H. G. Wells', detail: '12 MP3 files, no M4B', path: '/library/incoming/The Time Machine/', color: '#3F5566', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'pride', kind: 'convert', title: 'Pride and Prejudice', author: 'Jane Austen', detail: '61 MP3 files, no M4B', path: '/library/incoming/Pride and Prejudice/', color: '#6B5140', action: 'Convert', doneLabel: 'Queued' },
+{ id: 'montecristo', kind: 'chapters', title: 'The Count of Monte Cristo', author: 'Alexandre Dumas', detail: 'Only 1 chapter marker in the M4B', path: '/library/Alexandre Dumas/The Count of Monte Cristo/', color: '#34495E', action: 'Re-process', doneLabel: 'Queued' },
+{ id: 'mobydick', kind: 'chapters', title: 'Moby-Dick', author: 'Herman Melville', detail: 'Chapter times don’t match the edition', path: '/library/Herman Melville/Moby-Dick/', color: '#2F4A55', action: 'Re-process', doneLabel: 'Queued' },
+{ id: 'sense', kind: 'pair', title: 'Sense and Sensibility', author: 'Jane Austen', detail: 'M4B with no EPUB', path: '/library/Jane Austen/Sense and Sensibility/', color: '#6B5238', action: 'Find EPUB in BookOrbit', doneLabel: 'Requested' },
+{ id: 'hound', kind: 'pair', title: 'The Hound of the Baskervilles', author: 'Arthur Conan Doyle', detail: 'EPUB is in a different folder', path: '/library/ebooks/The Hound of the Baskervilles.epub', color: '#3A4A3A', action: 'Pair files', doneLabel: 'Paired' },
+{ id: 'frankenstein', kind: 'epub', title: 'Frankenstein', author: 'Mary Shelley', detail: 'EPUB with no audiobook', path: '/library/Mary Shelley/Frankenstein/', color: '#3D4F3A', action: 'Request in BookOrbit', doneLabel: 'Requested' },
+{ id: 'waroftheworlds', kind: 'epub', title: 'The War of the Worlds', author: 'H. G. Wells', detail: 'EPUB with no audiobook', path: '/library/H. G. Wells/The War of the Worlds/', color: '#5A3A36', action: 'Request in BookOrbit', doneLabel: 'Requested' }
+];
+const P = '/library/Matt Dinniman/';
+const PATH = { 1: P + '01. Dungeon Crawler Carl/Dungeon Crawler Carl.m4b', 2: P + '02. Carl’s Doomsday Scenario/Carl’s Doomsday Scenario.m4b', 3: P + '03. The Dungeon Anarchist’s Cookbook/The Dungeon Anarchist’s Cookbook.m4b', 4: P + '04. Dungeon Crawler Carl 4_ The Gate of the Feral Gods/The Gate of the Feral Gods.m4b', 5: P + '05. Dungeon Crawler Carl 5_ The Butcher’s Masquerade/The Butcher’s Masquerade.m4b', 6: P + '06. The Eye of the Bedlam Bride/The Eye of the Bedlam Bride.m4b', 7: P + '07. This Inevitable Ruin/This Inevitable Ruin.m4b', 8: P + '08. A Parade of Horribles (2026)/A Parade of Horribles (2026).m4b', 11: '/library/H. G. Wells/The Island of Doctor Moreau/The Island of Doctor Moreau.m4b' };
+const TIME = { 2: '5:15 PM', 4: '8:30 PM', 6: '8:27 PM', 8: '8:18 PM', 7: 'Just now', 11: '4:02 PM' };
+const REASON = { 6: 'Edition not found · 1 of 6 checks passed' };
+
+const HREF = {"home": "Home-Combined.dc.html", "queue": "Queue.dc.html", "review": "Review.dc.html", "book": "Book.dc.html", "mhome": "Home-Mobile.dc.html", "mqueue": "Queue-Mobile.dc.html", "mreview": "Review-Mobile.dc.html", "mbook": "Book-Mobile.dc.html"};
+
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = Object.assign({
+theme: null, collapsed: null, sheet: false, notif: true,
+status: { 1: 'optimized', 2: 'review', 3: 'optimized', 4: 'review', 5: 'done', 6: 'review', 7: 'converting', 8: 'review', 9: 'optimized', 10: 'optimized', 11: 'failed', 12: 'done', 13: 'optimized', 14: 'done', 15: 'optimized', 16: 'optimized', 17: 'done', 18: 'optimized', 19: 'optimized', 20: 'optimized' },
+phase: 'hidden', toast: null, bumpQ: 0, bumpR: 0, step: 0, q: '', qOpen: false, msearch: false, sIdx: -1, sugg: {}, log: []
+}, { scenario: null, dec: {}, ui: {}, playing: null, focus: null, gap: {}, minPct: {}, bulk: null, closing: {}, settled: {}, grow: null, book: 0, swap: null });
+this.timers = [];
+this.tid = 0;
+}
+componentDidMount() { this.schedule(1800, () => this.fire()); }
+componentDidUpdate(pp, ps) {
+if (this.state.msearch && !(ps && ps.msearch)) this.schedule(380, () => { const el = typeof document !== 'undefined' && document.getElementById('m-q'); if (el) el.focus(); });
+}
+componentWillUnmount() { this.timers.forEach(t => clearTimeout(t)); this.timers = []; }
+schedule(ms, fn) { this.timers.push(setTimeout(fn, ms)); }
+events() {
+return [
+{ changes: { 7: 'done' }, kind: 'ok', n: 7, title: 'This Inevitable Ruin is verified', body: 'All chapter checks passed · saved to library', action: 'Open', href: HREF.book },
+{ changes: { 8: 'converting' }, kind: 'info', n: 8, title: 'A Parade of Horribles resumed', body: 'Re-checking chapter audio with your fix', action: 'Watch', href: HREF.queue },
+{ changes: { 8: 'review', 7: 'converting' }, kind: 'warn', n: 8, title: 'A Parade of Horribles needs review', body: 'Edition still not confirmed', action: 'Review', href: HREF.review }
+];
+}
+fire() {
+if (!(this.props.autoplay ?? false)) return;
+const evs = this.events();
+const e = { ...evs[this.state.step % evs.length], chain: true };
+this.setState({ status: { ...this.state.status, ...e.changes }, step: this.state.step + 1 });
+this.notify(e);
+}
+notify(e) {
+const entry = { time: 'Just now', n: e.n || 0, text: e.title, kind: e.kind === 'plain' ? 'you' : e.kind, detail: e.body };
+this.setState({ log: [entry, ...(this.state.log || [])] });
+if (!this.state.notif) { if (e.chain) this.schedule(6000, () => this.fire()); return; }
+const id = ++this.tid;
+this.setState({ toast: e, phase: 'in' });
+this.schedule(4150, () => this.minimize(id));
+}
+minimize(id) {
+if (id !== this.tid || this.state.phase !== 'in') return;
+const t = this.state.toast;
+this.setState({ phase: 'out' });
+this.schedule(740, () => {
+if (id !== this.tid) return;
+const next = { phase: 'hidden' };
+if (t && t.kind !== 'plain') { const k = t.kind === 'warn' ? 'bumpR' : 'bumpQ'; next[k] = this.state[k] + 1; }
+this.setState(next);
+if (t && t.chain) this.schedule(3600, () => this.fire());
+});
+}
+shellVals() {
+const s = this.state || {};
+const propDark = this.props.dark ?? true;
+const theme = s.theme || 'system';
+const dark = theme === 'dark' ? true : theme === 'light' ? false : propDark;
+const collapsed = s.collapsed ?? !!this.props.collapsed;
+const mobile = false ? true : !!this.props.mobile;
+const offline = !!this.props.offline;
+const st = s.status || {};
+const books = BASE.map(b => ({ ...b, status: st[b.n] || 'done', color: C[b.n] }));
+const count = k => books.filter(b => b.status === k).length;
+const reviewCount = count('review');
+const convCount = count('converting');
+const failedCount = count('failed');
+const activeCount = reviewCount + convCount + failedCount;
+const activeBook = books.find(b => b.status === 'converting');
+const act = activeBook
+? { title: activeBook.title, sub: 'Checking chapter audio · 62%', pct: '62%', color: C[activeBook.n], live: true }
+: { title: 'Queue is idle', sub: 'Nothing converting', pct: '0%', color: 'var(--track)', live: false };
+const sfx = n => n ? (n % 2 ? ' bumpA' : ' bumpB') : '';
+const t = s.toast;
+const plain = !!(t && t.kind === 'plain');
+const toR = !!(t && t.kind === 'warn');
+const kinds = { ok: 'var(--ok)', warn: 'var(--warn)', info: 'var(--ink)', plain: 'var(--ok)' };
+const toast = t ? { ...t, iconBg: kinds[t.kind], color: t.n ? C[t.n] : 'var(--track)', hasAction: t.kind !== 'plain' && !!t.href && t.href !== '#', isOk: t.kind === 'ok' || t.kind === 'plain', isWarn: t.kind === 'warn', isInfo: t.kind === 'info' } : { hasAction: false, title: '', body: '', action: '', href: '#', iconBg: 'transparent', color: 'transparent', isOk: false, isWarn: false, isInfo: false };
+const shown = s.phase === 'in' || s.phase === 'out';
+const pc = s.phase === 'out' ? 'out' : 'in';
+const themeOpts = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, label]) => ({ k, label, on: theme === k ? 'true' : 'false', cls: theme === k ? 'sgb on' : 'sgb', pick: () => this.setState({ theme: k }) }));
+// ---- search: title, author, series, ASIN; arrow keys move, Enter opens
+const q = s.q || '';
+const ql = q.trim().toLowerCase();
+const SL = { review: ['Needs review', 'var(--warn)'], converting: ['Converting', 'var(--ink)'], failed: ['Failed', 'var(--bad)'], cancelled: ['Cancelled', 'var(--muted)'], done: ['Verified', 'var(--ok)'], optimized: ['Optimized', 'var(--ok)'] };
+const bookHref = b => (b.status === 'review' ? (mobile ? HREF.mreview : HREF.review) : (b.status === 'converting' || b.status === 'failed') ? (mobile ? HREF.mqueue : HREF.queue) : (mobile ? HREF.mbook : HREF.book));
+const row = (b, why) => { const at = ql ? b.title.toLowerCase().indexOf(ql) : -1; return { color: b.color, badge: b.sn || '', pre: at >= 0 ? b.title.slice(0, at) : b.title, mid: at >= 0 ? b.title.slice(at, at + ql.length) : '', post: at >= 0 ? b.title.slice(at + ql.length) : '', sub: (why || b.author) + ' · ' + SL[b.status][0], dot: SL[b.status][1], href: bookHref(b) }; };
+let list = [];
+let searchHead = '';
+if (ql) {
+const hits = [];
+books.forEach(b => {
+if (b.title.toLowerCase().includes(ql)) hits.push(row(b));
+else if (b.asin && b.asin.toLowerCase().includes(ql)) hits.push(row(b, 'ASIN ' + b.asin));
+else if (b.author.toLowerCase().includes(ql)) hits.push(row(b));
+});
+const seriesNames = [...new Set(books.filter(b => b.series && b.series.toLowerCase().includes(ql)).map(b => b.series))];
+seriesNames.forEach(name => { const n = books.filter(b => b.series === name).length; hits.push({ color: 'var(--raised)', badge: '', pre: name, mid: '', post: '', sub: 'Series · ' + n + ' books', dot: 'var(--muted)', href: mobile ? HREF.mhome : HREF.home }); });
+list = hits.slice(0, 7);
+searchHead = hits.length ? hits.length + (hits.length === 1 ? ' result' : ' results') : '';
+} else {
+list = [5, 6, 1].map(n => books.find(b => b.n === n)).map(b => row(b));
+searchHead = 'Recent';
+}
+const sIdx = Math.min(s.sIdx ?? -1, list.length - 1);
+const pfx = mobile ? 'sres-m-' : 'sres-d-';
+const searchList = list.map((r, i) => ({ ...r, id: pfx + i, cls: i === sIdx ? 'sres on' : 'sres', sel: i === sIdx ? 'true' : 'false' }));
+const suggCount = SUGG.filter(x => !(s.sugg || {})[x.id]).length;
+const sw = (key, label) => { const on = s[key] !== false; return { on: on ? 'true' : 'false', cls: on ? 'switch on' : 'switch', toggle: () => this.setState({ [key]: !on }), label }; };
+return {
+s, books, reviewCount, convCount, failedCount, activeCount, activeBook, dark, collapsed, mobile, offline,
+light: !dark, isDesktop: !mobile, isMobile: mobile,
+themeCls: (dark ? 'dark' : 'light') + (collapsed ? ' collapsed' : ''),
+toggleTheme: () => this.setState({ theme: dark ? 'light' : 'dark' }),
+themeOpts, notifSw: sw('notif', 'Status notifications'), sw,
+railOpen: collapsed ? 'false' : 'true',
+railLabel: collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+toggleRail: () => this.setState({ collapsed: !collapsed }),
+queueLabel: 'Queue, ' + activeCount + ' active',
+reviewLabel: 'Needs review, ' + reviewCount,
+qBadgeCls: 'badge' + sfx(s.bumpQ), qHaloCls: 'halo' + sfx(s.bumpQ),
+rBadgeCls: 'badge amber' + sfx(s.bumpR), rHaloCls: 'halo' + sfx(s.bumpR),
+pqBadgeCls: 'pbadge' + sfx(s.bumpQ), prBadgeCls: 'pbadge amber' + sfx(s.bumpR),
+qringCls: activeBook ? 'qring live' : 'qring', pringCls: activeBook ? 'pring live' : 'pring',
+act, actLabel: 'Activity: ' + act.title + ', ' + act.sub,
+toast,
+cornerShown: shown && !mobile && collapsed,
+sideShown: shown && !mobile && !collapsed,
+phoneShown: shown && mobile,
+toastCls: 'toast ' + pc, snoteCls: 'snote ' + pc, ptoastCls: 'ptoast ' + pc,
+cornerDx: plain ? '0px' : '-251px', cornerDy: plain ? '24px' : ((toR ? 253 : 205) - (3600 - 63)) + 'px',
+sideDx: plain ? '0px' : '85px', sideDy: plain ? '-20px' : (toR ? '-209px' : '-257px'),
+phoneDx: plain ? '0px' : (toR ? '153px' : '60px'), phoneDy: plain ? '24px' : '136px',
+dismiss: () => this.minimize(this.tid),
+q, searchList, searchHead, hasSearchHead: !!searchHead, noResults: !!ql && list.length === 0, showJump: !ql,
+dOpen: !!s.qOpen, dOpenStr: s.qOpen ? 'true' : 'false',
+onQuery: (e) => this.setState({ q: e.target.value, qOpen: true, sIdx: -1 }),
+openSearch: () => this.setState({ qOpen: true }),
+blurSearch: () => this.schedule(160, () => this.setState({ qOpen: false })),
+searchKey: (e) => {
+if (e.key === 'Escape') { this.setState({ qOpen: false, sIdx: -1 }); if (e.target && e.target.blur) e.target.blur(); }
+else if (e.key === 'ArrowDown') { if (e.preventDefault) e.preventDefault(); this.setState({ qOpen: true, sIdx: Math.min(sIdx + 1, list.length - 1) }); }
+else if (e.key === 'ArrowUp') { if (e.preventDefault) e.preventDefault(); this.setState({ sIdx: Math.max(sIdx - 1, 0) }); }
+else if (e.key === 'Enter') { const i = sIdx >= 0 ? sIdx : 0; const el = typeof document !== 'undefined' && document.getElementById(pfx + i); if (el) el.click(); }
+},
+msearch: !!s.msearch, mhCls: s.msearch ? 'mh searching' : 'mh', mqTab: s.msearch ? '0' : '-1',
+openMSearch: () => this.setState({ msearch: true }), closeMSearch: () => this.setState({ msearch: false, q: '', sIdx: -1 }),
+fabCls: s.msearch ? 'fab hide' : 'fab', showBar: true, suggCount,
+retryNow: () => {},
+sheetOpen: !!s.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false })
+};
+}
+pageVals(c) {
+const s = c.s;
+const SETS = {"typical": {"rows": [{"i": 1, "t": 0, "sc": "rec", "pub": "Opening Credits", "file": "Chapter 1", "q": "Frankenstein, or the Modern Prometheus, by Mary Shelley.", "audio": true}, {"i": 2, "t": 696, "sc": "ok", "pub": "Letter 1", "file": "Chapter 2", "q": "You will rejoice to hear that no disaster has accompanied the commencement of an enterprise…", "audio": true}, {"i": 3, "t": 1290, "sc": "ok", "pub": "Letter 2", "file": "Chapter 3", "q": "How slowly the time passes here, encompassed as I am by frost and snow!", "audio": true}, {"i": 4, "t": 1802, "sc": "ok", "pub": "Letter 3", "file": "Chapter 4", "q": "My dear sister, I write a few lines in haste to say that I am safe…", "audio": true}, {"i": 5, "t": 1950, "sc": "ok", "pub": "Letter 4", "file": "Chapter 5", "q": "So strange an accident has happened to us that I cannot forbear recording it…", "audio": true}, {"i": 6, "t": 3305, "sc": "ok", "pub": "Chapter 1", "file": "Chapter 6", "q": "I am by birth a Genevese, and my family is one of the most distinguished of that republic.", "audio": true}, {"i": 7, "t": 4315, "sc": "ok", "pub": "Chapter 2", "file": "Chapter 7", "q": "", "audio": true}, {"i": 8, "t": 5325, "sc": "ok", "pub": "Chapter 3", "file": "Chapter 8", "q": "", "audio": true}, {"i": 9, "t": 6335, "sc": "ok", "pub": "Chapter 4", "file": "Chapter 9", "q": "", "audio": true}, {"i": 10, "t": 7345, "sc": "ok", "pub": "Chapter 5", "file": "Chapter 10", "q": "", "audio": true}, {"i": 11, "t": 8355, "sc": "ok", "pub": "Chapter 6", "file": "Chapter 11", "q": "", "audio": true}, {"i": 12, "t": 9365, "sc": "ok", "pub": "Chapter 7", "file": "Chapter 12", "q": "On my return, I found the following letter from my father…", "audio": true}, {"i": 13, "t": 10375, "sc": "ok", "pub": "Chapter 8", "file": "Chapter 13", "q": "", "audio": true}, {"i": 14, "t": 11385, "sc": "ok", "pub": "Chapter 9", "file": "Chapter 14", "q": "", "audio": true}, {"i": 15, "t": 12000, "sc": "extra", "pub": null, "file": "Chapter 15", "q": "…and I wandered on, scarcely knowing where I went or what I did.", "audio": true}, {"i": 16, "t": 12395, "sc": "ok", "pub": "Chapter 10", "file": "Chapter 16", "q": "", "audio": true}, {"i": 17, "t": 13405, "sc": "ok", "pub": "Chapter 11", "file": "Chapter 17", "q": "", "audio": true}, {"i": 18, "t": 14415, "sc": "ok", "pub": "Chapter 12", "file": "Chapter 18", "q": "", "audio": true}, {"i": 19, "t": 15425, "sc": "ok", "pub": "Chapter 13", "file": "Chapter 19", "q": "I now hasten to the more moving part of my story.", "audio": true}, {"i": 20, "t": 16435, "sc": "ok", "pub": "Chapter 14", "file": "Chapter 20", "q": "", "audio": true}, {"i": 21, "t": 17445, "sc": "ok", "pub": "Chapter 15", "file": "Chapter 21", "q": "", "audio": true}, {"i": 22, "t": 18455, "sc": "ok", "pub": "Chapter 16", "file": "Chapter 22", "q": "", "audio": true}, {"i": 23, "t": 19465, "sc": "ok", "pub": "Chapter 17", "file": "Chapter 23", "q": "", "audio": true}, {"i": 24, "t": 20475, "sc": "ok", "pub": "Chapter 18", "file": "Chapter 24", "q": "", "audio": true}, {"i": 25, "t": 21485, "sc": "ok", "pub": "Chapter 19", "file": "Chapter 25", "q": "", "audio": true}, {"i": 26, "t": 22495, "sc": "ok", "pub": "Chapter 20", "file": "Chapter 26", "q": "I sat one evening in my laboratory; the sun had set, and the moon was just rising from the sea.", "audio": true}, {"i": 27, "t": 23505, "sc": "ok", "pub": "Chapter 21", "file": "Chapter 27", "q": "", "audio": true}, {"i": 28, "t": 24515, "sc": "ok", "pub": "Chapter 22", "file": "Chapter 28", "q": "", "audio": true}, {"i": 29, "t": 25525, "sc": "ok", "pub": "Chapter 23", "file": "Chapter 29", "q": "", "audio": true}, {"i": 30, "t": 26535, "sc": "ok", "pub": "Chapter 24", "file": "Chapter 30", "q": "", "audio": true}, {"i": 31, "t": 27543, "sc": "rec", "pub": "End Credits", "file": "Chapter 31", "q": "This has been Frankenstein, by Mary Shelley.", "audio": true}], "missing": [], "pub": [{"id": 0, "title": "Opening Credits"}, {"id": 698, "title": "Letter 1"}, {"id": 1290, "title": "Letter 2"}, {"id": 1802, "title": "Letter 3"}, {"id": 1950, "title": "Letter 4"}, {"id": 3305, "title": "Chapter 1"}, {"id": 4315, "title": "Chapter 2"}, {"id": 5325, "title": "Chapter 3"}, {"id": 6335, "title": "Chapter 4"}, {"id": 7345, "title": "Chapter 5"}, {"id": 8355, "title": "Chapter 6"}, {"id": 9365, "title": "Chapter 7"}, {"id": 10375, "title": "Chapter 8"}, {"id": 11385, "title": "Chapter 9"}, {"id": 12395, "title": "Chapter 10"}, {"id": 13405, "title": "Chapter 11"}, {"id": 14415, "title": "Chapter 12"}, {"id": 15425, "title": "Chapter 13"}, {"id": 16435, "title": "Chapter 14"}, {"id": 17445, "title": "Chapter 15"}, {"id": 18455, "title": "Chapter 16"}, {"id": 19465, "title": "Chapter 17"}, {"id": 20475, "title": "Chapter 18"}, {"id": 21485, "title": "Chapter 19"}, {"id": 22495, "title": "Chapter 20"}, {"id": 23505, "title": "Chapter 21"}, {"id": 24515, "title": "Chapter 22"}, {"id": 25525, "title": "Chapter 23"}, {"id": 26535, "title": "Chapter 24"}, {"id": 27545, "title": "End Credits"}], "end": 27605}, "extreme": {"rows": [{"i": 1, "t": 0, "sc": "rec", "pub": "Opening Credits", "file": "Chapter 1", "q": "Frankenstein, or the Modern Prometheus, by Mary Shelley.", "audio": true}, {"i": 2, "t": 696, "sc": "rec", "pub": "Letter 1", "file": "Chapter 2", "q": "You will rejoice to hear that no disaster has accompanied the commencement of an enterprise…", "audio": true}, {"i": 3, "t": 1290, "sc": "ok", "pub": "Letter 2", "file": "Chapter 3", "q": "How slowly the time passes here, encompassed as I am by frost and snow!", "audio": true}, {"i": 4, "t": 1802, "sc": "ok", "pub": "Letter 3", "file": "Chapter 4", "q": "My dear sister, I write a few lines in haste to say that I am safe…", "audio": true}, {"i": 5, "t": 1950, "sc": "ok", "pub": "Letter 4", "file": "Chapter 5", "q": "So strange an accident has happened to us that I cannot forbear recording it…", "audio": true}, {"i": 6, "t": 3305, "sc": "ok", "pub": "Chapter 1", "file": "Chapter 6", "q": "I am by birth a Genevese, and my family is one of the most distinguished of that republic.", "audio": true}, {"i": 7, "t": 4315, "sc": "ok", "pub": "Chapter 2", "file": "Chapter 7", "q": "", "audio": true}, {"i": 8, "t": 5325, "sc": "ok", "pub": "Chapter 3", "file": "Chapter 8", "q": "", "audio": true}, {"i": 9, "t": 6335, "sc": "ok", "pub": "Chapter 4", "file": "Chapter 9", "q": "", "audio": true}, {"i": 10, "t": 7345, "sc": "ok", "pub": "Chapter 5", "file": "Chapter 10", "q": "", "audio": true}, {"i": 11, "t": 8355, "sc": "ok", "pub": "Chapter 6", "file": "Chapter 11", "q": "", "audio": true}, {"i": 12, "t": 9367, "sc": "amb", "pub": null, "file": "Chapter 12", "q": "On my return, I found the following letter from my father…", "audio": true}, {"i": 13, "t": 10375, "sc": "ok", "pub": "Chapter 8", "file": "Chapter 13", "q": "", "audio": true}, {"i": 14, "t": 11385, "sc": "ok", "pub": "Chapter 9", "file": "Chapter 14", "q": "", "audio": true}, {"i": 15, "t": 12000, "sc": "extra", "pub": null, "file": "Chapter 15", "q": "…and I wandered on, scarcely knowing where I went or what I did.", "audio": true}, {"i": 16, "t": 12395, "sc": "ok", "pub": "Chapter 10", "file": "Chapter 16", "q": "", "audio": true}, {"i": 17, "t": 13405, "sc": "ok", "pub": "Chapter 11", "file": "Chapter 17", "q": "", "audio": true}, {"i": 18, "t": 14415, "sc": "ok", "pub": "Chapter 12", "file": "Chapter 18", "q": "", "audio": true}, {"i": 19, "t": 15400, "sc": "far", "pub": null, "file": "Chapter 19", "q": "I now hasten to the more moving part of my story.", "audio": true}, {"i": 20, "t": 16435, "sc": "ok", "pub": "Chapter 14", "file": "Chapter 20", "q": "", "audio": true}, {"i": 21, "t": 17445, "sc": "ok", "pub": "Chapter 15", "file": "Chapter 21", "q": "", "audio": true}, {"i": 22, "t": 18456, "sc": "noaudio", "pub": "Chapter 16", "file": "Chapter 22", "q": "", "audio": false}, {"i": 23, "t": 19465, "sc": "ok", "pub": "Chapter 17", "file": "Chapter 23", "q": "", "audio": true}, {"i": 24, "t": 20475, "sc": "ok", "pub": "Chapter 18", "file": "Chapter 24", "q": "", "audio": true}, {"i": 25, "t": 21485, "sc": "ok", "pub": "Chapter 19", "file": "Chapter 25", "q": "", "audio": true}, {"i": 26, "t": 22497, "sc": "rec", "pub": "Chapter 20", "file": "Chapter 26", "q": "I sat one evening in my laboratory; the sun had set, and the moon was just rising from the sea.", "audio": true}, {"i": 27, "t": 23505, "sc": "ok", "pub": "Chapter 21", "file": "Chapter 27", "q": "", "audio": true}, {"i": 28, "t": 24515, "sc": "ok", "pub": "Chapter 22", "file": "Chapter 28", "q": "", "audio": true}, {"i": 29, "t": 25525, "sc": "ok", "pub": "Chapter 23", "file": "Chapter 29", "q": "", "audio": true}, {"i": 30, "t": 26535, "sc": "ok", "pub": "Chapter 24", "file": "Chapter 30", "q": "", "audio": true}, {"i": 31, "t": 27543, "sc": "rec", "pub": "End Credits", "file": "Chapter 31", "q": "This has been Frankenstein, by Mary Shelley.", "audio": true}], "missing": [{"id": 24, "title": "Author’s Introduction"}], "pub": [{"id": 0, "title": "Opening Credits"}, {"id": 24, "title": "Author’s Introduction"}, {"id": 698, "title": "Letter 1"}, {"id": 1290, "title": "Letter 2"}, {"id": 1802, "title": "Letter 3"}, {"id": 1950, "title": "Letter 4"}, {"id": 3305, "title": "Chapter 1"}, {"id": 4315, "title": "Chapter 2"}, {"id": 5325, "title": "Chapter 3"}, {"id": 6335, "title": "Chapter 4"}, {"id": 7345, "title": "Chapter 5"}, {"id": 8355, "title": "Chapter 6"}, {"id": 9365, "title": "Chapter 7"}, {"id": 9369, "title": "Chapter 7, part 2"}, {"id": 10375, "title": "Chapter 8"}, {"id": 11385, "title": "Chapter 9"}, {"id": 12395, "title": "Chapter 10"}, {"id": 13405, "title": "Chapter 11"}, {"id": 14415, "title": "Chapter 12"}, {"id": 15425, "title": "Chapter 13"}, {"id": 16435, "title": "Chapter 14"}, {"id": 17445, "title": "Chapter 15"}, {"id": 18455, "title": "Chapter 16"}, {"id": 19465, "title": "Chapter 17"}, {"id": 20475, "title": "Chapter 18"}, {"id": 21485, "title": "Chapter 19"}, {"id": 22495, "title": "Chapter 20"}, {"id": 23505, "title": "Chapter 21"}, {"id": 24515, "title": "Chapter 22"}, {"id": 25525, "title": "Chapter 23"}, {"id": 26535, "title": "Chapter 24"}, {"id": 27545, "title": "End Credits"}], "end": 27605}};
+const DEFAULT_SCENARIO = "extreme";
+const LIST_MODE = "ordered";
+
+const disc = (key, def) => { const open = s[key] === undefined ? def : !!s[key]; return { open, openStr: open ? 'true' : 'false', toggle: () => this.setState({ [key]: !open }) }; };
+const seg = (key, opts, def) => opts.map(([k, label]) => { const cur = s[key] === undefined ? def : s[key]; return { k, label, on: cur === k ? 'true' : 'false', cls: cur === k ? 'sgb on' : 'sgb', pick: () => this.setState({ [key]: k }) }; });
+
+const sc = s.scenario || DEFAULT_SCENARIO;
+const MODE = LIST_MODE;
+const PHONE = !!c.mobile;
+// review list: two books waiting. Book 2 reuses the typical sample with neutral chapter names (mock only).
+const ren = t => { const m = /^Letter (\d+)$/.exec(t); if (m) return 'Chapter ' + m[1]; const n = /^Chapter (\d+)$/.exec(t); if (n) return 'Chapter ' + (+n[1] + 4); return t; };
+const B2 = { ...SETS.typical, rows: SETS.typical.rows.map(r => ({ ...r, pub: r.pub ? ren(r.pub) : r.pub, q: r.q ? 'Spoken words at this marker appear here.' : '' })), pub: SETS.typical.pub.map(p => ({ ...p, title: ren(p.title) })) };
+const BOOKS = [{ title: 'Frankenstein', author: 'Mary Shelley', color: '#3D4F3A', initial: 'F', when: 'Today' }, { title: 'The Gate of the Feral Gods', author: 'Matt Dinniman', color: '#5B3F6B', initial: 'G', when: 'Yesterday' }];
+const bi = s.book ?? 0;
+const finished = bi >= BOOKS.length;
+const BK = BOOKS[Math.min(bi, BOOKS.length - 1)];
+const K = bi === 1 ? 'b2' : sc;
+const D = bi === 1 ? B2 : SETS[sc];
+// smooth programmatic scrolling: one eased glide, skipped when the card is already comfortably in view, cancelled by any touch or wheel
+const glide = (id, force) => {
+if (typeof document === 'undefined') return;
+const el = document.getElementById('row-' + id); if (!el || !el.getBoundingClientRect) return;
+let sc0 = el.parentElement; while (sc0 && sc0 !== document.body) { const o = getComputedStyle(sc0).overflowY; if ((o === 'auto' || o === 'scroll') && sc0.scrollHeight > sc0.clientHeight) break; sc0 = sc0.parentElement; }
+const root = sc0 && sc0 !== document.body ? sc0 : (document.scrollingElement || document.documentElement);
+const box = root === document.scrollingElement || root === document.documentElement ? { top: 0, bottom: window.innerHeight } : root.getBoundingClientRect();
+const bar = PHONE && document.querySelector('.pbar.up');
+const topPad = PHONE ? 76 : 96;
+const bottom = bar ? Math.min(box.bottom, bar.getBoundingClientRect().top) - 12 : box.bottom - 24;
+const r = el.getBoundingClientRect();
+if (!force && r.top >= box.top + topPad && r.top + Math.min(r.height, 220) <= bottom) return;
+const from = root.scrollTop; const max = root.scrollHeight - root.clientHeight;
+const to = Math.max(0, Math.min(max, from + (r.top - (box.top + topPad))));
+const dist = to - from; if (Math.abs(dist) < 2) return;
+const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) { root.scrollTop = to; return; }
+const dur = Math.min(520, 260 + Math.abs(dist) * 0.2);
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const token = {}; window.__ckGlide = token;
+const stop = () => { if (window.__ckGlide === token) window.__ckGlide = null; };
+['touchstart', 'wheel', 'pointerdown'].forEach(ev => root.addEventListener(ev, stop, { once: true, passive: true }));
+const t0 = performance.now();
+const step = now => { if (window.__ckGlide !== token) return; const k = Math.min(1, (now - t0) / dur); root.scrollTop = from + dist * ease(k); if (k < 1) requestAnimationFrame(step); else stop(); };
+requestAnimationFrame(step);
+};
+const dec = (s.dec || {})[K] || {};
+const ui = s.ui || {};
+const clock = t => { const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = Math.floor(t % 60); return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); };
+const rel = (p, t) => { const d = p - t; const a = Math.abs(d); if (a === 0) return 'same time'; const u = a < 60 ? a + 's' : Math.round(a / 60) + ' min'; return u + (d > 0 ? ' later' : ' earlier'); };
+const order = [...D.rows.map(r => ({ id: 'm' + r.i, t: r.t, open: r.sc !== 'ok' })), ...D.missing.map(m => ({ id: 's' + m.id, t: m.id, open: true }))].sort((a, b) => a.t - b.t);
+const openIds = order.filter(o => o.open && !dec[o.id]).map(o => o.id);
+const focusNext = (fromId) => {
+const after = order.filter(o => o.open);
+const i = after.findIndex(o => o.id === fromId);
+const cand = [...after.slice(i + 1), ...after.slice(0, Math.max(i, 0))].find(o => !((this.state.dec || {})[K] || {})[o.id] && o.id !== fromId);
+this.setState({ focus: cand ? cand.id : null });
+if (cand && MODE === 'ordered') this.schedule(16, () => glide(cand.id, false));
+};
+const closing = s.closing || {};
+const settled = s.settled || {};
+const reduceMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CLOSE_MS = 300;
+const applyDec = (pairs, extra = {}) => { const all = { ...(this.state.dec || {}) }; const cur = { ...(all[K] || {}) }; const u = { ...(this.state.ui || {}) }; const cl = { ...(this.state.closing || {}) }; const st = { ...(this.state.settled || {}) }; pairs.forEach(([id, v]) => { if (v === null) { delete cur[id]; delete st[id]; } else { cur[id] = v; st[id] = true; } u[id] = {}; delete cl[id]; }); all[K] = cur; this.setState({ dec: all, ui: u, closing: cl, settled: st, ...extra }); };
+// Decide: the chosen option fills, the card collapses into its summary row (~300ms), then the decision commits and the next open card is focused.
+const setDec = (id, v, advance = true, label = null) => {
+if (v === null) { applyDec([[id, null]], { bulk: null, focus: id, grow: id }); return; }
+if ((this.state.closing || {})[id]) return;
+if (!advance || reduceMotion()) { applyDec([[id, v]], { bulk: null }); if (advance && PHONE) focusNext(id); return; }
+this.setState({ closing: { ...(this.state.closing || {}), [id]: { v, label } }, grow: null });
+this.schedule(CLOSE_MS, () => { applyDec([[id, v]], { bulk: null, focus: PHONE ? this.state.focus : null }); if (PHONE) focusNext(id); });
+};
+const setUi = (id, patch) => this.setState({ ui: { ...(this.state.ui || {}), [id]: { ...((this.state.ui || {})[id] || {}), ...patch } } });
+// anchors = confirmed chapters + chapters the user has assigned
+const taken = new Set();
+const anchors = [];
+D.rows.forEach(r => { if (r.sc === 'ok' && r.pub) { taken.add(r.pub); anchors.push({ t: r.t, title: r.pub, pid: D.pub.find(p => p.title === r.pub).id }); } });
+Object.entries(dec).forEach(([id, v]) => { if (v && v.a === 'assign') { taken.add(v.title); const r = D.rows.find(x => 'm' + x.i === id); anchors.push({ t: r.t, title: v.title, pid: D.pub.find(p => p.title === v.title).id }); } });
+anchors.sort((a, b) => a.t - b.t);
+const around = t => ({ prev: [...anchors].reverse().find(a => a.t < t), next: anchors.find(a => a.t > t) });
+const playing = s.playing ?? null;
+const playFn = (id) => () => { const on = this.state.playing === id; this.setState({ playing: on ? null : id }); if (!on) this.schedule(15000, () => { if (this.state.playing === id) this.setState({ playing: null }); }); };
+const prevName = (t) => { const p = around(t).prev; return p ? p.title : 'the previous chapter'; };
+const cardCls = (id, base) => base + (closing[id] ? ' closing' : '') + (s.focus === id && !closing[id] ? ' focus' : '') + (s.grow === id && !closing[id] ? ' grow' : '');
+// mini timeline: previous chapter on the left, next on the right, this one placed proportionally between
+const btl = (t, prev, next, label, color) => ({ btlPrev: prev ? prev.title : 'Start of book', btlNext: next ? next.title : 'End of book', btlColor: color, btlAria: 'Sits between ' + (prev ? prev.title : 'the start of the book') + ' and ' + (next ? next.title : 'the end of the book') });
+const KIND = { rec: 'Suggested match', noaudio: 'No audio saved', amb: 'Two close matches', extra: 'No chapter starts here', far: 'Nearest chapter is far' };
+const mkRow = (r) => {
+const id = 'm' + r.i; const v = dec[id]; const u = ui[id] || {}; const cl = closing[id]; const pv = v || (cl && cl.v);
+const { prev, next } = around(r.t);
+const free = D.pub.filter(p => !taken.has(p.title));
+const lo = prev ? prev.pid : -1, hi = next ? next.pid : Infinity;
+const inOrder = free.filter(p => p.id > lo && p.id < hi).map(p => ({ ...p, d: Math.abs(p.id - r.t) })).sort((a, b) => a.d - b.d);
+const outOrder = free.filter(p => !(p.id > lo && p.id < hi)).map(p => ({ ...p, d: Math.abs(p.id - r.t) })).sort((a, b) => a.d - b.d);
+const recTitle = (r.sc === 'rec' || r.sc === 'noaudio') && r.pub && !taken.has(r.pub) ? r.pub : null;
+let opts = [];
+if (r.sc === 'extra') {
+opts = [{ label: 'Remove this marker', sub: 'Its audio joins ' + prevName(r.t), rec: true, warn: false, pick: () => setDec(id, { a: 'remove' }, true, 'Remove this marker') },
+{ label: 'Keep it as its own chapter', sub: 'Named “' + r.file + '”', rec: false, warn: false, pick: () => setDec(id, { a: 'keep' }, true, 'Keep it as its own chapter') }];
+} else {
+const top = inOrder.slice(0, 3);
+opts = top.map(p => ({ label: p.title, sub: 'Published ' + clock(p.id) + ' · ' + rel(p.id, r.t) + (r.sc === 'far' && p === top[0] ? ' · listen first' : ''), rec: p.title === recTitle, warn: r.sc === 'far' && p === top[0], pick: () => setDec(id, { a: 'assign', title: p.title }, true, p.title) }));
+opts.sort((a, b) => (b.rec ? 1 : 0) - (a.rec ? 1 : 0));
+}
+const q = (u.q || '').toLowerCase();
+const allIn = inOrder.filter(p => !q || p.title.toLowerCase().includes(q)).map(p => ({ label: p.title, sub: 'Published ' + clock(p.id) + ' · ' + rel(p.id, r.t), pick: () => setDec(id, { a: 'assign', title: p.title }) }));
+const allOut = outOrder.filter(p => !q || p.title.toLowerCase().includes(q)).map(p => ({ label: p.title, sub: 'Published ' + clock(p.id) + ' · ' + rel(p.id, r.t) + ' · outside the usual order', pick: () => setDec(id, { a: 'assign', title: p.title, out: true }) }));
+const isPlaying = playing === id;
+const final = !pv ? '' : pv.a === 'assign' ? pv.title : pv.a === 'keep' ? r.file : pv.a === 'rename' ? pv.title : 'Marker removed';
+const note = !pv ? '' : pv.a === 'assign' ? (pv.out ? 'Out of the usual order · ' : '') + 'was “' + r.file + '”' : pv.a === 'keep' ? 'Kept its original name' : pv.a === 'rename' ? 'Custom name · was “' + r.file + '”' : 'Audio joins ' + prevName(r.t);
+return {
+id, domId: 'row-' + id, kind: 'marker', t: r.t, time: clock(r.t), fileName: r.file, kindTag: KIND[r.sc], kindColor: r.sc === 'rec' ? 'var(--ok)' : r.sc === 'noaudio' ? 'var(--muted)' : 'var(--warn)',
+hasPrev: !!prev, prevTitle: prev ? prev.title : 'the start of the book', prevTime: prev ? clock(prev.t) : '', hasNext: !!next, nextTitle: next ? next.title : 'the end of the book', nextTime: next ? clock(next.t) : '',
+quote: r.q || 'No spoken text saved for this marker.', hasAudio: r.audio, noAudio: !r.audio,
+playing: isPlaying, notPlaying: !isPlaying, listenCls: isPlaying ? 'listen on' : 'listen', listenLabel: isPlaying ? 'Stop listening' : 'Listen to 15 seconds at ' + clock(r.t), play: playFn(id),
+opts: opts.map(o => ({ ...o, cls: cl && cl.label === o.label ? 'opt chosen' : o.rec ? 'opt rec' : 'opt', subCls: o.warn ? 'sub warn' : 'sub' })), noOpts: opts.length === 0, optsCls: cl ? 'opts picking' : 'opts',
+...btl(r.t, prev, next, 'Here · ' + clock(r.t), 'var(--warn)'),
+keepLabel: 'Keep “' + r.file + '”', keep: () => setDec(id, { a: 'keep' }), showKeep: r.sc !== 'extra',
+canRemove: r.i > 1 && r.sc !== 'extra', remove: () => setDec(id, { a: 'remove' }),
+renameOpen: !!u.rename, toggleRename: () => setUi(id, { rename: !u.rename, search: false }), renameVal: u.name ?? r.file, onRename: e => setUi(id, { name: e.target.value }), saveRename: () => setDec(id, { a: 'rename', title: ((this.state.ui || {})[id] || {}).name || r.file }),
+searchOpen: !!u.search, toggleSearch: () => setUi(id, { search: !u.search, rename: false }), q: u.q || '', onQ: e => setUi(id, { q: e.target.value }),
+allIn, showOut: !!u.out, toggleOut: () => setUi(id, { out: !u.out }), allOut, outCount: outOrder.length, hasOut: outOrder.length > 0, noneIn: allIn.length === 0,
+open: !v, done: !!v, finalName: final, doneNote: note, change: () => setDec(id, null),
+focusCls: cardCls(id, 'cc'), doneCls: settled[id] ? 'cc-done settled' : 'cc-done'
+};
+};
+const mkMiss = (m) => {
+const id = 's' + m.id; const v = dec[id]; const u = ui[id] || {}; const cl = closing[id]; const pv = v || (cl && cl.v);
+const near = D.rows.filter(r => r.sc !== 'ok' && !dec['m' + r.i]).map(r => ({ r, d: Math.abs(r.t - m.id) })).sort((a, b) => a.d - b.d).slice(0, 2);
+const { prev, next } = around(m.id);
+return { id, domId: 'row-' + id, kind: 'missing', t: m.id, time: clock(m.id), title: m.title,
+hasPrev: !!prev, prevTitle: prev ? prev.title : 'start of book', prevTime: prev ? clock(prev.t) : '', hasNext: !!next, nextTitle: next ? next.title : '', nextTime: next ? clock(next.t) : '',
+...btl(m.id, prev, next, clock(m.id), 'var(--bad)'),
+opts: [{ label: 'Save without it', sub: 'Its audio stays inside ' + (prev ? prev.title : 'the first chapter'), cls: cl && cl.label === 'Save without it' ? 'opt chosen' : 'opt rec', subCls: 'sub', rec: true, pick: () => setDec(id, { a: 'skip' }, true, 'Save without it') },
+...near.map(({ r, d }) => ({ label: 'Start it at ' + clock(r.t), sub: 'Uses the marker “' + r.file + '” · ' + rel(r.t, m.id), cls: cl && cl.label === 'Start it at ' + clock(r.t) ? 'opt chosen' : 'opt', subCls: 'sub', rec: false, pick: () => setDec(id, { a: 'place', at: r.t }, true, 'Start it at ' + clock(r.t)) }))],
+open: !v, done: !!v, finalName: m.title, doneNote: pv ? (pv.a === 'skip' ? 'Saved without its own chapter' : 'Starts at ' + clock(pv.at)) : '', change: () => setDec(id, null),
+optsCls: cl ? 'opts picking' : 'opts', focusCls: cardCls(id, 'cc missing'), doneCls: settled[id] ? 'cc-done settled' : 'cc-done' };
+};
+const all = [...D.rows.filter(r => r.sc !== 'ok').map(mkRow), ...D.missing.map(mkMiss)].sort((a, b) => a.t - b.t);
+const markers = all.filter(x => x.kind === 'marker');
+const total = D.rows.length;
+const confirmed = D.rows.filter(r => r.sc === 'ok').length;
+const decided = all.filter(x => x.done).length;
+const need = all.length - decided;
+const recs = markers.filter(r => r.open && r.opts.some(o => o.rec) && r.kindTag !== 'No chapter starts here');
+const pct = Math.round(confirmed / total * 1000) / 10;
+const minPct = (s.minPct || {})[K] ?? 90;
+const blocked = pct < minPct;
+const gap = !!((s.gap || {})[K]);
+const canSave = need === 0 && gap && !blocked;
+const unit = 100 / (total + D.missing.length);
+// colour timeline (from option B), problem ticks are buttons that jump to their card
+const L = D.end;
+const pubTicks = D.pub.filter(p => !D.missing.some(m => m.id === p.id)).map(p => ({ left: (p.id / L * 100) + '%' }));
+const fileOk = D.rows.filter(r => r.sc === 'ok').map(r => ({ left: (r.t / L * 100) + '%' }));
+const jump = (id) => () => { this.setState({ focus: id }); this.schedule(16, () => glide(id, true)); };
+const probTicks = all.map(x => ({ left: (x.t / L * 100) + '%', color: x.done ? 'var(--ink)' : x.kind === 'missing' ? 'var(--bad)' : 'var(--warn)', label: (x.done ? 'Decided: ' : 'Needs you: ') + (x.kind === 'missing' ? x.title : x.fileName) + ' at ' + x.time, go: jump(x.id), lane: x.kind === 'missing' ? 'pub' : 'file' }));
+const firstOpen = all.find(x => x.open);
+const bulk = s.bulk;
+return {
+scenario: sc, need, decided, confirmed, total,
+items: all.map(x => ({ ...x, kindIsMarker: x.kind === 'marker', kindIsMissing: x.kind === 'missing' })), openItems: all.filter(x => x.open).map(x => ({ ...x, kindIsMarker: x.kind === 'marker', kindIsMissing: x.kind === 'missing' })), doneItems: all.filter(x => x.done), hasDone: all.some(x => x.done), hasOpen: need > 0,
+recCount: recs.length, hasRecs: recs.length > 1 && !bulk,
+acceptRecs: () => { const pairs = recs.map(r => [r.id, { a: 'assign', title: r.opts.find(o => o.rec).label }]); const ids = pairs.map(p => p[0]); const done = () => { applyDec(pairs, { bulk: ids }); if (PHONE) focusNext(ids[ids.length - 1]); }; if (reduceMotion()) return done(); const cl = { ...(this.state.closing || {}) }; recs.forEach(r => { cl[r.id] = { v: pairs.find(p => p[0] === r.id)[1], label: r.opts.find(o => o.rec).label }; }); this.setState({ closing: cl, grow: null }); this.schedule(CLOSE_MS, done); },
+hasBulk: !!bulk, bulkLine: bulk ? 'Applied ' + bulk.length + ' suggestions' : '',
+undoBulk: () => applyDec((bulk || []).map(id => [id, null]), { bulk: null }),
+barOk: (confirmed * unit) + '%', barDone: (decided * unit) + '%', barNeed: (need * unit) + '%',
+headline: need === 0 ? 'Every marker has a decision' : need + (need === 1 ? ' marker needs you' : ' markers need you'),
+subline: confirmed + ' of ' + total + ' confirmed by audio' + (decided ? ' · ' + decided + ' decided by you' : ''),
+pctLine: pct + '% identified by audio · your minimum is ' + minPct + '%', blocked,
+lowerMin: () => this.setState({ minPct: { ...(this.state.minPct || {}), [K]: Math.floor(pct) } }),
+gapChecked: gap, onGap: () => this.setState({ gap: { ...(this.state.gap || {}), [K]: !gap } }),
+saveDisabled: !canSave, saveOpacity: canSave ? '1' : '0.45',
+saveStatus: blocked ? 'Below your minimum' : need ? need + ' left to decide' : !gap ? 'Tick the box to save' : 'Ready to save',
+save: () => { if (!canSave) return; this.notify({ kind: 'info', n: 0, title: BK.title + ' went back to the queue', body: 'Saving new chapter names · audio unchanged', action: 'Open queue', href: PHONE ? HREF.mqueue : HREF.queue });
+const go = () => { this.setState({ book: bi + 1, swap: 'in', focus: null, closing: {}, settled: {}, grow: null, bulk: null, playing: null }); if (typeof document !== 'undefined') { const t = document.getElementById('bk-top'); if (t && t.scrollIntoView) t.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } this.schedule(320, () => this.setState({ swap: null })); };
+if (reduceMotion()) return go(); this.setState({ swap: 'out' }); this.schedule(190, go); },
+bkCls: s.swap === 'out' ? 'bk out' : s.swap === 'in' ? 'bk in' : 'bk', hasBook: !finished, finished,
+bookTitle: BK.title, bookAuthor: BK.author, bookColor: BK.color, bookInitial: BK.initial, bookPos: (bi + 1) + ' of ' + BOOKS.length, isFirstBook: bi === 0, isLastBook: bi >= BOOKS.length - 1,
+leftRows: BOOKS.slice(Math.min(bi, BOOKS.length)).map((b, i) => ({ ...b, cls: i === 0 ? 'irow on' : 'irow', cur: i === 0 ? 'true' : 'false' })), queueHref: PHONE ? HREF.mqueue : HREF.queue, libHref: PHONE ? HREF.mhome : HREF.home,
+restart: () => this.setState({ book: 0, dec: {}, gap: {}, minPct: {}, swap: 'in', closing: {}, settled: {}, focus: null, bulk: null }), isPhone: PHONE,
+nextOpen: firstOpen ? jump((all.find(x => x.open && x.id !== s.focus && x.t > ((all.find(y => y.id === s.focus) || {}).t ?? -1)) || firstOpen).id) : () => {}, hasNextOpen: !!firstOpen, noNextOpen: !firstOpen,
+pubTicks, fileOk, probTicks: probTicks.filter(p => p.lane === 'file'), missTicks: probTicks.filter(p => p.lane === 'pub'),
+confDisc: disc('confOpen', false), advDisc: disc('advOpen', false), otherDisc: disc('otherOpen', false),
+confirmedRows: D.rows.filter(r => r.sc === 'ok').map(r => ({ time: clock(r.t), name: r.pub })),
+scOpts: [['typical', 'Typical (3)'], ['extreme', 'Extreme (9)']].map(([k, label]) => ({ k, label, on: sc === k ? 'true' : 'false', cls: sc === k ? 'sgb on' : 'sgb', pick: () => this.setState({ scenario: k, book: 0, focus: null, bulk: null, closing: {}, settled: {} }) })),
+showBar: false, fabCls: 'fab hide'
+};
+
+}
+renderVals() { const c = this.shellVals(); return { ...c, ...this.pageVals(c) }; }
+}
+
+</script>
+</body>
+</html>

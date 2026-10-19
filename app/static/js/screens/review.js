@@ -2,17 +2,22 @@
 // Build-only features with a home here: Finalize with accepted exceptions (G-029),
 // Resume checks and Review markers from audio (G-030), diagnostics (G-032).
 
-import { html, bool, clock, relative, folderName, stripAudioExt, minutes } from '../format.js';
+import { html, bool, clock, relative, folderName, stripAudioExt, minutes, transcriptPreview } from '../format.js';
 import { icon } from '../icons.js';
 import { api } from '../api.js';
+import * as audio from '../audio.js';
 import { state, refresh, expect, jobDetail, bookById, touch } from '../store.js';
 import { reportOf, reviewTitle, reviewDetail } from '../status.js';
-import { cover, button, iconButton, menuButton, confirmRow, choices, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
+import { cover, button, iconButton, spotButton, menuButton, confirmRow, choices, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState, statusPill } from '../ui.js';
 import { notify } from '../notify.js';
 import { historyFor } from '../history.js';
 import { acceptanceState, draftApproval } from '../review-state.js';
 import { readLog } from '../prefs.js';
+import { loadDraft, saveDraft, clearDraft, acceptedDraft } from '../review-drafts.js';
 import { confirmSheet } from '../overlay.js';
+import { markerDecisions, remainingSections } from '../chapter-review.js';
+import { chapterReviewView, chapterSaveBar, chapterController } from '../chapter-review-view.js';
+import { glideToTop } from '../scroll.js';
 import { checksOf, checkTimeline, checkRows, playCheck, durationOf, gatesDetail, technical, alignmentPlot, bestDiagnostics } from './evidence.js';
 import { serverButton, offline, OFFLINE_REASON, reportError, cancelActions, cancelJob } from './common.js';
 
@@ -20,6 +25,14 @@ const forms = new Map();     // jobId → form state; survives polling and navig
 const details = new Map();   // jobId → full job record (with recovery_acceptance_preview)
 const detailVersions = new Map();
 const sources = new Map();   // jobId → current file duration in seconds (G-042)
+let selectedBook = loadDraft('selection')?.id;
+
+function persist(book, ctx) {
+  const form = forms.get(book.id) || {};
+  const fields = Object.fromEntries(['title', 'author', 'narrator', 'asin', 'region', 'query'].map(k => [k, form[k]]));
+  const saved = saveDraft(book.id, { accept: ctx.ui.accept?.[book.id] || loadDraft(book.id)?.accept, fields });
+  ctx.ui.localDraftWarning = saved ? '' : 'Browser storage is unavailable. Edits are retained in this tab only; keep it open until you save.';
+}
 
 function rememberDetail(id, job) {
   details.delete(id); details.set(id, job);
@@ -66,6 +79,7 @@ function formFor(book) {
       title: answer.title || book.title, author: answer.author || book.author, narrator: answer.narrator || book.narrators,
       asin: answer.asin || book.asin, region: (answer.region || report.selected_recording?.region || 'us').toLowerCase(),
       query: '', results: null, searching: false, message: '', note: '', selected: null, busy: false,
+      ...(loadDraft(book.id)?.fields || {}),
     });
   }
   return forms.get(book.id);
@@ -145,7 +159,7 @@ function nextSteps(book, form, sit, ctx) {
   const p = sit.preview;
   const options = [];
   if (sit.key === 'draft') {
-    options.push({ id: 'finalize', title: 'Save using the draft', desc: `Keeps the chapter times already in your file and applies the ${p.supported} names that were identified. You confirm each exception first.`, body: finalizeBody(book, p, ctx) });
+    options.push({ id: 'finalize', title: 'Review and save the draft', desc: `Review the ${p.supported} identified names, keep or edit existing names, and optionally remove navigation markers. Audio stays unchanged.`, body: finalizeBody(book, p, ctx) });
   }
   if (sit.category === 'chapters') {
     options.push({ id: 'draft', title: sit.key === 'draft' ? 'Draft the chapters again' : 'Draft chapters from the audio', desc: 'For when this is the right edition but the chapter markers are off. ChapterKeeparr listens at each marker already in your file and drafts names. Your file isn’t changed.', body: draftBody(book, form) });
@@ -215,22 +229,24 @@ function editionBody(book, form, ctx) {
   </form>`;
 }
 
-function finalizeBody(book, p, ctx) {
-  const f = draftApproval(p, ctx.ui.accept?.[book.id]);
+function draftForm(book, p, ctx) {
+  const previous = ctx.ui.accept?.[book.id];
+  const f = previous ? draftApproval(p, previous) : acceptedDraft(book.id, p.token);
+  if (!previous && loadDraft(book.id)?.accept?.token && loadDraft(book.id).accept.token !== p.token) f.message = 'The draft changed. Review it and confirm your choices again.';
   ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: f };
-  const acceptance = acceptanceState(p, f, { connected: !offline(), authNeeded: state.authNeeded });
-  return html`<form class="accept" data-form="accept" data-key="accept-${p.token}" aria-busy="${bool(Boolean(f.busy))}">
-      <p style="font-size:14px">That’s ${p.supported_percent.toFixed(1)}% of the markers. Nothing is moved and no missing chapter is invented. You can listen to what was heard under Chapter checks below.</p>
-      ${field({ id: 'accept-min', label: 'Minimum identified markers for this book (%)', type: 'number', value: f.min ?? p.default_minimum_percent, hint: `Default from Settings: ${p.default_minimum_percent}%. Applies to this book only.`, extra: { min: 1, max: 100, step: 0.1, inputmode: 'decimal' } })}
-      ${p.sections.length ? html`<div class="col"><span style="font-size:14px;font-weight:650">Sections that couldn’t be located</span><span class="meta">Tick each one to accept it as optional for this book. Named chapters aren’t assumed optional.</span>${p.sections.map(s => html`<label class="checkbox"><input type="checkbox" id="optional-${s.id}" name="optional_section" value="${s.id}" ${f.sections?.includes(s.id) ? 'checked' : ''}><span>Accept “${s.title}” as optional</span></label>`)}</div>` : ''}
-      ${p.unresolved_markers.length ? html`<details class="tech"><summary>${p.unresolved_markers.length} original ${p.unresolved_markers.length === 1 ? 'marker keeps' : 'markers keep'} its name and time</summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">${p.unresolved_markers.map(m => html`<li>${m.index}. ${m.title} · ${clock(m.seconds)}</li>`)}</ul></details><label class="checkbox"><input type="checkbox" id="accept-preserve" name="preserve" ${f.preserve ? 'checked' : ''}><span>Keep these unidentified markers as they are</span></label>` : ''}
-      ${p.coverage_warnings.length ? html`<div class="col gap4"><span style="font-size:14px;font-weight:650">Content coverage</span>${p.coverage_warnings.map(w => html`<span class="meta">${w}</span>`)}</div>` : ''}
-      <label class="checkbox"><input type="checkbox" id="accept-gap" name="gap" ${f.gap ? 'checked' : ''}><span>I accept possible content gaps or edition differences in this recording. Matching chapters doesn’t prove the audio is complete.</span></label>
-      <p class="meta">The audio must be unchanged and the output must validate. An existing M4B is backed up first. Source MP3s are kept.</p>
-      ${f.message ? html`<p class="note" role="status">${f.message}</p>` : ''}
-      <p id="accept-status" class="meta" role="status" aria-live="polite">${acceptance.problem || 'Ready to submit. Final checks run before anything is saved.'}</p>
-      <div id="accept-action" ${acceptance.visible ? '' : 'hidden'}>${serverButton({ label: f.busy ? 'Submitting…' : 'Accept and save', kind: 'review-save', act: 'accept', size: 'lg', block: ctx.phone, disabled: !acceptance.enabled, disabledReason: acceptance.problem, extra: { 'aria-describedby': 'accept-status' } })}</div></form>`;
+  return f;
 }
+
+function finalizeBody(book, p, ctx) {
+  const f = draftForm(book, p, ctx);
+  return html`<form class="accept" data-form="accept" data-key="accept-${p.token}" aria-busy="${bool(Boolean(f.busy))}"><fieldset class="cr-fieldset" aria-label="Chapter review decisions" ${f.busy ? 'disabled' : ''}>${chapterReviewView(p, f, { duration: sources.get(book.id), playing: audio.current()?.key?.startsWith('review:' + book.id + ':') ? Number(audio.current().key.split(':').pop()) : null, warning: ctx.ui.localDraftWarning, open: ctx.ui.open })}</fieldset></form>`;
+}
+
+const chapters = chapterController({
+  get: ctx => { const { book } = current(ctx); const p = book && details.get(book.id)?.recovery_acceptance_preview; return p?.ready ? { book, p, f: draftForm(book, p, ctx) } : null; },
+  update: (ctx, f) => { const { book } = current(ctx); if (!book) return; ctx.ui.accept = { ...ctx.ui.accept, [book.id]: f }; persist(book, ctx); ctx.rerender(); },
+  play: (ctx, index) => { const { book } = current(ctx); const p = book && details.get(book.id)?.recovery_acceptance_preview; const m = p?.markers?.find(m => m.index === index); if (m?.excerpt) audio.playExcerpt({ key: `review:${book.id}:${m.index}`, jobId: book.id, label: m.suggested_title || m.title, excerpt: m.excerpt }).catch(error => reportError(error, 'Couldn’t play marker')); },
+});
 
 function checksSection(book, ctx) {
   const rows = checksOf(book.job);
@@ -280,7 +296,7 @@ function reviewRail(list, book, ctx) {
 }
 
 function allClear(ctx) {
-  return html`<div class="panel bigempty ${ctx.phone ? 'page-inset' : ''} ${ctx.enter ? 'rise' : ''}"><span class="circ tone-ok">${icon('check', 26, { stroke: 2.2 })}</span><span class="t">You’re all caught up</span><span class="lede" style="font-size:15px">Nothing needs your review right now.</span>${button({ label: 'Open queue', href: '#/queue' })}</div>`;
+  return html`<div class="panel bigempty ${ctx.phone ? 'page-inset' : ''} ${ctx.enter ? 'rise' : ''}"><span class="circ tone-ok">${icon('check', 26, { stroke: 2.2 })}</span><span class="t">${ctx.route.query.has('done') ? 'Nothing left to review' : 'You’re all caught up'}</span><span class="lede" style="font-size:15px">${ctx.route.query.has('done') ? 'Everything you saved is in the queue' : 'Nothing needs your review right now.'}</span>${button({ label: 'Open queue', href: '#/queue' })}</div>`;
 }
 
 function resumedPanel(book, list, ctx) {
@@ -291,7 +307,8 @@ function resumedPanel(book, list, ctx) {
 function current(ctx) {
   const list = waiting();
   const id = ctx.route.id;
-  const book = id ? bookById(id) : list[0];
+  const book = id ? bookById(id) : list.find(b => b.id === selectedBook) || list[0];
+  if (book && selectedBook !== book.id) { selectedBook = book.id; saveDraft('selection', { id: book.id }); }
   return { list, book, idx: book ? list.findIndex(b => b.id === book.id) : -1 };
 }
 
@@ -304,14 +321,23 @@ function readForm(book) {
   return form;
 }
 
-/**
- * A book left Needs review and went back to the queue: tell the user (the
- * notification opens it in the Queue) and return to the list rather than
- * jumping to the next book.
- */
-function sentToQueue(book, body) {
-  notify({ kind: 'info', title: `${book.title} is back in the queue`, body, action: 'Watch', href: `#/queue?job=${encodeURIComponent(book.id)}`, dest: 'queue', jobId: book.id, at: Date.now() });
-  location.hash = `#/review?resumed=${encodeURIComponent(book.id)}`;
+/** Finish one review in place, then open the next book rather than the list. */
+async function sentToQueue(book, body, ctx) {
+  const previous = waiting(), index = previous.findIndex(b => b.id === book.id);
+  const content = document.querySelector('.review-detail');
+  audio.stop();
+  if (content && document.documentElement.dataset.motion !== 'reduce') {
+    content.classList.add('is-leaving');
+    await new Promise(resolve => setTimeout(resolve, 180));
+  }
+  await refresh();
+  const candidates = waiting();
+  const next = previous.slice(index + 1).map(b => candidates.find(c => c.id === b.id)).find(Boolean) || candidates[0];
+  notify({ kind: 'info', title: `${book.title} went back to the queue`, body, action: 'Open queue', href: `#/queue?job=${encodeURIComponent(book.id)}`, dest: 'queue', jobId: book.id, book, at: Date.now() });
+  forms.delete(book.id); details.delete(book.id);
+  if (next) location.hash = `#/review/${encodeURIComponent(next.id)}?continued=1`;
+  else location.hash = '#/review?done=1';
+  await glideToTop();
 }
 
 async function submit(book, ctx, recovery) {
@@ -325,9 +351,7 @@ async function submit(book, ctx, recovery) {
   try {
     await api.answerReview(book.id, { title: form.title, author: form.author, narrator: form.narrator, asin, region: form.region, recovery });
     expect(book.id, 'queued');
-    forms.delete(book.id); details.delete(book.id);
-    await refresh();
-    sentToQueue(book, recovery === 'local_markers' ? 'Listening near each marker for a draft' : 'Re-checking chapter audio with your changes');
+    await sentToQueue(book, recovery === 'local_markers' ? 'Listening near each marker for a draft' : 'Re-checking chapter audio with your changes', ctx);
   } catch (error) {
     form.busy = false; form.message = error.message; ctx.rerender();
   }
@@ -372,6 +396,14 @@ export default {
     return [state.loaded, state.connected, state.sig, ctx.route.id, audioKey, book && JSON.stringify(forms.get(book.id) || {})].join('|');
   },
 
+  renderFooter(ctx) {
+    const { book } = current(ctx); if (!book || book.status.key !== 'review' || !ctx.route.id) return '';
+    const sit = situation(book);
+    if (sit.key !== 'draft' || (ctx.ui.path?.[book.id] && ctx.ui.path[book.id] !== 'finalize')) return '';
+    const f = draftForm(book, sit.preview, ctx);
+    return chapterSaveBar(sit.preview, f, acceptanceState(sit.preview, f, { connected: !offline(), authNeeded: state.authNeeded }));
+  },
+
   render(ctx) {
     const { phone, enter } = ctx;
     const { list, book, idx } = current(ctx);
@@ -394,15 +426,9 @@ export default {
   },
 
   onInput(el, ev, ctx) {
-    const { book } = current(ctx);
-    if (!book) return;
-    if (el.name === 'optional_section' || el.name === 'preserve' || el.name === 'gap' || el.id === 'accept-min') {
-      const form = el.closest('form');
-      ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...(ctx.ui.accept?.[book.id] || {}), min: form.querySelector('#accept-min')?.value, sections: [...form.querySelectorAll('[name="optional_section"]:checked')].map(x => x.value), preserve: form.querySelector('[name="preserve"]')?.checked, gap: form.querySelector('[name="gap"]')?.checked, message: '' } };
-      ctx.rerender();
-      return;
-    }
-    readForm(book);
+    const { book } = current(ctx); if (!book) return;
+    if (chapters.onInput(el, ev, ctx)) return;
+    readForm(book); persist(book, ctx);
   },
 
   onSubmit(form, ev, ctx) {
@@ -424,6 +450,7 @@ export default {
   },
 
   mount(root, ctx) {
+    const unmountChapters = chapters.mount(root, ctx);
     const preview = root.querySelector('#review-title-preview');
     const show = event => {
       const link = event.target.closest?.('.review-book');
@@ -456,10 +483,11 @@ export default {
       if (ev.key === 'Enter') { ev.preventDefault(); const { book } = current(ctx); if (book) searchEditions(book, ctx); }
     };
     if (ctx.enter && ctx.route.query.has('match')) setTimeout(() => find?.focus());
-    return () => { window.removeEventListener('scroll', scrolled, true); document.removeEventListener('click', outside); root.onpointerover = root.onfocusin = root.onpointerout = root.onfocusout = null; };
+    return () => { unmountChapters(); window.removeEventListener('scroll', scrolled, true); document.removeEventListener('click', outside); root.onpointerover = root.onfocusin = root.onpointerout = root.onfocusout = null; };
   },
 
   actions: {
+    ...chapters.actions,
     ...cancelActions,
     'review-list': (el, ev, ctx) => { ctx.ui.reviewListExpanded = !ctx.ui.reviewListExpanded; ctx.rerender(); },
     'reload-draft': (el, ev, ctx) => {
@@ -473,6 +501,11 @@ export default {
     next: (el, ev, ctx) => move(ctx, 1),
     'check-open': (el, ev, ctx) => { const n = Number(el.dataset.arg); ctx.ui.check = ctx.ui.check === n ? null : n; ctx.rerender(); },
     'check-play': (el, ev, ctx) => { const { book } = current(ctx); if (book) playCheck(book.job, el.dataset.arg, checksOf(book.job)).catch(error => reportError(error, 'Couldn’t play this check')); },
+    'marker-play': (el, ev, ctx) => {
+      const { book } = current(ctx);
+      const m = details.get(book.id)?.recovery_acceptance_preview?.markers?.find(m => m.index === Number(el.dataset.arg));
+      if (m?.excerpt) audio.playExcerpt({ key: `review:${book.id}:${m.index}`, jobId: book.id, label: m.title || `Marker ${m.index}`, excerpt: m.excerpt }).catch(error => reportError(error, 'Couldn’t play marker'));
+    },
     'next-region': (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
@@ -532,8 +565,7 @@ export default {
       try {
         await api.resumeChecks(book.id);
         expect(book.id, 'queued');
-        await refresh();
-        sentToQueue(book, 'Running the required checks again');
+        await sentToQueue(book, 'Running the required checks again', ctx);
       } catch (error) { reportError(error, 'Couldn’t resume checks'); }
     },
     accept: async (el, ev, ctx) => {
@@ -542,17 +574,17 @@ export default {
       const f = { ...(ctx.ui.accept?.[book.id] || {}) };
       if (!p) return;
       const approval = draftApproval(p, f);
+      const decisions = markerDecisions(p, approval);
       const acceptance = acceptanceState(p, approval, { connected: !offline(), authNeeded: state.authNeeded });
-      const setAccept = patch => { ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...approval, ...patch } }; ctx.rerender(); };
+      const setAccept = patch => { ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...approval, ...patch } }; persist(book, ctx); ctx.rerender(); };
       if (!acceptance.enabled) { setAccept({ message: acceptance.problem }); return; }
       const min = acceptance.minimum;
       setAccept({ busy: true, message: '' });
       try {
-        await api.acceptRecovery(book.id, { draft_token: p.token, minimum_percent: min, optional_sections: f.sections || [], preserve_unresolved: Boolean(f.preserve), accept_possible_gap: true });
+        await api.acceptRecovery(book.id, { draft_token: p.token, minimum_percent: min, optional_sections: remainingSections(p, f).filter(s => f.sections?.includes(s.id)).map(s => s.id), marker_decisions: decisions, accept_possible_gap: true });
+        clearDraft(book.id);
         expect(book.id, 'queued');
-        details.delete(book.id);
-        await refresh();
-        sentToQueue(book, 'Exceptions accepted; finalizing now');
+        await sentToQueue(book, 'Saving new chapter names · audio unchanged', ctx);
       } catch (error) {
         if (error.status === 409) {
           delete ctx.ui.accept?.[book.id]; details.delete(book.id); detailVersions.delete(book.id);

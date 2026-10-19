@@ -179,7 +179,9 @@ class Store:
             if value is not None:
                 if key == "progress" and not 0 <= value <= 1:
                     raise ValueError("progress must be between 0 and 1")
-                updates.append(f"{key}=?")
+                # Stage checkpoints must not undo finer-grained work progress.
+                # Claim/retry explicitly reset progress for a new execution.
+                updates.append("progress=MAX(progress,?)" if key == "progress" else f"{key}=?")
                 values.append(json.dumps(value) if key in ("result", "review") else value)
         where = "id=? AND status='running'"
         values.append(job_id)
@@ -237,7 +239,7 @@ class Store:
                 db.execute("UPDATE jobs SET cancel_requested=1,updated_at=? WHERE id=?", (now, job_id))
             return self._dict(db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone())
 
-    def retry(self, job_id: str) -> dict[str, Any] | None:
+    def retry(self, job_id: str, force: bool | None = None) -> dict[str, Any] | None:
         now = time.time()
         with self._connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -252,11 +254,20 @@ class Store:
             ).fetchone()
             if conflict:
                 raise ValueError("another active job already uses this path")
+            options = json.loads(row['options'] or '{}')
+            answer = json.loads(row['review_answer'] or '{}')
+            # Re-verify a finished book, rather than immediately skipping its receipt.
+            if force is not None or row['status'] in ('complete', 'skipped'):
+                options['force'] = force if force is not None else True
+            for values in (options, answer):
+                values.pop('finalization', None)
+                if values.get('recovery') == 'finalize_recovery' or row['status'] in ('complete', 'skipped'):
+                    values['recovery'] = 'verify'
             db.execute(
                 "UPDATE jobs SET status='queued',stage='queued',progress=0,error=NULL,"
-                "review=NULL,cancel_requested=0,updated_at=?,"
+                "review=NULL,cancel_requested=0,updated_at=?,options=?,review_answer=?,"
                 "started_at=NULL,finished_at=NULL,lease_owner=NULL,lease_expires_at=NULL WHERE id=?",
-                (now, job_id),
+                (now, json.dumps(options), json.dumps(answer), job_id),
             )
             return self._dict(db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone())
 

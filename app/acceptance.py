@@ -36,7 +36,14 @@ def preview(report, default=95):
     return {'token': token(report), 'supported_percent': 100*supported/len(markers),
             'default_minimum_percent': default, 'supported': supported, 'total': len(markers),
             'ready': bool(draft.get('complete') and not draft.get('invalidated') and remote),
+            'markers': [{'index': i+1, 'title': m.get('old_title',''), 'seconds': m['old_seconds'],
+                         'suggested_title': m.get('title') if m.get('status') == 'supported' else None,
+                         'supported': m.get('status') == 'supported', 'excerpt': m.get('audio_excerpt'),
+                         'reference_id': str(m['reference_start']) if m.get('status') == 'supported' else None,
+                         'transcript': m.get('transcript') or '',
+                         'removable': i > 0} for i,m in enumerate(markers)],
             'sections': [{'id': str(c['start']), 'title': c['title']} for c in draft.get('missing_sections',[])],
+            'published_sections': [{'id': str(c['start']), 'title': c['title']} for c in remote],
             'unresolved_markers': [{'index': i+1, 'title': m.get('old_title') or 'Untitled marker',
                                     'seconds': m['old_seconds']} for i,m in enumerate(markers) if m.get('status')!='supported'],
             'coverage_warnings': report.get('coverage_warnings') or [],
@@ -54,9 +61,13 @@ def validate(report, answer):
         raise engine.NeedsReview('Minimum supported markers must be between 1 and 100 percent.')
     if not info['supported'] or info['supported_percent'] + 1e-9 < minimum:
         raise engine.NeedsReview('Supported marker coverage is below the selected minimum.')
-    if set(answer.get('optional_sections',[])) != {s['id'] for s in info['sections']}:
+    assignments = manual_assignments(report, answer)
+    remaining = [s for s in info['sections'] if s['id'] not in assignments]
+    if set(answer.get('optional_sections',[])) != {s['id'] for s in remaining}:
         raise engine.NeedsReview('Explicitly accept each unlocated published section as optional for this book.')
-    if info['unresolved_markers'] and answer.get('preserve_unresolved') is not True:
+    if answer.get('marker_decisions') is not None:
+        marker_plan(report, answer)
+    elif info['unresolved_markers'] and answer.get('preserve_unresolved') is not True:
         raise engine.NeedsReview('Accept retaining the original labels and times of unresolved markers.')
     if answer.get('accept_possible_gap') is not True:
         raise engine.NeedsReview('Separately accept unresolved content coverage for this recording.')
@@ -80,7 +91,80 @@ def validate(report, answer):
                 raise engine.NeedsReview('Supported chapter identities are out of published order.')
             previous_reference = m['reference_start']
             seen.add(m['reference_start'])
-    return info
+    return {**info, 'sections': remaining, 'manual_assignments': assignments}
+
+
+def manual_assignments(report, answer):
+    """Resolve IDs against this exact draft; labels supplied by the client are ignored."""
+    markers = report['recovery_draft']['markers']
+    decisions = answer.get('marker_decisions')
+    if decisions is None:
+        return {}
+    if not isinstance(decisions, list) or len(decisions) != len(markers):
+        raise engine.NeedsReview('Review a decision for every original marker.')
+    indexed = {}
+    for d in decisions:
+        if not isinstance(d, dict) or type(d.get('index')) is not int or not 1 <= d['index'] <= len(markers) or d['index'] in indexed:
+            raise engine.NeedsReview('Marker decisions contain an unknown or duplicate index.')
+        indexed[d['index']] = d
+    remote = {str(c['start']): c for c in references(report)}
+    used = set()
+    assigned = {}
+    previous = []
+    for i, marker in enumerate(markers, 1):
+        decision = indexed[i]
+        if decision.get('action') == 'remove':
+            continue
+        manual = decision.get('action') == 'published'
+        identity = decision.get('section_id') if manual else str(marker['reference_start']) if marker.get('status') == 'supported' else None
+        if identity is None and not manual:
+            continue
+        if not isinstance(identity, str) or identity not in remote:
+            raise engine.NeedsReview('Choose a published section from the current draft.')
+        if identity in used:
+            raise engine.NeedsReview('A published section cannot be assigned to two retained markers.')
+        override = manual and decision.get('override_order') is True
+        if any(remote[identity]['start'] < start and not (override or accepted) for start, accepted in previous):
+            raise engine.NeedsReview('Assigned sections must follow the published order. Review the selected timestamp.')
+        previous.append((remote[identity]['start'], override))
+        used.add(identity)
+        if manual:
+            assigned[identity] = {'index': i, 'title': remote[identity]['title'], 'seconds': marker['old_seconds'], 'override_order': override}
+    return assigned
+
+
+def marker_plan(report, answer):
+    """Explicit navigation edits; recognition coverage always uses the original draft."""
+    markers = report['recovery_draft']['markers']
+    decisions = answer.get('marker_decisions')
+    if decisions is None:
+        return [{'start_seconds':m['old_seconds'], 'title':m['title'] if m['status']=='supported' else m.get('old_title','')} for m in markers]
+    assignments = manual_assignments(report, answer)
+    if not isinstance(decisions, list) or len(decisions) != len(markers):
+        raise engine.NeedsReview('Review a decision for every original marker.')
+    indexed = {}
+    for d in decisions:
+        if not isinstance(d, dict) or type(d.get('index')) is not int or not 1 <= d['index'] <= len(markers) or d['index'] in indexed:
+            raise engine.NeedsReview('Marker decisions contain an unknown or duplicate index.')
+        indexed[d['index']] = d
+    plan = []
+    for i,m in enumerate(markers, 1):
+        d = indexed[i]; action = d.get('action')
+        if action == 'remove':
+            if i == 1 or d.get('confirmed') is not True:
+                raise engine.NeedsReview('Confirm each removal; the first marker must remain.')
+            continue
+        if action == 'keep': title = m.get('old_title','')
+        elif action == 'suggested' and m.get('status') == 'supported': title = m['title']
+        elif action == 'published': title = assignments[d['section_id']]['title']
+        elif action == 'rename':
+            title = d.get('title')
+            if not isinstance(title,str) or not title.strip() or len(title)>200 or any(ord(c)<32 for c in title):
+                raise engine.NeedsReview('Enter a chapter name of 1–200 characters without control characters.')
+            title = title.strip()
+        else: raise engine.NeedsReview('Invalid marker action or unavailable suggested name.')
+        plan.append({'start_seconds':m['old_seconds'], 'title':title})
+    return plan
 
 
 def finalize(args, prior, answer, folder):
@@ -95,6 +179,7 @@ def finalize(args, prior, answer, folder):
     report['recovery_acceptance'] = {**answer, 'supported_percent':info['supported_percent'],
                                     'accepted_at':datetime.now(timezone.utc).isoformat(),
                                     'sections':info['sections'], 'unresolved_markers':info['unresolved_markers']}
+    report['recovery_acceptance']['manual_assignments'] = info['manual_assignments']
     target = args.target
     root = target if target.is_dir() else target.parent
     fd = engine.open_book_lock(root)
@@ -129,9 +214,11 @@ def finalize(args, prior, answer, folder):
         if not report.get('edition',{}).get('asin'):
             raise engine.NeedsReview('Recording identity is missing from the draft.')
         flow.gate(report,'match','passed','Previously matched recording is bound to the reviewed draft')
-        plan = [{'start_seconds':m['old_seconds'],'title':m['title'] if m['status']=='supported' else m.get('old_title','')} for m in draft['markers']]
+        plan = marker_plan(prior, answer)
+        report['recovery_acceptance']['saved_markers'] = len(plan)
+        report['recovery_acceptance']['removed_markers'] = len(draft['markers']) - len(plan)
         # Acceptance is a separate approval object; the evidence remains explicitly a draft.
-        flow.gate(report,'align','passed','Supported labels applied at existing times; unresolved markers retained by explicit acceptance')
+        flow.gate(report,'align','passed','Reviewed names and navigation removals applied; retained marker times unchanged')
         flow.assess(report,'alignment','accepted_exceptions','No marker times moved and no unlocated sections invented')
         flow.assess(report,'coverage','accepted_exceptions','User accepted the listed unlocated sections and possible content gaps')
         flow.assess(report,'speech','accepted_exceptions',f"{info['supported']} of {info['total']} marker identities supported; exceptions explicitly accepted")

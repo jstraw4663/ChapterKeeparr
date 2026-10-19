@@ -31,3 +31,35 @@ test('a changed draft discards consent and per-section choices, unchanged pollin
   assert.equal(reset.token, 'two'); assert.equal(reset.gap, undefined); assert.equal(reset.sections, undefined);
   assert.match(reset.message, /changed/);
 });
+
+test('ordered decisions share the submit gates and never carry consent across tokens', () => {
+  const p = { ready: true, token: 'ordered', supported: 2, total: 3, supported_percent: 66.6666666667, default_minimum_percent: 60,
+    markers: [{ index: 1, seconds: 0, title: 'A', supported: true, reference_id: '0' }, { index: 2, seconds: 10, title: 'Unknown', removable: true }, { index: 3, seconds: 20, title: 'C', supported: true, reference_id: '20' }],
+    published_sections: [{ id: '0', title: 'A' }, { id: '10', title: 'B' }, { id: '20', title: 'C' }, { id: '30', title: 'Missing' }], sections: [{ id: '10', title: 'B' }, { id: '30', title: 'Missing' }] };
+  let f = { token: 'ordered', gap: true };
+  assert.equal(acceptanceState(p, f).enabled, false, 'an untouched default keep is not an explicit decision');
+  f = { ...f, decisions: { 2: { index: 2, action: 'published', section_id: '10' } }, sections: ['30'] };
+  assert.equal(acceptanceState(p, f).enabled, true, 'an assigned section does not also need optional consent');
+  for (const patch of [{ gap: false }, { min: 95 }, { token: 'older' }, { busy: true }, { closing: {} }]) assert.equal(acceptanceState(p, { ...f, ...patch }).enabled, false);
+  assert.equal(acceptanceState(p, { ...f, decisions: { 2: { index: 2, action: 'published', section_id: '0' } }, sections: ['10','30'] }).enabled, false, 'duplicate identities block submission');
+  assert.equal(acceptanceState(p, { ...f, decisions: { 2: { index: 2, action: 'published', section_id: 'unknown' } }, sections: ['10','30'] }).enabled, false);
+  assert.equal(acceptanceState(p, { ...f, decisions: { 2: { index: 2, action: 'rename', title: 'Custom' } }, sections: ['30'] }).enabled, false, 'renaming does not resolve published identity');
+  assert.equal(acceptanceState(p, { ...f, decisions: { 2: { index: 2, action: 'rename', title: 'Custom' } }, sections: ['10','30'] }).enabled, true);
+  assert.equal(acceptanceState(p, f, { connected: false }).enabled, false);
+  assert.equal(acceptanceState(p, f, { authNeeded: true }).enabled, false);
+});
+
+test('explicit order overrides match server validation on either member of an inverted pair', () => {
+  const p = { ready: true, token: 'order', supported_percent: 25, default_minimum_percent: 20,
+    markers: [{ index: 1, seconds: 0, title: 'Opening', supported: true, reference_id: '0' },
+      { index: 2, seconds: 10, title: 'Unknown' }, { index: 3, seconds: 20, title: 'Unknown' }, { index: 4, seconds: 30, title: 'Unknown' }],
+    published_sections: ['0','10','20','30'].map(id => ({ id, title: id })), sections: [] };
+  const decisions = { 2: { index: 2, action: 'published', section_id: '20' },
+    3: { index: 3, action: 'published', section_id: '10' }, 4: { index: 4, action: 'keep' } };
+  const f = { token: 'order', gap: true, decisions };
+  assert.equal(acceptanceState(p, f).enabled, false);
+  for (const index of [2, 3]) {
+    assert.equal(acceptanceState(p, { ...f, decisions: { ...decisions, [index]: { ...decisions[index], override_order: true } } }).enabled, true);
+  }
+  assert.equal(acceptanceState(p, { ...f, decisions: { ...decisions, 4: { index: 4, action: 'published', section_id: '20', override_order: true } } }).enabled, false, 'overrides never allow duplicates');
+});

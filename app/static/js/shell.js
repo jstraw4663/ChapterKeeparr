@@ -70,6 +70,7 @@ export function shellMarkup() {
   <div class="offline hidden" role="alert" data-offline><span class="dot lg dot-bad pulse"></span><span><strong>Can’t reach the server.</strong> Showing the last known state.</span><button type="button" class="tbtn" data-act="retry-now">Retry now</button></div>
   <div class="moffline hidden" role="alert" data-moffline><span class="dot dot-bad pulse"></span><span class="grow">Can’t reach the server · last known state</span><button type="button" class="tbtn" data-act="retry-now" style="height:32px">Retry</button></div>
   <div id="player-slot"></div>
+  <div id="review-save"></div>
   <div id="notes"></div>
   <div id="overlays"></div>`;
 }

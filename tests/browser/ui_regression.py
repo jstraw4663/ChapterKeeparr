@@ -82,9 +82,19 @@ def main():
             expect(gap).to_be_focused()
             gap.uncheck(); expect(save).to_be_hidden()
             gap.check()
+            page.locator('[data-act="toggle"][data-arg="chapter-advanced"]').click()
             page.locator('#accept-min').fill('80')
-            for checkbox in page.locator('[name="optional_section"],#accept-preserve').all(): checkbox.check()
-            expect(save).to_be_enabled()
+            for _ in range(30):
+                choices = page.locator('.cr-card:not(.decided) .cr-options [data-act="cr-pick"]')
+                if not choices.count(): break
+                choices.first.click()
+            try:
+                expect(save).to_be_enabled()
+            except Exception:
+                page.screenshot(path=str(output / ('decision-failure-' + theme + '.png')), full_page=True)
+                print('Decision failure:', page.locator('#view').inner_text(), flush=True)
+                print('Saved fixture draft:', page.evaluate("async id=>(await import('/static/js/review-drafts.js')).loadDraft(id)", rid), flush=True)
+                raise
             # Failed submit retains approvals; a second click while pending is blocked.
             writes = []
             def fail_submit(route):

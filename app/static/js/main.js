@@ -4,7 +4,7 @@ import { html } from './format.js';
 import { parse, legacyJobTarget, navFor } from './router.js';
 import { state, start, subscribe, onEvents, bookById, refresh } from './store.js';
 import { shellMarkup, applyAppearance, initShell, updateShell, setScreenChrome, shellActions, closeSearch, refreshSearch } from './shell.js';
-import { notify } from './notify.js';
+import { notify, reflowNotifications } from './notify.js';
 import { onPrefs } from './prefs.js';
 import { hydrateCovers, settleCovers } from './covers.js';
 import { top as topOverlay } from './overlay.js';
@@ -34,6 +34,14 @@ let unmount = null;
 let firstRender = true;
 let currentKey = '';
 const scrollByKey = new Map(); // route key → scroll position, for returning to a tab or list
+let rendering = false;
+let renderQueued = false;
+
+function requestRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  queueMicrotask(() => { renderQueued = false; render(false, true); });
+}
 
 function ctx(enter = false) {
   return { route, state, ui, enter, phone: phoneQuery.matches, rerender: () => render(false, true) };
@@ -45,6 +53,15 @@ function ctx(enter = false) {
  * still: drop per-element entrance animations (a view transition animates instead).
  */
 function render(enter = false, force = false, { patch = false, still = false } = {}) {
+  // Removing a focused field can dispatch change synchronously. Finish the
+  // current DOM patch before processing any render requested by that handler.
+  if (rendering) { requestRender(); return; }
+  rendering = true;
+  try { renderView(enter, force, { patch, still }); }
+  finally { rendering = false; }
+}
+
+function renderView(enter, force, { patch, still }) {
   if (!screen) return;
   const view = document.getElementById('view');
   const c = ctx(enter);
@@ -64,13 +81,19 @@ function render(enter = false, force = false, { patch = false, still = false } =
     if (enter && !patch) view.innerHTML = String(screen.render(c));
     else morphInto(view, String(screen.render(c)));
     if (still) stripEntrance(view);
+    const footerMarkup = String(screen.renderFooter?.(c) || '');
+    morphInto(document.getElementById('review-save'), footerMarkup);
+    document.documentElement.classList.toggle('reviewing', Boolean(footerMarkup));
     hydrateCovers(view);
+    reflowNotifications();
     syncInks(view);
     unmount = screen.mount?.(view, c) || null;
   } catch (error) {
     // Keep the shell usable and say what broke instead of leaving a blank page.
     console.error(error);
     unmount = null;
+    document.getElementById('review-save').replaceChildren();
+    document.documentElement.classList.remove('reviewing');
     view.innerHTML = String(html`<div class="page-inset">${emptyState({ title: 'This screen couldn’t be shown', body: error?.message || 'Unexpected error', action: html`<button type="button" class="btn btn-md" onclick="location.reload()">Reload</button>` })}</div>`);
     return;
   }
@@ -115,7 +138,7 @@ function go() {
     // First load keeps the designed entrance; later navigation is animated by the transition.
     render(true, false, { patch: kind === 'same', still: kind !== 'none' });
     window.scrollTo(0, restore);
-    if (kind !== 'none') document.querySelector(next.name === 'review' && next.id && !phone ? '#view .revhead h2' : '#view h1')?.focus({ preventScroll: true });
+    if (kind !== 'none' && !next.query.has('continued')) document.querySelector(next.name === 'review' && next.id && !phone ? '#view .revhead h2' : '#view h1')?.focus({ preventScroll: true });
     return settleCovers(document.getElementById('view'));
   };
   transition(kind, swap, { bookId: kind === 'push' ? next.id : kind === 'pop' ? from?.id : '' });
@@ -202,8 +225,10 @@ function boot() {
   });
   const onField = event => {
     const el = event.target;
-    if (!(el instanceof HTMLElement) || el.closest('.layer') || !document.getElementById('view').contains(el)) return;
-    screen?.onInput?.(el, event, ctx());
+    if (!(el instanceof HTMLElement) || el.closest('.layer') || (!document.getElementById('view').contains(el) && !document.getElementById('review-save').contains(el))) return;
+    // Commit field state immediately, then patch after the input/change event
+    // finishes so a blur during morphing cannot start a nested DOM update.
+    screen?.onInput?.(el, event, { ...ctx(), rerender: requestRender });
   };
   document.addEventListener('input', onField);
   document.addEventListener('change', onField);

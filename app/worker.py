@@ -67,7 +67,11 @@ def execute(store: Store, job: dict, owner: str):
     args.prepared_cache = config / 'jobs' / job['id'] / 'prepared'
     args.recovery_cache = config / 'alignment-cache'
     args.recovery_force = job['attempts'] > 1
-    current = {'report': {}, 'report_path': None, 'log_path': str(folder / 'worker.log')}
+    prior = job.get('result') or {}
+    args.prior_report = prior.get('report') or {}
+    # Keep the last usable evidence if a retry fails before it can make a new report.
+    current = {**prior, 'report': json.loads(json.dumps(args.prior_report)),
+               'log_path': str(folder / 'worker.log')}
     committing = False
     cancelled = False
     original_write = engine.write_report
@@ -112,7 +116,11 @@ def execute(store: Store, job: dict, owner: str):
         progress = None
         if match and int(match[2]):
             current['speech_check'] = {'current': int(match[1]), 'total': int(match[2])}
-            progress = .5 + .24 * (int(match[1])-1) / int(match[2])
+            progress = .5 + .18 * (int(match[1])-1) / int(match[2])
+        retry = re.search(r'Retrying unresolved marker (\d+)/(\d+)', str(message))
+        if retry and int(retry[2]):
+            current['speech_check'] = {'current': int(retry[1]), 'total': int(retry[2]), 'retry': True}
+            progress = .68 + .06 * (int(retry[1])-1) / int(retry[2])
         store.update_job(job['id'], result=current, progress=progress, worker=owner)
 
     heavy_depth = 0
@@ -160,7 +168,7 @@ def execute(store: Store, job: dict, owner: str):
                 model_id = engine.file_hash(model_file) if model_file.is_file() else str(self.model)
                 self.identity = self.backend + model_id + version
             key = hashlib.sha256((engine.file_hash(wav) + self.identity
-                                  + 'chapterkeeper-speech-v1').encode()).hexdigest()
+                                  + 'chapterkeeper-speech-v2-word-timestamps').encode()).hexdigest()
             cached = config / 'transcripts' / (key + '.json')
             cached.parent.mkdir(exist_ok=True)
             if cached.exists():
@@ -202,7 +210,10 @@ def execute(store: Store, job: dict, owner: str):
         # Recheck discovered layouts immediately before invoking recursive conversion.
         if target.is_dir():
             jobs, issues = engine.discover_jobs(target)
-            if issues or jobs != [target]:
+            if not issues and len(jobs) == 1 and jobs[0].is_file() and jobs[0].parent == target:
+                # A successfully converted folder now contains its single M4B.
+                args.target = target = jobs[0]
+            elif issues or jobs != [target]:
                 raise engine.NeedsReview('Folder layout changed or is ambiguous. Rescan this folder before processing.')
         if target.is_file() and not args.force and args.recovery == 'verify':
             store.update_job(job['id'], stage='checking_completion', result=current, worker=owner)
@@ -245,7 +256,14 @@ def execute(store: Store, job: dict, owner: str):
     except Exception as ex:
         state = 'awaiting_review' if isinstance(ex, engine.NeedsReview) else 'failed'
         if not current['report'].get('review_reason'):
-            flow.require_review(current['report'], 'service' if isinstance(ex,engine.MetadataServiceError) else 'operational', str(ex))
+            category = 'operational'
+            if isinstance(ex, engine.MetadataServiceError):
+                category = 'service'
+            elif isinstance(ex, engine.NeedsReview) and current['report'].get('active_gate') == 'match':
+                category = 'identity'
+            elif current['report'].get('recovery_draft', {}).get('invalidated'):
+                category = 'source_changed'
+            flow.require_review(current['report'], category, str(ex))
         if current['report']:
             current['report'].update(status='needs_review' if state == 'awaiting_review' else 'error', reason=str(ex))
             engine.write_json(folder / 'report.json', current['report'])

@@ -1,6 +1,50 @@
 # ChapterKeeparr project context
 
+## Reconciled container source and testable review UI — 2026-10-19
+
+Merged Jeremy's uploaded active-container source with the responsive-review branch using shared ancestor `5055ded`. The prior GitHub branch was missing deployed manual-assignment/retry/recognition work; those implementations and tests are now preserved alongside the existing build diagnostics, public GHCR/Unraid installation kit and PyAV compatibility fix. The archive manifest is historical provenance in `docs/provenance`, not this build's identity. See [the reconciliation record](docs/provenance/container-source-reconciliation.md).
+
+Jeremy chose to complete the ordered-card/sticky-footer review design, with Accept and save hidden until consent is checked, then white. The editor supports explicit published assignments, rename/removal, missing-section decisions, order overrides, conservative bulk suggestions/Undo, browser-local token-bound drafts and guarded save handoff to the next book. Large lists render in batches; manual choices do not increase speech coverage. Field updates are deferred and the render loop guards against nested DOM updates during blur.
+
+Notifications hydrate book covers and display up to three stable simultaneous cards with a bounded waiting queue. Polling preserves nodes and remaining time. Hover, focus, panel scrolling, hidden tabs and clipped cards pause expiry. The panel reflows above mobile navigation/save controls.
+
+Validation: 100 Python tests passed, including generated-media acceptance/backup/audio checks and real mono/stereo speech decoding; seven frontend/design/syntax cases and all nine JavaScript test files passed. The full browser sweep passed 216 viewport/theme observations and 36 axe scans. Dedicated workflows passed in both themes; synthetic 180-marker checks passed on 390px reduced-motion and 1024px animated desktop, including override selection, bulk Undo, progressive rendering, stationary desktop decisions and notification timer pause/resume.
+
+This is a branch/PR update only. Jeremy must run the branch image workflow and pull the resulting tag/digest before testing on Unraid; no production deployment, image publication or real-library write was performed. Physical Safari/assistive technology, real model resource use and deployed PWA upgrade remain field checks.
+
+## Stable progress and browser review drafts — 2026-10-02
+
+Worker progress updates are now monotonically increasing in SQLite within a run; claim/retry resets remain explicit. Local listening uses 50–68%, wider retries 68–74%, before existing validation/save stages. Retry detail is distinct from first-pass listening. This remains a phase-weighted estimate, not elapsed-time prediction.
+
+Review selection stays on the current book when the waiting list is reordered by a background completion. Input changes persist immediately in per-book browser localStorage, with an in-tab fallback and storage-failure notice. Recovery edits/threshold/acknowledgments restore only for the same server draft token. Changed evidence starts a clean acceptance form with a notice; successful acceptance clears saved edits. No file mutation occurs through autosave. Browsers/devices do not share edits. Service-worker cache is v16.
+
+## Embedded heading detection — 2026-10-02
+
+Local-marker recovery now considers explicit chapter headings inside speech segments using retained word timestamps from both speech backends. Additional matches require the existing -2.1/+8 second proximity window, word probabilities >=0.7, a preceding pause >=0.35 seconds, ordered finite word intervals, and a heading duration <=4 seconds. Common narrative references are excluded. Missing alignment stays unresolved; existing bounded wider retries still apply. Unique published identity, conflicting evidence, duplicate-marker detection, and all publication guards remain in force. This extension is draft recovery only; standard verification's heading parser is unchanged. Speech cache is versioned v2 to regenerate word evidence, and recovery version is 5. Word alignment adds inference work; Tower performance and the actual Chapter 61 recording remain unvalidated. Redraft after deployment to apply the new evidence rules; saved drafts are not silently rewritten.
+
 ## Canonical source
+
+Latest layout repair: removed an unmatched closing div in the server-details template. Desktop book list is the sole left column; header/actions/evidence/history stay in the right. Dense marker rows use shared circular spot-play controls and one quoted italic transcript, unwrapped in place when expanded. Original names are shown only when they differ from the proposed save name. Browser DOM containment, playback, pagination and mobile checks passed; see VALIDATION.md.
+
+### Compact review — 2026-10-01
+
+Marker review uses expandable rows, green Confirmed/amber Unconfirmed text badges, one-line speech previews, and 15-row pagination within the selected filter. Decisions and expanded state survive page changes; all-marker save counts remain unchanged. Full transcript preview, playback and edits are inside each row.
+
+### Review conveniences — 2026-10-01
+
+Added Select All for unmatched published sections, short verbatim saved-transcript previews, and All/Unconfirmed/Confirmed marker filtering. Filters retain edits and global save counts; manual renaming does not change confirmation status. No new speech processing or publication-policy changes.
+
+### Speech decode compatibility fix — 2026-10-01
+
+Tower reported `open() got an unexpected keyword argument 'metadata_errors'`. Faster-Whisper 1.1.1 calls PyAV with this argument; PyAV 19 removed it, but Faster-Whisper's dependency constraint permits that release. Pin PyAV to 18.1.0 (the local installed version). Docker now runs `scripts/check_speech_runtime.py` to decode generated WAV data with the real Faster-Whisper decoder before model installation, instead of checking imports alone. Runtime unittest invokes the same check. Rebuild the image and recreate the container; retry the failed book afterward. No chapter policy changes.
+
+### Marker decisions — 2026-10-01
+
+User requested an interactive implementation of per-marker keep/rename/remove decisions. The recovery review screen now exposes original names/times, identified names, saved excerpts and explicit navigation removal. Backend validates a complete decision set, protects the first marker, keeps the original recognition denominator and records edits in acceptance. Audio, source identity, backup and output validation safeguards still apply. Unmatched published sections remain separate acknowledgments. Frontend edits were explicitly requested for this work.
+
+### Backend review of redesigned UI — 2026-09-30
+
+Reviewed the four Needs review actions against API and worker behavior. Fixed completion-receipt reuse on Re-verify, stale finalization approval on retry, converted-folder retry resolution, retained-conversion redrafting, and lost coverage warnings during manual redrafting. Redrafting now holds the book lock and checkpoints invalidation/identity failures. Early storage failures retain prior review evidence. No frontend files or real audiobook files were changed. API handoff details are in `docs/design/GAPS.md` (G-019/G-030); validation is in `VALIDATION.md`.
 
 This folder is the development Git project (main branch, committed initial build): `/Users/jeremystraw/Documents/Codex/ChapterKeeparr`.
 It was copied from the previous task's `chapterkeeper` 0.2.1 source; that source and its release ZIPs remain unchanged. The recovery design is in `ALIGNMENT-RECOVERY-PLAN.md`.
@@ -139,3 +183,33 @@ tests before downloading the model. No model or external service is needed for
 the regression. Existing verified receipts can skip decoding, so the first book's
 unchanged result did not establish decoder compatibility. See VALIDATION.md for
 results. The owner must build/pull the updated preview before retrying the job.
+
+## Manual published assignments — 2026-10-02
+
+Implemented assigning published section IDs to existing marker timestamps in either direction using a searchable desktop modal/mobile sheet with excerpt context. Unassigned published sections appear first; duplicate and out-of-order placements are disabled and rejected by the backend. Outstanding acknowledgments exclude manual assignments and return when those assignments are changed/removed. Custom names remain distinct. Manual badges and filters, collapsed outstanding-section list and previous/next unresolved controls reduce scrolling. Autosave retains decisions; canonical names and manual provenance are recorded on finalization without raising speech recognition coverage. Existing source, backup and unchanged-audio checks remain. Worker-disabled generated-data preview is on port 8777; service-worker cache v17. No Tower deployment or real-book writes.
+
+### Nearest unassigned picker — 2026-10-02
+Published-section picker now hides retained speech/manual assignments and sorts remaining sections by absolute published-start versus local-marker-time distance (stable published-order ties). Reverse picker shows unassigned, retained timestamps in nearest-first order. Small closest-available and published-time/distance text is advisory only; no auto-selection or confirmation change. Replaced/removed assignments release their old published identity. Service-worker cache v18.
+
+### Assignment clarity — 2026-10-02
+Expanded manually assigned rows explicitly show Selected section and its canonical title. Picker shows current manual selection and Remove assignment, which keeps the marker/time/audio and restores the original name, immediately returning the released section to available choices. Picker groups Recommended (closest available, advisory), Other available and Out of chapter order, retaining distance sorting within groups and disabled invalid choices. Cache v19.
+
+### Stable unconfirmed filter — 2026-10-02
+Unconfirmed matches now reflects the original speech result throughout a draft review, retaining manually assigned rows and their badges. Unresolved navigation still skips assigned decisions, but uses the full unconfirmed list for page positions. Service-worker cache v20.
+
+Removed Previous/Next unresolved controls and their handlers at user request. Marker filters and pagination remain. Cache v21.
+
+### Main assignment action and no-match alternatives
+Marker rows lead with Select Unmatched Section (Change selected section for assigned rows) beside an Other options selector. When no eligible section exists, the picker offers custom naming or navigation removal with explanatory copy. Removal stages an unconfirmed decision in the existing row, preserving the explicit checkbox and phone save confirmation; the first marker cannot be removed. Cache v22.
+
+### Apply Recommended Matches — 2026-10-02
+User-triggered bulk assignment acts across the book, preserving explicit edits. Only unique unassigned published matches within five seconds, with ten-second separation from competing sections/local markers and consistent published order, are applied from a single snapshot. Combined-order revalidation precedes mutation. No cascade by elimination. These remain manually assigned evidence and require Accept and save. Red Unconfirmed and yellow Manually assigned distinguish remaining work; unconfirmed-filter membership stays stable. Cache v23.
+
+### Complex Frankenstein local fixture
+`tests/fixtures/complex_review.py` expands only the synthetic Eve Fixture/B000FIXT05 job in an explicit ui_seed config. Local port 8777 now exposes 23 markers and 23 reference sections: six bulk timing recommendations, ambiguous/distant/competing cases, extra boundaries, no-evidence marker, same-title distinct references, unmatched bonus content, and pagination. Tone excerpts and illustrative transcripts, with deliberately invalid publication fingerprints. Scenario guide is written beside the fixture config. Never applied to deployment config automatically.
+
+### Review decisions and explicit order overrides — 2026-10-02
+Picker search is collapsed behind the Out of chapter order search icon and filters only that group. Manual out-of-order selection requires an inline confirmation with the section/time and warning; `override_order: true` is recorded on that explicit published decision and in acceptance provenance. Backend permits inversions involving explicitly overridden manual decisions but still rejects duplicate/unknown IDs and retains all source/time/audio guards. Recommendations never set overrides. Unmatch deletes the prior decision so valid recommendations become eligible again. Manual rename/removal/keep have distinct badges; incomplete names/removals remain action-needed. Input renders are microtask-deferred to prevent nested DOM morphing during blur. Cache v24.
+
+
+Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.

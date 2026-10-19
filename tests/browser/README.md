@@ -13,6 +13,7 @@ In another terminal:
 
 ```sh
 python tests/browser/ui_regression.py --output /tmp/ck-ui-results
+python tests/browser/reconciled_workflows.py --output /tmp/ck-ui-results/reconciled
 ```
 
 Use `--chromium /usr/bin/chromium` for an installed system browser, `--interactions-only` while iterating on a workflow, and `--axe /path/to/axe.min.js` for WCAG 2.2 AA checks at 390 and 1024 px. CI supplies the pinned axe-core 4.10.3 script and checks its SHA-256 before use.
@@ -20,3 +21,7 @@ Use `--chromium /usr/bin/chromium` for an installed system browser, `--interacti
 The complete run checks nine route states at twelve viewport sizes in both themes, plus consent visibility/style/blockers, failed submissions, changed-draft approval reset, native disclosures, skip-link navigation, cover-rail expansion/Escape, live resize, explicit sidebar preference, form retention and redacted diagnostics. It makes no provider calls or real acceptance writes.
 
 The generated screenshots and JSON report are development evidence. They do not replace physical iPhone/Safari, VoiceOver, desktop screen-reader or native browser zoom validation before release.
+
+The reconciled workflows additionally check ordered chapter choices, inline rename/Change, reload persistence, token invalidation, save handoff, hydrated notification covers and three simultaneous stable notification slots across polling, dismissal and viewport changes. They intercept all writes.
+
+A synthetic 180-marker override also checks the initial 30-card bound, progressive reveal, explicit order override, bulk Undo, first-marker protection, desktop scroll stability, reduced motion, and notification hover/focus pause and resumed expiry.

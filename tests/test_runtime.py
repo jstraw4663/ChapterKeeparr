@@ -46,3 +46,11 @@ class RuntimeTests(unittest.TestCase):
                 self.assertGreater(float(np.sqrt(np.mean(decoded ** 2))), .1)
                 self.assertLessEqual(float(np.max(np.abs(decoded))), .26)
                 self.assertEqual(hashlib.sha256(path.read_bytes()).digest(), before)
+
+    def test_deployed_runtime_smoke_script(self):
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve().parents[1] / 'scripts' / 'check_speech_runtime.py')],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('16000 samples', result.stdout)

@@ -62,6 +62,7 @@ jobs:
               raise RuntimeError('Fixture server did not start')
           PY
           python tests/browser/ui_regression.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results
+          python tests/browser/reconciled_workflows.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/reconciled
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
