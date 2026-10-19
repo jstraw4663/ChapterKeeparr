@@ -42,6 +42,7 @@ const id = value => encodeURIComponent(value);
 export const api = {
   health: () => request('/api/health'),
   settings: () => request('/api/settings'),
+  updates: () => request('/api/updates'),
   setRecoveryMinimum: percent => request('/api/settings/recovery', { method: 'PUT', body: { recovery_minimum_percent: percent } }),
 
   listJobs: (limit = 1000) => request(`/api/jobs?limit=${limit}`).then(d => (Array.isArray(d) ? d : d?.jobs || [])),

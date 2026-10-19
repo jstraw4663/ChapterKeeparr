@@ -32,6 +32,11 @@ RUN mkdir -p /opt/models/small.en /models \
     && MODEL_REVISION="$MODEL_REVISION" python -c "import os; from huggingface_hub import snapshot_download; snapshot_download(repo_id='Systran/faster-whisper-small.en', revision=os.environ['MODEL_REVISION'], local_dir='/opt/models/small.en')"
 
 COPY app ./app
+ARG APP_VERSION
+ARG BUILD_CHANNEL=development
+ARG BUILD_REVISION
+ARG BUILD_DATE
+RUN python -m app.version
 COPY main.py ./main.py
 COPY deploy/entrypoint.sh /usr/local/bin/chapterkeeper-entrypoint
 RUN chmod 0755 /usr/local/bin/chapterkeeper-entrypoint \

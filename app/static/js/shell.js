@@ -19,7 +19,7 @@ const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
 
 export function shellMarkup() {
   return html`
-  <a class="skip" href="#view">Skip to content</a>
+  <a class="skip" href="#view" data-act="skip-content">Skip to content</a>
   <div class="app">
     <aside class="rail" aria-label="Sidebar">
       <a class="brand" href="#/" aria-label="ChapterKeeparr, Library">${logo(30)}<span class="lbl word">ChapterKeeparr</span></a>
@@ -87,12 +87,14 @@ export function applyAppearance() {
 
 export function initCollapse() {
   const saved = getPrefs().sidebarCollapsed;
-  const collapsed = saved ?? (window.innerWidth >= 768 && window.innerWidth < 1024);
+  const collapsed = saved ?? (window.innerWidth >= 768 && window.innerWidth < 1100);
   document.documentElement.classList.toggle('collapsed', collapsed);
   syncCollapseButton();
 }
 function syncCollapseButton() {
   const collapsed = document.documentElement.classList.contains('collapsed');
+  const activity = document.querySelector('[data-activity-card]');
+  if (activity) { activity.inert = collapsed; activity.setAttribute('aria-hidden', String(collapsed)); }
   const btn = document.querySelector('[data-act="collapse"]');
   if (!btn) return;
   btn.setAttribute('aria-expanded', String(!collapsed));
@@ -290,6 +292,10 @@ function openSettingsSheet() {
 
 // ---------- shell actions (delegated from main.js) ----------
 export const shellActions = {
+  'skip-content'(el, event) {
+    event.preventDefault();
+    document.getElementById('view')?.focus();
+  },
   collapse() {
     const rootEl = document.documentElement;
     if (!rootEl.classList.contains('collapsed')) aimActivityCard();
@@ -308,6 +314,8 @@ export function initShell() {
   bindSearch();
   initCollapse();
   aimActivityCard();
+  const sidebarQuery = window.matchMedia('(min-width: 768px) and (max-width: 1099px)');
+  sidebarQuery.addEventListener?.('change', initCollapse);
   window.addEventListener('resize', () => aimActivityCard());
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyAppearance);
   window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyAppearance);

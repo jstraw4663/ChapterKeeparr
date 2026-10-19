@@ -39,7 +39,7 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 | G-021 | BookOrbit | missing | backend + Jeremy | placeholder in UI | — |
 | G-022 | Folder browser counts + guess | partial | backend | placeholder in UI | — |
 | G-023 | Settings persistence | partial | both | placeholder in UI | — |
-| G-024 | Health + version | partial | backend | placeholder in UI | — |
+| G-024 | Health + version | exists | frontend + backend | implemented; device validation pending | — |
 | G-025 | Queued jobs ("Up next") | exists | frontend | done | — |
 | G-026 | PWA | partial | frontend | done | — |
 | G-027 | Static file serving allowlist | — | backend (tiny) | done | — |
@@ -59,7 +59,7 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 | G-041 | Download report | — | frontend | done | — |
 | G-042 | Current-file duration | — | frontend | done | — |
 | G-043 | `skipped` status not in vocabulary | — | Jeremy | done | — |
-| G-045 | Figtree hosting | — | frontend | open | needs G-027 to self-host |
+| G-045 | Figtree hosting | exists | frontend | done | bundled variable WOFF2 + OFL |
 | G-046 | Worker activity line | exists | frontend | done | — |
 | G-047 | No stable book id | missing | backend | open | — |
 | G-048 | Chapter playback reduced to 15 s | — | Jeremy | open | — |
@@ -221,10 +221,11 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: both · Status: placeholder in UI
 
 ### G-024 · Health and version
-- Build today (rechecked 2026-10-19 at `c94c052`): **partial.** `GET /api/health` → `{"status":"ok"}`. The redesigned `index.html` does not expose an installed version; Settings → Server shows a placeholder.
-- Proposed contract: report the actual release version plus build/commit and build date from a single build source. Keep frontend asset identity distinguishable from server identity. Unknown fields remain unknown.
-- Owner request (2026-10-19): show installed version/build details in Settings for troubleshooting and checking updates. Add honest manual update-check states and a redacted Copy diagnostics action. Checking does not pull images or restart the app. This remains planned, not implemented; see [the finalized UI/UX plan](../plans/ui-ux-optimization.md#4-settings-about-version-and-updates) and its mockups.
-- Owner: backend · Status: placeholder in UI
+- Implemented (2026-10-19): `GET /api/health` retains its public status-only contract. Authenticated `GET /api/settings` adds `build`: version, release/development channel, commit, optional build date, frontend build marker/content hash, speech backend and model basename. Source builds resolve their Git commit; container builds stamp API, frontend marker and PWA cache identity together from Docker build arguments supplied by the release workflow.
+- Settings → About and updates displays both this tab’s frontend marker and the server’s identity, plus manual `GET /api/updates` and Copy diagnostics. Diagnostics exclude credentials and library/config/work paths.
+- Manual checks use a fixed GitHub releases endpoint with bounded reads/timeouts, one request at a time and a five-minute cache. Private-repository/auth/rate-limit/no-release failures and development builds remain unknown rather than claiming Up to date. No image pull or restart occurs.
+- A waiting PWA update stays waiting until a user confirms reload; existing review tabs keep their cached shell. Unknown build fields stay `—`. Device/PWA rollout validation remains required.
+- Owner: frontend + backend · Status: implemented; release/device validation pending
 
 ### G-025 · Queued jobs
 - Build today: **exists.** `status=queued`, claimed oldest-first. Up to `WORKERS` run at once.
@@ -321,9 +322,8 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: Jeremy · Status: done
 
 ### G-045 · Figtree hosting
-- Google Fonts CDN (the design's reference) sends a request to Google from a self-hosted LAN app, and fails offline or in the PWA. Self-hosting needs G-027.
-- Proposal: self-host `Figtree[wght].woff2` once G-027 lands. Until then, use the Google Fonts link with a system-font fallback.
-- Owner: frontend · Status: open
+- Implemented (2026-10-19): variable Figtree WOFF2 is bundled under `app/static/fonts`, preloaded, declared with `font-display: swap`, and included in the versioned PWA shell cache. The OFL license ships alongside it. No Google Fonts request is needed.
+- Owner: frontend · Status: done
 
 ### G-046 · Worker activity line
 - Build: `result.activity` (latest worker message) and `result.speech_check {current,total}`.

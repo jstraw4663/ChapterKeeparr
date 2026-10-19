@@ -115,7 +115,7 @@ function go() {
     // First load keeps the designed entrance; later navigation is animated by the transition.
     render(true, false, { patch: kind === 'same', still: kind !== 'none' });
     window.scrollTo(0, restore);
-    if (kind !== 'none') document.querySelector('#view h1')?.focus({ preventScroll: true });
+    if (kind !== 'none') document.querySelector(next.name === 'review' && next.id && !phone ? '#view .revhead h2' : '#view h1')?.focus({ preventScroll: true });
     return settleCovers(document.getElementById('view'));
   };
   transition(kind, swap, { bookId: kind === 'push' ? next.id : kind === 'pop' ? from?.id : '' });
@@ -187,6 +187,9 @@ function boot() {
   window.addEventListener('resize', reink);
   document.fonts?.ready.then(reink);
   document.addEventListener('keydown', event => {
+    if (event.defaultPrevented || topOverlay()) return;
+    screen?.onKeyDown?.(event, ctx());
+    if (event.defaultPrevented) return;
     if (!ui.menu || document.querySelector('.layer')) return;
     if (event.key === 'Escape') { event.preventDefault(); closeMenu({ focusToggle: true }); return; }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -211,7 +214,12 @@ function boot() {
     screen.onSubmit(form, event, ctx());
   });
   window.addEventListener('hashchange', go);
-  phoneQuery.addEventListener?.('change', () => { lastSig = ''; go(); });
+  phoneQuery.addEventListener?.('change', () => {
+    // Resizing is not navigation: retain the current draft, playback and scroll.
+    closeSearch();
+    setScreenChrome({ topbar: screen?.topbar !== false, detail: typeof screen?.detail === 'function' ? screen.detail(ctx()) : Boolean(screen?.detail && phoneQuery.matches) });
+    lastSig = ''; render(false, true); updateShell(route);
+  });
   onPrefs(() => { applyAppearance(); });
   subscribe(() => {
     updateShell(route);
@@ -226,7 +234,16 @@ function boot() {
   });
   go();
   start();
-  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').then(registration => {
+    const available = () => notify({ kind: 'info', title: 'A frontend update is ready', body: 'Finish your review, then open Settings to reload safely.', href: '#/settings/about', action: 'Settings', dest: null, at: Date.now() });
+    if (registration.waiting) available();
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) available();
+      });
+    });
+  }).catch(() => {}));
 }
 
 boot();

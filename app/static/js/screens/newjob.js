@@ -203,7 +203,7 @@ export default {
         <div class="pbar">${start}</div>`;
     }
     return html`<div class="page-head ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">New job</h1><p class="lede">Pick a folder on your server. We’ll match the edition, build one M4B with chapters, and verify it.</p></div>
-      <div class="twocol" style="grid-template-columns:minmax(0,1fr) 340px;gap:28px">
+      <div class="twocol newjob-grid">
         <div class="col gap20 ${enter ? 'rise' : ''}" style="animation-delay:.05s">${sourceSection(ctx)}${editionSection(ctx)}${optionsSection(ctx)}</div>
         <aside class="panel pad col gap16 ${enter ? 'rise' : ''}" style="animation-delay:.12s;position:sticky;top:24px" aria-label="What happens next"><span class="eyebrow">What happens next</span>
           <ol class="col gap14" style="margin:0;padding:0;list-style:none">${steps.map(([b, t], i) => html`<li class="row" style="align-items:flex-start;gap:12px"><span class="meta" style="font-weight:800;width:18px">${i + 1}</span><span style="font-size:14px;line-height:1.45"><strong>${b}</strong> ${t}</span></li>`)}</ol>

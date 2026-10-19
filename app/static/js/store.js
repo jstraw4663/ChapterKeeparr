@@ -92,7 +92,7 @@ export async function refresh() {
     } finally {
       inflight = null;
       const busy = state.books.some(b => b.status.key === 'converting' || b.status.key === 'queued');
-      timer = setTimeout(refresh, state.connected === false ? OFFLINE : busy ? FAST : SLOW);
+      timer = setTimeout(refresh, document.hidden ? 60_000 : state.connected === false ? OFFLINE : busy ? FAST : SLOW);
     }
   })();
   return inflight;

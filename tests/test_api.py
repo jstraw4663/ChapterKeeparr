@@ -45,6 +45,18 @@ class ApiTests(unittest.TestCase):
         submitted = self.client.post("/api/jobs", json={"path": str(self.outside)}, headers=self.headers)
         self.assertEqual(submitted.status_code, 403)
 
+    def test_build_identity_and_manual_updates_require_auth(self):
+        self.assertEqual(self.client.get('/api/settings').status_code, 401)
+        self.assertEqual(self.client.get('/api/updates').status_code, 401)
+        settings = self.client.get('/api/settings', headers=self.headers).json()
+        self.assertIn('frontend_assets', settings['build'])
+        self.assertIn('revision', settings['build'])
+        self.assertNotIn('test-token', str(settings))
+        with patch('app.version.UpdateChecker.check', return_value={'state': 'unknown', 'message': 'Private release unavailable'}):
+            result = self.client.get('/api/updates', headers=self.headers)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.json()['state'], 'unknown')
+
     def test_submission_dedup_and_job_actions(self):
         with patch("app.engine.discover_jobs", return_value=([self.book], [])):
             first = self.client.post("/api/jobs", json={"path": str(self.book)}, headers=self.headers)

@@ -68,6 +68,9 @@
   --radius-input:12px;
   --radius-sheet:26px;
   --radius-pill:999px;
+  --review-save:var(--on-cover);
+  --review-save-ink:var(--cp-ink);
+  --review-save-line:var(--muted);
   --tap:44px;
   --sidebar:248px;
   --sidebar-collapsed:76px;

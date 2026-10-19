@@ -147,3 +147,16 @@ Acceptance is bound to the exact draft, source audio and reference timeline. The
 ## UI redesign (2026-09-24)
 
 The teal dashboard is replaced by the redesign in `docs/design/`: a Library of covers, a Queue with live progress and an activity log, a Needs review workspace, a Book page with 15-second spot checks, a New job flow with a server folder browser, partial Suggestions and Settings. Old links (`#jobs`, `#job/<id>`, `#new-job`, `#settings`) redirect. Recovery acceptance, Review markers from audio, Resume checks, multi-book discovery, the access token and the recovery minimum all keep a place in the new screens. The static route now serves any `.js/.css/.woff2/.png/.svg` file inside `app/static`. `tests/test_frontend.py` guards the design rules and runs the JavaScript unit tests when Node is installed.
+
+
+## Responsive review and build diagnostics (implementation, 2026-10-19)
+
+Needs review opens a readable list, then an expandable compact cover rail for the selected book. Windowed desktop layouts and the shared Library/New job/Settings controls reflow by available workspace width. Phones retain list/detail navigation. Accept and save is hidden while gap consent is unchecked and white when checked; coverage, per-section approval and server publication checks still block invalid saves. A changed draft requires fresh approval.
+
+Settings → About and updates shows the installed version/channel, commit, build date when available, client/server frontend identity and speech backend/model. Copy diagnostics excludes tokens and private library/config/work paths. Manual update checks never install or restart anything, and private/no-release/rate-limit failures remain unknown.
+
+Release images receive `APP_VERSION`, `BUILD_CHANNEL`, `BUILD_REVISION` and `BUILD_DATE` from CI. The image stamps the API, frontend and PWA cache identity from that same build. A plain source checkout is a development build, not proof that it matches the latest release tag. Waiting PWA updates offer an explicit reload after review work is finished.
+
+Figtree is bundled locally with its OFL license. Background tabs poll at most once a minute; visible queue updates retain their existing cadence. No new production dependency or conversion policy is introduced.
+
+Browser regressions and CI setup are documented in [tests/browser/README.md](tests/browser/README.md). Physical-device/Safari, screen-reader and deployed PWA rollout validation remain release checks.

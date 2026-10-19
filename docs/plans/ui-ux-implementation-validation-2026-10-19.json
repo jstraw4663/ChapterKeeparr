@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-19",
+  "baseline": "c94c05298ec90ffa45d1d432eb6541bb4045b6a3",
+  "implementation_branch": "feat/responsive-review-workspace",
+  "environment": "isolated workspace preview; ENABLE_WORKERS=0; generated media; browser writes intercepted",
+  "python_regressions": {
+    "tests": 77,
+    "passed": true
+  },
+  "javascript": {
+    "test_files": 7,
+    "passed": true,
+    "syntax_checks": "passed"
+  },
+  "browser": {
+    "route_states": 9,
+    "viewport_sizes": 12,
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "observations": 216,
+    "page_errors": [],
+    "page_overflow": 0,
+    "duplicate_ids": 0,
+    "axe_scans": 36,
+    "axe_violations": 0,
+    "focused_workflow_checks": "passed in both themes",
+    "extra_checks": [
+      "consent off/on/off and white styling",
+      "below-minimum and per-section approval blockers",
+      "duplicate submit suppression and retained approval after simulated failure",
+      "draft-token reset from simulated changed job/detail responses",
+      "skip link preserves route",
+      "native disclosure state survives refresh",
+      "cover list expansion preserves detail width and Escape restores focus",
+      "selected book heading receives keyboard focus",
+      "live resize and explicit expanded sidebar at tablet widths",
+      "long unbroken titles and multiple narrators",
+      "edition form retention",
+      "redacted diagnostic copy"
+    ]
+  },
+  "build_identity": "unit-tested image stamping for API/frontend/PWA identity; no image was built or published",
+  "limitations": [
+    "deployed LAN app and MacBook checkout not accessible",
+    "supplied deployed sticky-editor variant is absent from GitHub main; reconcile deployed commit before rollout",
+    "physical Safari/iPhone, software keyboard, VoiceOver/desktop screen-reader, native zoom and deployed PWA rollout still require validation",
+    "no hardware throughput, speech inference or iGPU benchmark performed"
+  ]
+}

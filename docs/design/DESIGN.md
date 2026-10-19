@@ -326,3 +326,14 @@ Changes made while building the redesign against the real server, one line each 
 | Book derivation, grouping, sorting | `app/static/js/books.js` | `deriveLibrary()`, `groupBooks()`, `sortBooks()` |
 | Notification destinations | `app/static/js/events.js` | `destinationFor()`, `diffJobs()` |
 | Icons | `app/static/js/icons.js` | `icon()`, `logo()` |
+
+
+## Responsive workspace refinement (2026-10-19)
+
+The approved UI/UX plan in `docs/plans/ui-ux-optimization.md` extends the existing design. Selecting a review book collapses its list to an 80px cover rail. A separate accessible expand button overlays the readable title list; pointer/focus previews and Escape supplement it. When the workspace is too narrow for a useful detail pane, the compact covers move to a horizontal row. Phones retain list/detail navigation. Review navigation occupies its own row above the cover/title metadata.
+
+Gap consent controls visibility of Accept and save: unchecked hides it completely, checked shows the named white review-save variant in both themes. A dashed border and nearby explanation distinguish a blocked white action. The full acceptance predicate, current draft token and server fingerprint/publication checks still govern authorization. No threshold is changed automatically.
+
+Shared interactive targets use 44px minimums. Container queries adapt Library tools, New job, Settings, book metadata and review headers to available workspace width. An explicit sidebar preference is retained; the automatic mode adapts during resizing. Hidden activity cards are inert. Native disclosure state, focus, form values and previews survive ordinary updates; resizing across the phone breakpoint does not navigate or stop playback.
+
+Settings adds About and updates. Build metadata comes from the server’s embedded build identity, while this tab has its own shipped asset marker. Update checks are manual and read-only. Waiting service workers never force a reload of unsaved review work. Figtree is bundled locally under the OFL license.

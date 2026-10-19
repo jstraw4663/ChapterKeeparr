@@ -73,3 +73,17 @@ See [the UI/UX plan](docs/plans/ui-ux-optimization.md), [audit evidence](docs/pl
 
 
 
+
+
+## UI/UX implementation — 2026-10-19
+
+- Fresh clone/fetch verified GitHub main at `c94c052`; implementation branch `feat/responsive-review-workspace` includes the saved planning commits. Main is 15 commits ahead of v0.5.0; the earlier audit folder is a partial copy and is not the implementation checkout.
+- Python 3.12 with repository development requirements: **77 unittests pass**, including generated-media publication/audio-preservation/backup regressions, authenticated build/update API checks, release failure/development-build handling and shared image/API/frontend/PWA identity stamping.
+- JavaScript syntax/design guards and **seven JavaScript test files pass**, including consent/draft-state and waiting-service-worker/cache-isolation regressions.
+- Browser sweep: **216 observations** across nine route states, twelve viewport sizes and both themes; no page overflow, duplicate IDs or JavaScript page errors. **36 axe-core WCAG 2.2 AA scans** report no violations. This is automated evidence, not a conformance certification.
+- Focused browser checks pass in both themes: checkbox off/on/off, white action, remaining approval/coverage blockers, duplicate submit suppression, retained choices after simulated failure, reset after a changed draft, native disclosure persistence, skip-link route preservation, rail expansion/Escape/focus, selected-book heading focus, live resize, explicit expanded sidebar at 768/820/900/1024, long unbroken titles/narrators, form retention and redacted diagnostics. All acceptance writes were intercepted; no real library was published.
+- Figtree WOFF2 is bundled (27,784 bytes) with its OFL license. Background polling is reduced to once per minute; build identity is calculated once at API startup; manual release checks are serialized and cached for five minutes. No throughput/RAM/iGPU claim is established by these UI checks.
+- Browser test setup is in `tests/browser/README.md`; the release workflow now runs generated-fixture browser/accessibility checks and uploads results. Local results precede remote CI and deployment.
+- Remaining release checks: identify/reconcile the deployed container commit (its supplied sticky editor is not in GitHub main), actual iPhone/Safari/software keyboard, VoiceOver plus desktop screen reader, native zoom, actual container build and PWA upgrade/reload behavior. No merge, tag, image publication, production deployment or real audiobook changes were performed.
+
+See `docs/plans/ui-ux-implementation-validation-2026-10-19.json` for the compact record. The backend optimization roadmap remains deferred.

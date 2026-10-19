@@ -33,6 +33,42 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
       - name: Run tests
         run: python -m unittest discover -s tests
+      - name: Install browser test tools
+        run: |
+          python -m pip install -r requirements-browser.txt
+          python -m playwright install --with-deps chromium
+      - name: Prepare disposable browser fixture
+        run: python tests/fixtures/ui_seed.py /tmp/ck-ui-check
+      - name: Download pinned accessibility checker
+        run: |
+          curl --fail --location --max-time 30 https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js --output /tmp/axe.min.js
+          echo '880970c081707360e64f34cea25ff91892f5bc95675b0776925b9709dd8a68bb  /tmp/axe.min.js' | sha256sum --check
+      - name: Run responsive browser checks
+        env:
+          ENABLE_WORKERS: '0'
+          CONFIG_DIR: /tmp/ck-ui-check/config
+          LIBRARY_ROOTS: /tmp/ck-ui-check/library
+        run: |
+          python -m uvicorn app.api:create_app --factory --port 8767 > /tmp/ck-ui-server.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8767/api/health', timeout=1)
+                  break
+              except OSError:
+                  time.sleep(.25)
+          else:
+              raise RuntimeError('Fixture server did not start')
+          PY
+          python tests/browser/ui_regression.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-regression-results
+          path: |
+            /tmp/ck-ui-results
+            /tmp/ck-ui-server.log
 
   image:
     needs: test
@@ -74,5 +110,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            BUILD_CHANNEL=${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'development' }}
+            BUILD_REVISION=${{ github.sha }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

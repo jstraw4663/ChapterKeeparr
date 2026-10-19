@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from .db import Store
 from .media import MediaService, MediaError
+from .version import build_info, UpdateChecker
 
 
 class JobSubmission(BaseModel):
@@ -104,6 +105,8 @@ def create_app(store: Store | None = None) -> FastAPI:
     app = FastAPI(title="ChapterKeeparr", lifespan=lifespan)
     app.state.store = store
     app.state.settings = settings
+    installed = build_info()
+    update_checker = UpdateChecker(installed)
 
     def auth(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> None:
         token = os.getenv("CHAPTERKEEPER_API_TOKEN")
@@ -117,7 +120,11 @@ def create_app(store: Store | None = None) -> FastAPI:
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:
-        return {**settings,"recovery_minimum_percent":store.recovery_minimum()}
+        return {**settings, "build": installed, "recovery_minimum_percent":store.recovery_minimum()}
+
+    @app.get("/api/updates", dependencies=[Depends(auth)])
+    def check_updates() -> dict[str, Any]:
+        return update_checker.check()
 
     @app.put("/api/settings/recovery", dependencies=[Depends(auth)])
     def recovery_settings(payload: RecoverySettings):

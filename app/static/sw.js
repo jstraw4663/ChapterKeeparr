@@ -1,4 +1,4 @@
-const CACHE = 'chapterkeeparr-shell-v10';
+const CACHE = 'chapterkeeparr-shell-v11';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
   '/',
@@ -8,6 +8,7 @@ const SHELL = [
   '/static/icon-512.png',
   '/static/icon.svg',
   '/static/js/api.js',
+  '/static/js/assets.js',
   '/static/js/audio.js',
   '/static/js/books.js',
   '/static/js/covers.js',
@@ -23,6 +24,7 @@ const SHELL = [
   '/static/js/player.js',
   '/static/js/prefs.js',
   '/static/js/router.js',
+  '/static/js/review-state.js',
   '/static/js/screens/book.js',
   '/static/js/screens/common.js',
   '/static/js/screens/evidence.js',
@@ -37,12 +39,18 @@ const SHELL = [
   '/static/js/status.js',
   '/static/js/store.js',
   '/static/js/ui.js',
+  '/static/fonts/figtree-latin.woff2',
   '/static/styles.css',
   '/static/tokens.css',
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
+});
+
+// A waiting worker activates only after the user chooses a safe reload.
+self.addEventListener('message', event => {
+  if (event.data === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -61,12 +69,15 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(request).catch(() => caches.match('/')));
     return;
   }
-  if (SHELL.includes(url.pathname)) event.respondWith(fetch(request).then(async response => {
+  if (SHELL.includes(url.pathname)) event.respondWith(caches.open(CACHE).then(async cache => {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return fetch(request).then(async response => {
     if (response.ok) {
       const copy = response.clone();
-      const cache = await caches.open(CACHE);
       await cache.put(request, copy);
     }
     return response;
-  }).catch(() => caches.match(request)));
+    });
+  }));
 });

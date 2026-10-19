@@ -218,3 +218,10 @@ Release criteria:
 - Existing JavaScript/design/backend acceptance regressions pass, plus focused browser tests for the new behavior.
 - PWA refresh and deployed-build identity are verified on the owner's actual installation before release.
 
+
+
+## Implementation record (2026-10-19)
+
+Implemented on `feat/responsive-review-workspace`: responsive cover rail and header; consent-driven white action with shared approval predicate and draft-token reset; adaptive shared layouts/44px targets; skip-link route preservation; native disclosure and resize/playback stability; local font; hidden-tab polling; About/build identity, cached manual update checks and redacted diagnostic copy; build-stamped frontend/PWA identities with explicit reload. The prior audit and mockups above remain historical design evidence.
+
+The GitHub source has an in-flow acceptance form. It does not contain the supplied deployment screenshot’s sticky draft editor, so this implementation does not claim to fix or remove that separate deployed variant. Identify and reconcile the running container’s commit before release. Physical iPhone/Safari, software keyboard, VoiceOver/desktop screen-reader, native zoom and deployed PWA rollout checks remain outstanding. See `VALIDATION.md` for actual automated results. Backend optimization stays deferred.

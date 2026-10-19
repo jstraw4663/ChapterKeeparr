@@ -10,6 +10,7 @@ import { reportOf, reviewTitle, reviewDetail } from '../status.js';
 import { cover, button, iconButton, menuButton, confirmRow, choices, collapsible, field, selectField, historyList, techDetails, REGIONS, regionName, skeletonRows, emptyState } from '../ui.js';
 import { notify } from '../notify.js';
 import { historyFor } from '../history.js';
+import { acceptanceState, draftApproval } from '../review-state.js';
 import { readLog } from '../prefs.js';
 import { confirmSheet } from '../overlay.js';
 import { checksOf, checkTimeline, checkRows, playCheck, durationOf, gatesDetail, technical, alignmentPlot, bestDiagnostics } from './evidence.js';
@@ -17,7 +18,17 @@ import { serverButton, offline, OFFLINE_REASON, reportError, cancelActions, canc
 
 const forms = new Map();     // jobId → form state; survives polling and navigation
 const details = new Map();   // jobId → full job record (with recovery_acceptance_preview)
+const detailVersions = new Map();
 const sources = new Map();   // jobId → current file duration in seconds (G-042)
+
+function rememberDetail(id, job) {
+  details.delete(id); details.set(id, job);
+  // Reports include transcripts; retain edits separately without keeping every report.
+  while (details.size > 40) {
+    const oldest = details.keys().next().value;
+    details.delete(oldest); detailVersions.delete(oldest);
+  }
+}
 
 // What happened, in plain words, per pause reason. The server's own sentence is under "Details from the server".
 const HAPPENED = {
@@ -61,9 +72,17 @@ function formFor(book) {
 }
 
 function ensureLoaded(book, ctx) {
-  if (!details.has(book.id)) {
+  const version = book.job.updated_at;
+  if (detailVersions.get(book.id) !== version || !details.has(book.id)) {
+    detailVersions.set(book.id, version);
     details.set(book.id, null);
-    jobDetail(book.id).then(job => { details.set(book.id, job); ctx.rerender(); }).catch(() => details.delete(book.id));
+    jobDetail(book.id).then(job => {
+      if (detailVersions.get(book.id) !== version) return;
+      rememberDetail(book.id, job); ctx.rerender();
+    }).catch(error => {
+      if (detailVersions.get(book.id) !== version) return;
+      details.set(book.id, { load_error: error.message }); ctx.rerender();
+    });
   }
   if (!sources.has(book.id)) {
     sources.set(book.id, null);
@@ -80,10 +99,11 @@ function header(book, list, idx, ctx) {
     ${iconButton({ icon: 'chevronDown', label: 'Next book', act: 'next', disabled: idx >= list.length - 1, cls: ctx.phone ? 'picon' : 'icb' })}`;
   if (ctx.phone) {
     return html`<div class="back-head"><a class="textlink" href="#/review" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Review</a><div class="row" style="gap:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'phone-cancel', cls: 'picon', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
-      <div class="row gap14 page-pad">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
+      <div class="row gap14 page-pad review-mobile-head">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
   }
   const confirming = ctx.ui.confirm === `cancel:${book.id}`;
-  return html`<div class="revhead">${cover(book, { size: 132, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div><div class="row gap8" style="flex-shrink:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
+  return html`<div class="revnav row wrap gap8"><span class="meta grow">Selected book</span>${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div>
+    <div class="revhead">${cover(book, { size: 112, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 tabindex="-1" data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div></div>
     ${confirming ? confirmRow({ question: 'Cancel this job? Source files stay put.', keepAct: 'confirm-keep', confirmAct: 'confirm-cancel', confirmLabel: 'Cancel job', arg: book.id }) : ''}`;
 }
 
@@ -158,7 +178,7 @@ function editionResults(form) {
   if (form.searching) return html`<p class="meta" role="status">Searching editions…</p>`;
   if (!form.results) return '';
   if (!form.results.length) return html`<p class="meta" role="status">No editions found. Try another title, ASIN or region.</p>`;
-  return html`<div class="edresults" role="list" aria-label="Edition results">${form.results.map((e, i) => html`<button type="button" class="edrow" role="listitem" data-act="pick-edition" data-arg="${i}" aria-pressed="${bool(form.selected === i)}">
+  return html`<div class="edresults" role="group" aria-label="Edition results">${form.results.map((e, i) => html`<button type="button" class="edrow" data-act="pick-edition" data-arg="${i}" aria-pressed="${bool(form.selected === i)}">
     ${e.cover_url ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${e.cover_url}">` : html`<span class="cover" style="width:52px;height:52px;border-radius:8px"></span>`}
     <span class="col gap4"><span style="font-weight:700" class="clamp2">${e.title || 'Untitled edition'}</span><span class="meta ell">${(e.authors || []).map(a => a.name).join(', ') || 'Author unknown'}${e.narrators?.length ? ` · ${e.narrators.map(n => n.name).join(', ')}` : ''}</span><span class="meta">${[e.runtime_length_min ? `${Math.round(e.runtime_length_min).toLocaleString()} min` : '', e.publisher_name, e.language].filter(Boolean).join(' · ')}</span></span>
     <span class="mono meta">${e.asin}</span></button>`)}</div>`;
@@ -196,17 +216,20 @@ function editionBody(book, form, ctx) {
 }
 
 function finalizeBody(book, p, ctx) {
-  const f = ctx.ui.accept?.[book.id] || {};
-  return html`<form class="accept" data-form="accept">
+  const f = draftApproval(p, ctx.ui.accept?.[book.id]);
+  ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: f };
+  const acceptance = acceptanceState(p, f, { connected: !offline(), authNeeded: state.authNeeded });
+  return html`<form class="accept" data-form="accept" data-key="accept-${p.token}" aria-busy="${bool(Boolean(f.busy))}">
       <p style="font-size:14px">That’s ${p.supported_percent.toFixed(1)}% of the markers. Nothing is moved and no missing chapter is invented. You can listen to what was heard under Chapter checks below.</p>
       ${field({ id: 'accept-min', label: 'Minimum identified markers for this book (%)', type: 'number', value: f.min ?? p.default_minimum_percent, hint: `Default from Settings: ${p.default_minimum_percent}%. Applies to this book only.`, extra: { min: 1, max: 100, step: 0.1, inputmode: 'decimal' } })}
-      ${p.sections.length ? html`<div class="col"><span style="font-size:14px;font-weight:650">Sections that couldn’t be located</span><span class="meta">Tick each one to accept it as optional for this book. Named chapters aren’t assumed optional.</span>${p.sections.map(s => html`<label class="checkbox"><input type="checkbox" name="optional_section" value="${s.id}" ${f.sections?.includes(s.id) ? 'checked' : ''}><span>Accept “${s.title}” as optional</span></label>`)}</div>` : ''}
-      ${p.unresolved_markers.length ? html`<details class="tech"><summary>${p.unresolved_markers.length} original ${p.unresolved_markers.length === 1 ? 'marker keeps' : 'markers keep'} its name and time</summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">${p.unresolved_markers.map(m => html`<li>${m.index}. ${m.title} · ${clock(m.seconds)}</li>`)}</ul></details><label class="checkbox"><input type="checkbox" name="preserve" ${f.preserve ? 'checked' : ''}><span>Keep these unidentified markers as they are</span></label>` : ''}
+      ${p.sections.length ? html`<div class="col"><span style="font-size:14px;font-weight:650">Sections that couldn’t be located</span><span class="meta">Tick each one to accept it as optional for this book. Named chapters aren’t assumed optional.</span>${p.sections.map(s => html`<label class="checkbox"><input type="checkbox" id="optional-${s.id}" name="optional_section" value="${s.id}" ${f.sections?.includes(s.id) ? 'checked' : ''}><span>Accept “${s.title}” as optional</span></label>`)}</div>` : ''}
+      ${p.unresolved_markers.length ? html`<details class="tech"><summary>${p.unresolved_markers.length} original ${p.unresolved_markers.length === 1 ? 'marker keeps' : 'markers keep'} its name and time</summary><ul class="meta" style="margin:8px 0 0;padding-left:18px">${p.unresolved_markers.map(m => html`<li>${m.index}. ${m.title} · ${clock(m.seconds)}</li>`)}</ul></details><label class="checkbox"><input type="checkbox" id="accept-preserve" name="preserve" ${f.preserve ? 'checked' : ''}><span>Keep these unidentified markers as they are</span></label>` : ''}
       ${p.coverage_warnings.length ? html`<div class="col gap4"><span style="font-size:14px;font-weight:650">Content coverage</span>${p.coverage_warnings.map(w => html`<span class="meta">${w}</span>`)}</div>` : ''}
-      <label class="checkbox"><input type="checkbox" name="gap" ${f.gap ? 'checked' : ''}><span>I accept possible content gaps or edition differences in this recording. Matching chapters doesn’t prove the audio is complete.</span></label>
+      <label class="checkbox"><input type="checkbox" id="accept-gap" name="gap" ${f.gap ? 'checked' : ''}><span>I accept possible content gaps or edition differences in this recording. Matching chapters doesn’t prove the audio is complete.</span></label>
       <p class="meta">The audio must be unchanged and the output must validate. An existing M4B is backed up first. Source MP3s are kept.</p>
       ${f.message ? html`<p class="note" role="status">${f.message}</p>` : ''}
-      <div>${serverButton({ label: 'Accept and save', kind: 'primary', act: 'accept', size: 'md', disabled: f.busy, disabledReason: 'Working…' })}</div></form>`;
+      <p id="accept-status" class="meta" role="status" aria-live="polite">${acceptance.problem || 'Ready to submit. Final checks run before anything is saved.'}</p>
+      <div id="accept-action" ${acceptance.visible ? '' : 'hidden'}>${serverButton({ label: f.busy ? 'Submitting…' : 'Accept and save', kind: 'review-save', act: 'accept', size: 'lg', block: ctx.phone, disabled: !acceptance.enabled, disabledReason: acceptance.problem, extra: { 'aria-describedby': 'accept-status' } })}</div></form>`;
 }
 
 function checksSection(book, ctx) {
@@ -221,7 +244,7 @@ function checksSection(book, ctx) {
 
 function historySection(book, ctx) {
   const entries = historyFor(details.get(book.id) || book.job, readLog());
-  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Everything recorded for this book', open: ctx.ui.open?.history ?? false, body: html`${historyList(entries)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history needs server support. <span class="mono">(G-011)</span></p>` });
+  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Everything recorded for this book', open: ctx.ui.open?.history ?? false, body: html`${historyList(entries)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history isn’t available yet.</p>` });
 }
 
 function detail(book, list, idx, ctx) {
@@ -229,8 +252,9 @@ function detail(book, list, idx, ctx) {
   const form = formFor(book);
   const sit = situation(book);
   const inset = ctx.phone ? 'page-inset' : '';
-  return html`<div class="col ${ctx.phone ? 'gap16' : 'gap20'} ${ctx.enter ? (ctx.phone ? 'pushin' : 'rise') : ''}" style="animation-delay:.12s;min-width:0">
+  return html`<div class="review-detail col ${ctx.phone ? 'gap16' : 'gap20'} ${ctx.enter ? (ctx.phone ? 'pushin' : 'rise') : ''}" style="animation-delay:.12s;min-width:0">
     ${header(book, list, idx, ctx)}
+    ${details.get(book.id)?.load_error ? html`<div class="alert-bad" role="alert">${details.get(book.id).load_error} ${button({ label: 'Reload draft', act: 'reload-draft' })}</div>` : ''}
     ${whatHappened(book, form, sit, ctx)}
     ${nextSteps(book, form, sit, ctx)}
     <div class="col ${ctx.phone ? 'gap12' : 'gap16'} ${inset}" style="margin-top:8px"><h2 class="eyebrow" style="padding:0 4px">Evidence</h2>${checksSection(book, ctx)}${historySection(book, ctx)}</div>
@@ -240,7 +264,19 @@ function detail(book, list, idx, ctx) {
 function listItem(book, current, ctx) {
   const reason = reviewTitle(book.job);
   if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
-  return html`<a class="irow" role="listitem" href="#/review/${encodeURIComponent(book.id)}" aria-current="${bool(current)}">${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular" style="font-size:12px;flex-shrink:0">${relative(book.updatedAt)}</span></a>`;
+  const label = `${book.title} · ${book.author || 'Author unknown'} · ${reason}`;
+  return html`<a class="irow review-book" data-key="review-${book.id}" data-review-label="${label}" aria-label="${label}" href="#/review/${encodeURIComponent(book.id)}" ${current ? 'aria-current="page"' : ''}>${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow review-book-copy"><span class="ell" style="font-size:15px;font-weight:700">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular review-book-time">${relative(book.updatedAt)}</span></a>`;
+}
+
+
+function reviewRail(list, book, ctx) {
+  const expanded = Boolean(ctx.ui.reviewListExpanded);
+  return html`<aside class="revlist-shell ${expanded ? 'expanded' : ''}" aria-label="Review book navigation">
+    <div class="revlist-panel">
+      ${iconButton({ icon: expanded ? 'chevronLeft' : 'list', label: expanded ? 'Collapse book list' : 'Expand book list', act: 'review-list', extra: { id: 'review-list-toggle', 'aria-expanded': bool(expanded), 'aria-controls': 'review-books' } })}
+      <nav id="review-books" class="revlist" aria-label="Books waiting for review">${list.map(b => listItem(b, b.id === book.id, ctx))}</nav>
+    </div><span class="rail-preview" id="review-title-preview" role="tooltip" hidden></span>
+  </aside>`;
 }
 
 function allClear(ctx) {
@@ -280,6 +316,7 @@ function sentToQueue(book, body) {
 
 async function submit(book, ctx, recovery) {
   const form = readForm(book);
+  if (form.busy || offline() || state.authNeeded) return;
   form.message = '';
   const asin = form.asin.trim().toUpperCase();
   if (asin && !/^[A-Z0-9]{10}$/.test(asin)) { form.message = 'ASIN must be 10 letters or digits.'; ctx.rerender(); return; }
@@ -298,6 +335,7 @@ async function submit(book, ctx, recovery) {
 
 async function searchEditions(book, ctx) {
   const form = readForm(book);
+  if (form.searching || form.busy || offline() || state.authNeeded) return;
   const q = form.query.trim();
   if (q.length < 2) { form.message = 'Enter a title or ASIN to search.'; ctx.rerender(); return; }
   form.searching = true; form.results = null; form.selected = null; form.message = ''; ctx.rerender();
@@ -351,8 +389,8 @@ export default {
     }
     if (!list.length) return html`${heading}${allClear(ctx)}`;
     const resumed = !ctx.route.id && ctx.route.query.get('resumed');
-    if (resumed) return html`${heading}<div class="revgrid"><div class="revlist ${enter ? 'rise' : ''}" role="list" aria-label="Books waiting for review" style="animation-delay:.05s">${list.map(b => listItem(b, false, ctx))}</div>${resumedPanel(bookById(resumed), list, ctx)}</div>`;
-    return html`${heading}<div class="revgrid"><div class="revlist ${enter ? 'rise' : ''}" role="list" aria-label="Books waiting for review" style="animation-delay:.05s">${list.map(b => listItem(b, b.id === book.id, ctx))}</div>${detail(book, list, idx, ctx)}</div>`;
+    if (!ctx.route.id) return html`${heading}${resumed ? resumedPanel(bookById(resumed), list, ctx) : ''}<nav class="review-overview col gap8" aria-label="Books waiting for review">${list.map(b => listItem(b, false, ctx))}</nav>`;
+    return html`${heading}<div class="revgrid">${reviewRail(list, book, ctx)}${detail(book, list, idx, ctx)}</div>`;
   },
 
   onInput(el, ev, ctx) {
@@ -360,7 +398,8 @@ export default {
     if (!book) return;
     if (el.name === 'optional_section' || el.name === 'preserve' || el.name === 'gap' || el.id === 'accept-min') {
       const form = el.closest('form');
-      ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...(ctx.ui.accept?.[book.id] || {}), min: form.querySelector('#accept-min')?.value, sections: [...form.querySelectorAll('[name="optional_section"]:checked')].map(x => x.value), preserve: form.querySelector('[name="preserve"]')?.checked, gap: form.querySelector('[name="gap"]')?.checked } };
+      ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...(ctx.ui.accept?.[book.id] || {}), min: form.querySelector('#accept-min')?.value, sections: [...form.querySelectorAll('[name="optional_section"]:checked')].map(x => x.value), preserve: form.querySelector('[name="preserve"]')?.checked, gap: form.querySelector('[name="gap"]')?.checked, message: '' } };
+      ctx.rerender();
       return;
     }
     readForm(book);
@@ -374,17 +413,61 @@ export default {
     }
   },
 
+  onKeyDown(event, ctx) {
+    if (event.key !== 'Escape') return;
+    const preview = document.getElementById('review-title-preview');
+    if (preview && !preview.hidden) { preview.hidden = true; ctx.ui.previewDismissed = document.activeElement?.closest?.('.review-book')?.href; event.preventDefault(); }
+    if (ctx.ui.reviewListExpanded) {
+      ctx.ui.reviewListExpanded = false; ctx.rerender();
+      document.getElementById('review-list-toggle')?.focus(); event.preventDefault();
+    }
+  },
+
   mount(root, ctx) {
+    const preview = root.querySelector('#review-title-preview');
+    const show = event => {
+      const link = event.target.closest?.('.review-book');
+      if (!preview || !link || ctx.ui.reviewListExpanded || ctx.ui.previewDismissed === link.href) return;
+      preview.textContent = link.dataset.reviewLabel;
+      preview.hidden = false;
+      const r = link.getBoundingClientRect();
+      preview.style.left = `${Math.max(8, Math.min(r.right + 10, innerWidth - preview.offsetWidth - 8))}px`;
+      preview.style.top = `${Math.max(8, Math.min(r.top, innerHeight - preview.offsetHeight - 8))}px`;
+    };
+    const hide = event => {
+      if (!preview || event.relatedTarget?.closest?.('.review-book') === event.target.closest?.('.review-book') || event.relatedTarget === preview) return;
+      ctx.ui.previewDismissed = null;
+      preview.hidden = true;
+    };
+    root.onpointerover = show; root.onfocusin = show;
+    root.onpointerout = hide; root.onfocusout = hide;
+    const outside = event => {
+      if (ctx.ui.reviewListExpanded && !event.target.closest('.revlist-shell')) {
+        ctx.ui.reviewListExpanded = false; ctx.rerender();
+      }
+    };
+    document.addEventListener('click', outside);
+    const scrolled = () => { if (preview) preview.hidden = true; };
+    window.addEventListener('scroll', scrolled, { capture: true, passive: true });
+
     const find = root.querySelector('#rv-find');
     // Re-renders keep this element (morph.js), so assign rather than add a listener.
     if (find) find.onkeydown = ev => {
       if (ev.key === 'Enter') { ev.preventDefault(); const { book } = current(ctx); if (book) searchEditions(book, ctx); }
     };
     if (ctx.enter && ctx.route.query.has('match')) setTimeout(() => find?.focus());
+    return () => { window.removeEventListener('scroll', scrolled, true); document.removeEventListener('click', outside); root.onpointerover = root.onfocusin = root.onpointerout = root.onfocusout = null; };
   },
 
   actions: {
     ...cancelActions,
+    'review-list': (el, ev, ctx) => { ctx.ui.reviewListExpanded = !ctx.ui.reviewListExpanded; ctx.rerender(); },
+    'reload-draft': (el, ev, ctx) => {
+      const { book } = current(ctx); if (!book) return;
+      details.set(book.id, null); detailVersions.set(book.id, book.job.updated_at);
+      jobDetail(book.id, { force: true }).then(job => { rememberDetail(book.id, job); ctx.rerender(); }).catch(error => { details.set(book.id, { load_error: error.message }); ctx.rerender(); });
+      ctx.rerender();
+    },
     choose: (el, ev, ctx) => { const { book } = current(ctx); if (book) { choose(ctx, book, el.dataset.arg); ctx.rerender(); } },
     prev: (el, ev, ctx) => move(ctx, -1),
     next: (el, ev, ctx) => move(ctx, 1),
@@ -424,7 +507,7 @@ export default {
       const id = reportOf(book.job).identity || {};
       form.title = id.title || form.title; form.author = id.author || form.author; form.narrator = id.narrator || form.narrator; form.asin = id.asin || form.asin;
       form.query = id.asin || id.title || form.query;
-      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Edit the search if needed, then search. Raw tags need server support (G-014).';
+      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Edit the search if needed, then search. Raw embedded tags aren’t available separately yet.';
       ctx.rerender();
       setTimeout(() => document.getElementById('rv-find')?.focus());
     },
@@ -458,14 +541,11 @@ export default {
       const p = details.get(book.id)?.recovery_acceptance_preview;
       const f = { ...(ctx.ui.accept?.[book.id] || {}) };
       if (!p) return;
-      const min = Number(f.min ?? p.default_minimum_percent);
-      const missing = p.sections.filter(s => !(f.sections || []).includes(s.id));
-      const problemText = !(min >= 1 && min <= 100) ? 'The minimum must be between 1 and 100%.'
-        : missing.length ? `Tick each section you accept as optional (${missing.map(s => s.title).join(', ')}).`
-          : p.unresolved_markers.length && !f.preserve ? 'Confirm that unresolved markers keep their labels and times.'
-            : !f.gap ? 'Confirm that you accept possible content gaps.' : '';
-      const setAccept = patch => { ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...f, ...patch } }; ctx.rerender(); };
-      if (problemText) { setAccept({ message: problemText }); return; }
+      const approval = draftApproval(p, f);
+      const acceptance = acceptanceState(p, approval, { connected: !offline(), authNeeded: state.authNeeded });
+      const setAccept = patch => { ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...approval, ...patch } }; ctx.rerender(); };
+      if (!acceptance.enabled) { setAccept({ message: acceptance.problem }); return; }
+      const min = acceptance.minimum;
       setAccept({ busy: true, message: '' });
       try {
         await api.acceptRecovery(book.id, { draft_token: p.token, minimum_percent: min, optional_sections: f.sections || [], preserve_unresolved: Boolean(f.preserve), accept_possible_gap: true });
@@ -473,7 +553,13 @@ export default {
         details.delete(book.id);
         await refresh();
         sentToQueue(book, 'Exceptions accepted; finalizing now');
-      } catch (error) { setAccept({ busy: false, message: error.message }); }
+      } catch (error) {
+        if (error.status === 409) {
+          delete ctx.ui.accept?.[book.id]; details.delete(book.id); detailVersions.delete(book.id);
+          await jobDetail(book.id, { force: true }).catch(() => {});
+        }
+        setAccept({ ...(error.status === 409 ? { token: null, sections: [], preserve: false, gap: false } : {}), busy: false, message: error.message });
+      }
     },
     'desk-cancel': (el, ev, ctx) => { const { book } = current(ctx); if (book) { ctx.ui.confirm = `cancel:${book.id}`; ctx.rerender(); } },
     'phone-cancel': async (el, ev, ctx) => {

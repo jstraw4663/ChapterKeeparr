@@ -76,3 +76,14 @@ Validation totals and deployment status are not established by this context upda
 
 The frontend was rebuilt to the approved design in `docs/design/` (Claude owns `app/static/`). The only backend change is the widened static-file route (GAPS G-027). Every build feature kept a home, including explicit recovery acceptance, which still requires each consent and never auto-publishes. Placeholders for missing server support are listed in `docs/design/GAPS.md`; next steps in `docs/design/FOLLOW_UPS.md`. UI previews use the generated fixture `tests/fixtures/ui_seed.py`; no real audiobook was read or modified for the redesign.
 
+
+
+## UI/UX implementation (2026-10-19; awaiting PR review/deployment)
+
+Implementation is based on freshly fetched GitHub main `c94c052` plus the saved plan commits. The previous audit directory was a partial source snapshot; the complete Git checkout is `/workspace/ChapterKeeparr-implementation`. Main is 15 commits ahead of tag v0.5.0. The deployed container and MacBook checkout identities remain unknown.
+
+The review workspace now gives selected books a compact expandable cover rail, readable adaptive header and responsive details. Gap consent immediately hides/reveals the white save action, while all existing server publication gates remain unchanged. UI approvals are draft-token-bound; polling/resizing preserve valid edits, native disclosures and playback. Shared responsive layouts and 44px hit areas were improved, and the skip link keeps the current route.
+
+Settings now shows server build identity and client/frontend identity, a manual cached release check and redacted diagnostics. Docker/release builds embed their version/channel/commit/date; source checkouts remain development builds. Figtree ships locally. Hidden tabs poll more slowly; PWA updates wait for a user-confirmed reload. No conversion/matching backend optimization, real-media publication, merge, tag, release or production deployment was performed.
+
+See VALIDATION.md for actual regression evidence and remaining physical-device/accessibility/PWA checks.

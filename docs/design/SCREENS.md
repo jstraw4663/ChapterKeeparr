@@ -178,3 +178,11 @@ What changed from the screens above once they met the real server. Gap IDs are i
 - **New job:** a folder holding several books shows a checklist of them and "Start N jobs" (G-033). Edition fields are read-only (G-040). Options add "Process again" (G-037). "Save to" is a fixed line (G-039). Chapter checks drop "Off" (G-038).
 - **Suggestions:** partial (G-020). "Chapters need a fix" became "Chapters need a check", listing M4Bs never checked, because wrong chapters can't be detected before a check. Ignore hides a row on this device only.
 - **Settings:** adds Access token, the server readout and the accepted-exceptions minimum (G-034 to G-036). Default region and BookOrbit address are disabled (G-023, G-021). Version shows "—" (G-024).
+
+
+## UI/UX implementation refinement (2026-10-19)
+
+- **Needs review:** the unselected desktop view is a readable list. Selection opens the detail with a compact cover rail, expandable overlay list, accessible title previews and separate previous/next/cancel row. Narrow desktop workspaces use a compact cover row; phones keep Back to review. Accept and save is hidden without gap consent, white when checked and enabled only when every existing approval/coverage/connection requirement is met. Draft-token changes clear prior approvals. The GitHub source retains its in-flow acceptance form; a deployed sticky-footer variant must be reconciled against its actual source before deployment.
+- **Shared layouts:** Library tools wrap into rows; New job and Book columns stack by workspace width; Settings navigation and rows reflow without truncating controls. Controls meet the shared 44px target standard.
+- **Settings → About and updates:** installed version/channel, build commit/date, client/server frontend identity and configured speech backend/model; manual update check, release-notes link and redacted diagnostic copy. Unknown release access is never shown as current. Access tokens still require explicit Save.
+- **Stability:** local variable font, state-preserving disclosures/resizes, slower hidden-tab polling and a waiting PWA update with explicit safe reload. No backend matching/conversion policy changes.

@@ -10,10 +10,7 @@
   <link rel="apple-touch-icon" href="/static/icon-180.png">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <title>ChapterKeeparr</title>
-  <!-- DESIGN-GAP: G-045 — Figtree from Google Fonts until it can be self-hosted. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&display=swap">
+  <link rel="preload" href="/static/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/tokens.css">
   <link rel="stylesheet" href="/static/styles.css">
   <script>
@@ -25,7 +22,7 @@
       if (p.theme === 'light' || p.theme === 'dark') root.setAttribute('data-theme', p.theme);
       if (p.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches) root.setAttribute('data-motion', 'reduce');
       var w = innerWidth, c = p.sidebarCollapsed;
-      if (c === true || (c == null && w >= 768 && w < 1024)) root.classList.add('collapsed');
+      if (c === true || (c == null && w >= 768 && w < 1100)) root.classList.add('collapsed');
       var bg = getComputedStyle(root).getPropertyValue('--bg').trim();
       if (bg) document.querySelector('meta[name="theme-color"]').setAttribute('content', bg);
     })();

@@ -125,7 +125,7 @@ def main(folder: str) -> None:
                       'reference_start': s, 'reason': 'Spoken heading heard', 'source': 'speech', 'confidence': 'high',
                       'transcript': f'{t}.', 'audio_excerpt': f'recovery-clips/m{i:03d}.wav'} for i, (t, s) in enumerate(CHAPTERS)]
     refs = [{'start': s, 'title': t} for t, s in CHAPTERS] + [{'start': 295, 'title': 'Secret Skit'}]
-    job('Mary Shelley/Frankenstein', 'awaiting_review', base_report('Frankenstein', 'Mary Shelley', 'Eve Fixture', 'B000FIXT05',
+    job('Mary Shelley/Frankenstein', 'awaiting_review', base_report('Frankenstein; or, The Modern Prometheus — An Unabridged Dramatic Reading', 'Mary Shelley', 'Eve Fixture, Second Fixture, Third Fixture, Fourth Fixture', 'B000FIXT05',
         ['passed', 'passed', 'review'],
         review_reason={'category': 'chapters', 'detail': 'Possible missing content or an edited recording: Local audio is 62.6 seconds shorter than the published timeline'},
         coverage_warnings=['Local audio is 62.6 seconds shorter than the published timeline; missing content or an edition edit needs review'],
