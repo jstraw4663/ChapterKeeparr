@@ -221,8 +221,9 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: both · Status: placeholder in UI
 
 ### G-024 · Health and version
-- Build today: **partial.** `GET /api/health` → `{"status":"ok"}`. The version is hard-coded in `index.html` ("0.5.0").
-- Proposed contract: `{"status":"ok","version":"0.5.0"}`.
+- Build today (rechecked 2026-10-19 at `c94c052`): **partial.** `GET /api/health` → `{"status":"ok"}`. The redesigned `index.html` does not expose an installed version; Settings → Server shows a placeholder.
+- Proposed contract: report the actual release version plus build/commit and build date from a single build source. Keep frontend asset identity distinguishable from server identity. Unknown fields remain unknown.
+- Owner request (2026-10-19): show installed version/build details in Settings for troubleshooting and checking updates. Add honest manual update-check states and a redacted Copy diagnostics action. Checking does not pull images or restart the app. This remains planned, not implemented; see [the finalized UI/UX plan](../plans/ui-ux-optimization.md#4-settings-about-version-and-updates) and its mockups.
 - Owner: backend · Status: placeholder in UI
 
 ### G-025 · Queued jobs
@@ -339,3 +340,4 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Build: tapping a chapter plays until the chapter ends. The design (RULES: "no media-player features") limits playback to a 15-second spot check.
 - Proposal: follow the design (a 15 s stop). This reduces an existing feature, so it's logged here for sign-off.
 - Owner: Jeremy · Status: open
+

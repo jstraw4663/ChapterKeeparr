@@ -59,3 +59,17 @@ Not validated here: Linux/amd64 Docker build, Unraid CPU speech performance, the
 - Checked by script on every screen: named buttons and links, labelled inputs, no duplicate ids, 44px targets (switches extend their hit area). Keyboard: `/` search with arrows, Enter and Esc; modal focus trap, Esc and focus return. Reduced motion replaces loops with a single fade.
 - Spot-check playback verified against a generated M4B with chapters. Not validated: a physical iPhone install, and screen readers beyond the ARIA structure.
 
+## UI/UX audit and planning — 2026-10-19
+
+- Read-only app audit against main at `c94c05298ec90ffa45d1d432eb6541bb4045b6a3`, using an isolated generated fixture DB and `ENABLE_WORKERS=0`. No real library files or production settings were changed.
+- Nine route states at twelve CSS viewport sizes in both themes: 216 screen observations plus consent checks. Additional live-resize and keyboard checks reproduced title-width collapse and review overflow after shrinking an expanded desktop window.
+- Stable dark-theme axe checks at 390/1024 px reproduced obscured Library grouping/sorting targets at 1024 px; light-theme checks also flagged muted metadata contrast. Automated scans do not establish full accessibility conformance.
+- Folder dialog semantics, Escape/focus return, and edition-query preservation passed the tested interactions. Existing five JavaScript test files pass.
+- Saved the backend/hardware plan and finalized the UI/UX plan with audit evidence, seven visual mockups, and a documentation-only interactive prototype. Prototype checks passed checkbox off/on/off visibility, white action styling, continued blocking below the minimum, cover-rail expand/Escape, and no page overflow in seven captured states.
+- The deployed private LAN app was not accessed. Its screenshot has a sticky acceptance footer and draft controls beyond current main; installed build identity remains unknown.
+- Production implementation and physical iPhone/Safari, native zoom/keyboard, screen-reader, deployed/PWA version, and full accessibility validation remain outstanding. Plans and mockups are not implemented features.
+
+See [the UI/UX plan](docs/plans/ui-ux-optimization.md), [audit evidence](docs/plans/ui-ux-audit-2026-10-19.json), and [backend plan](docs/plans/backend-optimization.md).
+
+
+

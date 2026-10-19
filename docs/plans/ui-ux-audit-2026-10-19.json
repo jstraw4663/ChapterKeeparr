@@ -1,0 +1,401 @@
+{
+  "recorded": "2026-10-19",
+  "source_commit": "c94c05298ec90ffa45d1d432eb6541bb4045b6a3",
+  "environment": "Local isolated Chromium preview; generated fixture database; ENABLE_WORKERS=0; service workers blocked; writes blocked in browser audit. Not the deployed LAN app.",
+  "viewport_sizes": [
+    [
+      320,
+      740
+    ],
+    [
+      360,
+      800
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      430,
+      932
+    ],
+    [
+      667,
+      375
+    ],
+    [
+      768,
+      1024
+    ],
+    [
+      820,
+      1180
+    ],
+    [
+      1024,
+      768
+    ],
+    [
+      1100,
+      800
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1920,
+      1080
+    ]
+  ],
+  "themes": [
+    "dark",
+    "light"
+  ],
+  "routes": [
+    "library",
+    "suggestions",
+    "queue",
+    "review",
+    "review-list",
+    "edition",
+    "book",
+    "new",
+    "settings"
+  ],
+  "screen_observations": 216,
+  "page_errors": [],
+  "review_header_fresh_load": [
+    {
+      "width": 320,
+      "collapsed": false,
+      "title_width": null,
+      "document_width": 320
+    },
+    {
+      "width": 360,
+      "collapsed": false,
+      "title_width": null,
+      "document_width": 360
+    },
+    {
+      "width": 390,
+      "collapsed": false,
+      "title_width": null,
+      "document_width": 390
+    },
+    {
+      "width": 430,
+      "collapsed": false,
+      "title_width": null,
+      "document_width": 430
+    },
+    {
+      "width": 667,
+      "collapsed": false,
+      "title_width": null,
+      "document_width": 667
+    },
+    {
+      "width": 768,
+      "collapsed": true,
+      "title_width": 0,
+      "document_width": 768
+    },
+    {
+      "width": 820,
+      "collapsed": true,
+      "title_width": 22,
+      "document_width": 820
+    },
+    {
+      "width": 1024,
+      "collapsed": false,
+      "title_width": 22,
+      "document_width": 1024
+    },
+    {
+      "width": 1100,
+      "collapsed": false,
+      "title_width": 98,
+      "document_width": 1100
+    },
+    {
+      "width": 1280,
+      "collapsed": false,
+      "title_width": 196,
+      "document_width": 1280
+    },
+    {
+      "width": 1440,
+      "collapsed": false,
+      "title_width": 356,
+      "document_width": 1440
+    },
+    {
+      "width": 1920,
+      "collapsed": false,
+      "title_width": 836,
+      "document_width": 1920
+    }
+  ],
+  "consent": [
+    {
+      "route": "consent",
+      "theme": "dark",
+      "observed": {
+        "before": {
+          "visible": true,
+          "disabled": false
+        },
+        "checked": {
+          "visible": true,
+          "disabled": false
+        },
+        "unchecked": {
+          "visible": true,
+          "disabled": false
+        }
+      }
+    },
+    {
+      "route": "consent",
+      "theme": "light",
+      "observed": {
+        "before": {
+          "visible": true,
+          "disabled": false
+        },
+        "checked": {
+          "visible": true,
+          "disabled": false
+        },
+        "unchecked": {
+          "visible": true,
+          "disabled": false
+        }
+      }
+    }
+  ],
+  "live_resize": [
+    {
+      "case": "live-resize",
+      "width": 1100,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 1100,
+        "heading": "Needs review",
+        "reviewTitleWidth": 98.34375
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 1024,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 1024,
+        "heading": "Needs review",
+        "reviewTitleWidth": 22.34375
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 900,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 938,
+        "heading": "Needs review",
+        "reviewTitleWidth": 0
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 820,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 938,
+        "heading": "Needs review",
+        "reviewTitleWidth": 0
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 768,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 938,
+        "heading": "Needs review",
+        "reviewTitleWidth": 0
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 767,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 767,
+        "heading": "Frankenstein",
+        "reviewTitleWidth": null
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 390,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 390,
+        "heading": "Frankenstein",
+        "reviewTitleWidth": null
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 900,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 938,
+        "heading": "Needs review",
+        "reviewTitleWidth": 0
+      }
+    },
+    {
+      "case": "live-resize",
+      "width": 1440,
+      "data": {
+        "collapsed": false,
+        "scrollWidth": 1440,
+        "heading": "Needs review",
+        "reviewTitleWidth": 356.34375
+      }
+    }
+  ],
+  "interaction_checks": [
+    {
+      "case": "folder-dialog",
+      "role": "dialog",
+      "modal": "true",
+      "label": "Choose a folder"
+    },
+    {
+      "case": "dialog-close",
+      "remaining": 0,
+      "focus": "<button type=\"button\" class=\"pickfolder\" data-act=\"browse\"><span class=\"tile\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round"
+    },
+    {
+      "case": "edition-form-preservation",
+      "value": "A deliberately long title for a different edition"
+    },
+    {
+      "case": "first-tab",
+      "name": "Skip to content"
+    },
+    {
+      "case": "skip-link",
+      "hash": "#view",
+      "focus": "view"
+    }
+  ],
+  "stable_dark_axe": [
+    {
+      "case": "stable-axe",
+      "route": "library",
+      "width": 1024,
+      "violations": [
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "#lib-group"
+              ],
+              "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 138px by 10px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 0px instead of at least 24px."
+            },
+            {
+              "target": [
+                "#lib-sort"
+              ],
+              "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 193px by 10px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 20.8px instead of at least 24px."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "light_axe_findings": [
+    {
+      "route": "library",
+      "width": 1024,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "nodes": [
+            {
+              "target": [
+                "#g-author-Jules20Verne > .libgrid.grid > .card > .cs.ell"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.18 (foreground color: #797974, background color: #fafaf8, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "a[aria-label=\"Frankenstein, Needs review\"] > .cs.ell"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.18 (foreground color: #797974, background color: #fafaf8, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "a[aria-label=\"The Last Man, Optimized\"] > .cs.ell"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.18 (foreground color: #797974, background color: #fafaf8, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "a[aria-label=\"Treasure Island, Verified\"] > .cs.ell"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.18 (foreground color: #797974, background color: #fafaf8, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            },
+            {
+              "target": [
+                "a[aria-label=\"Pride and Prejudice, Queued\"] > .cs.ell"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.18 (foreground color: #797974, background color: #fafaf8, font size: 9.0pt (12px), font weight: normal). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "description": "Ensure touch targets have sufficient size and space",
+          "nodes": [
+            {
+              "target": [
+                "#lib-group"
+              ],
+              "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 140px by 10px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 0px instead of at least 24px."
+            },
+            {
+              "target": [
+                "#lib-sort"
+              ],
+              "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 196px by 10px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 21.4px instead of at least 24px."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Physical iPhone/Safari, VoiceOver/TalkBack, native browser zoom, virtual keyboard and safe-area behavior require device checks.",
+    "Current main has an inline acceptance form; supplied deployed screenshot has a sticky footer and richer draft controls. Deployed build identity is unknown.",
+    "Automated scans are not a WCAG conformance certification.",
+    "Full-page capture artifacts occurred around transitions; stable viewport captures and DOM measurements support layout findings.",
+    "Some small visual controls have larger hit areas; do not classify all small bounding boxes as accessibility failures."
+  ]
+}
+

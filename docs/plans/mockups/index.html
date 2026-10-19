@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>ChapterKeeparr · UI/UX proposal</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+  <div class="proposal-bar"><span><strong>Design proposal</strong><span class="proposal-note"> · illustrative content; no server connection</span></span><div class="proposal-tools"><button id="view-toggle" type="button">Settings mockup</button><button id="theme-toggle" type="button">Light theme</button></div></div>
+  <div class="application">
+    <aside class="app-sidebar" aria-label="Application navigation">
+      <a class="brand" href="?view=review"><span class="brand-icon">C</span><span class="nav-label">ChapterKeeparr</span></a>
+      <nav class="nav-list"><span class="nav-item"><span data-icon="library"></span><span class="nav-label">Library</span></span><span class="nav-item"><span data-icon="bulb"></span><span class="nav-label">Suggestions</span></span><span class="nav-item"><span data-icon="queue"></span><span class="nav-label">Queue</span></span><button class="nav-item selected" type="button" id="nav-review"><span data-icon="inbox"></span><span class="nav-label">Needs review</span><span class="badge">2</span></button><span class="nav-item"><span data-icon="plus"></span><span class="nav-label">New job</span></span><button class="nav-item" type="button" id="nav-settings"><span data-icon="settings"></span><span class="nav-label">Settings</span></button></nav>
+      <div class="sidebar-bottom"><div class="activity"><span class="eyebrow">Activity</span><strong>Queue is idle</strong><span class="muted">Nothing converting</span></div><span class="nav-item muted"><span data-icon="panel"></span><span class="nav-label">Application navigation</span></span></div>
+    </aside>
+    <main>
+      <div class="desktop-top"><div class="search"><span data-icon="search"></span><span>Search title, series, or ASIN</span><kbd>/</kbd></div><span class="new-job"><span data-icon="plus"></span>New job</span></div>
+      <div id="review-page">
+        <header class="page-title"><h1>Needs review</h1><p class="muted">Books paused for a decision. Review one at a time.</p></header>
+        <div class="review-layout" id="review-layout">
+          <nav class="book-rail" aria-label="Books waiting for review" id="book-rail">
+            <button class="rail-toggle" id="rail-toggle" type="button" aria-expanded="false" aria-controls="rail-books"><span data-icon="panel"></span><span class="rail-label">Collapse book list</span></button>
+            <div class="rail-books" id="rail-books">
+              <button class="rail-book active" type="button" aria-current="true" aria-label="The Gate of the Feral Gods, selected, 1 of 2"><span class="cover gate mini" aria-hidden="true"><span>G</span></span><span class="rail-label book-label"><strong>The Gate of the Feral Gods</strong><small>Matt Dinniman · Needs review</small></span><span class="title-preview" role="tooltip">The Gate of the Feral Gods<br><small>Matt Dinniman</small></span></button>
+              <button class="rail-book" type="button" aria-label="The Eye of the Bedlam Bride, 2 of 2"><span class="cover bedlam mini" aria-hidden="true"><span>B</span></span><span class="rail-label book-label"><strong>The Eye of the Bedlam Bride</strong><small>Matt Dinniman · Needs review</small></span><span class="title-preview" role="tooltip">The Eye of the Bedlam Bride<br><small>Matt Dinniman</small></span></button>
+            </div>
+            <span class="rail-count">2 books</span>
+          </nav>
+          <article class="review-detail">
+            <div class="review-navigation"><button class="back" type="button"><span data-icon="left"></span>Review</button><div class="book-navigation"><span class="muted">1 of 2</span><button class="icon-button" type="button" disabled aria-label="Previous book"><span data-icon="up"></span></button><button class="icon-button" type="button" aria-label="Next book"><span data-icon="down"></span></button><button class="icon-button cancel" type="button" aria-label="Cancel job"><span data-icon="trash"></span></button></div></div>
+            <header class="book-heading"><div class="cover gate hero" aria-hidden="true"><span class="cover-letter">G</span><small>THE GATE OF<br>THE FERAL GODS</small></div><div class="book-heading-copy"><span class="eyebrow">Matt Dinniman</span><h2>The Gate of the Feral Gods</h2><p class="muted">Matt Dinniman</p></div></header>
+            <section class="problem" aria-labelledby="problem-title"><span class="eyebrow">What happened</span><h3 id="problem-title">A chapter draft is ready for you</h3><p>34 of 37 existing markers were identified. Review the remaining markers before deciding whether to save.</p><p class="muted">Nothing has been saved. Your audio is unchanged.</p><details><summary>Edition and server details</summary><p>The Gate of the Feral Gods · B09GCYRZRQ · United States</p></details></section>
+            <section class="next-action" aria-labelledby="next-title"><span class="eyebrow" id="next-title">What to do next</span><div class="decision-card"><div class="decision-heading"><span class="selected-dot" aria-hidden="true"></span><div><h3>Review and save the draft</h3><p class="muted">Keep the existing times and review the proposed chapter names.</p></div></div><div class="decision-body"><div class="coverage-row"><strong>34 of 37 identified</strong><span class="muted">91.9%</span></div><div class="coverage-track" role="img" aria-label="34 of 37 markers identified, below the selected 95 percent minimum"><span></span></div><p class="blocker"><span data-icon="alert"></span>Below your minimum of 95%</p><details><summary>Review 3 unidentified markers</summary><p>Unresolved markers retain their existing names and times unless you explicitly review them. Matching markers does not establish content completeness.</p></details><details><summary>Minimum and required approvals</summary><p>The selected minimum is 95%. Required section approvals and unchanged source evidence still apply.</p></details></div></div><details class="other-options"><summary>Other ways to resolve this book</summary><div class="other-body"><p>Choose a different edition</p><p>Draft chapters again</p><p>Run checks again</p></div></details></section>
+            <section class="evidence"><span class="eyebrow">Evidence</span><details><summary>Chapter checks <span class="muted">34 of 37 identified</span></summary><p>Chapter names, short audio checks and unresolved markers appear here.</p></details><details><summary>History</summary><p>The book's checks and decisions appear here.</p></details></section>
+            <section class="acceptance" id="acceptance" aria-label="Accept draft exceptions"><div class="acceptance-summary"><strong>Review before saving</strong><span class="muted">34 / 37 identified</span></div><label class="consent-label"><input type="checkbox" id="gap-consent" aria-describedby="consent-description"><span>I accept possible gaps or edition differences.</span></label><p class="muted consent-description" id="consent-description">Matching chapters doesn’t prove the audio is complete.</p><div id="save-wrap" hidden><button class="save-button" id="accept-save" type="button" disabled aria-describedby="save-reason">Accept and save</button><p class="blocker save-reason" id="save-reason">Still below your selected 95% minimum. Saving remains blocked.</p></div><p class="consent-hint muted" id="consent-hint">Check the box to show the save action.</p><span id="consent-status" class="sr" role="status" aria-live="polite"></span></section>
+          </article>
+        </div>
+      </div>
+      <div id="settings-page" hidden>
+        <header class="page-title"><h1>Settings</h1><p class="muted">Preferences and information about this installation.</p></header>
+        <div class="settings-layout"><nav class="settings-nav" aria-label="Settings sections"><span>Appearance</span><span>Conversion defaults</span><span>Metadata</span><strong>About &amp; updates</strong></nav><div class="settings-content"><section class="settings-card"><span class="eyebrow">About this installation</span><h2>ChapterKeeparr</h2><p class="muted">Version information makes troubleshooting easier.</p><dl><div><dt>Installed version</dt><dd>Unknown</dd></div><div><dt>Build / commit</dt><dd>—</dd></div><div><dt>Built</dt><dd>—</dd></div><div><dt>Frontend assets</dt><dd>—</dd></div><div><dt>Speech backend</dt><dd>—</dd></div></dl><p class="information">This installation does not report build details yet. Unknown values stay visible.</p><button class="secondary" type="button" disabled>Copy diagnostics</button></section><section class="settings-card"><span class="eyebrow">Updates</span><h3>Update status</h3><dl><div><dt>Latest release</dt><dd>Not checked</dd></div><div><dt>Last checked</dt><dd>—</dd></div></dl><div class="settings-actions"><button class="primary" type="button" id="check-updates">Check for updates</button><span class="muted">Release notes</span></div><p class="muted" id="update-note">Checking for an update won’t restart your server.</p></section><p class="mockup-explanation">Mockup: values are intentionally unknown. The implementation will display real server and image build metadata.</p></div></div>
+      </div>
+    </main>
+  </div>
+  <nav class="mobile-nav" aria-label="Main navigation"><span><span data-icon="bulb"></span>Suggestions</span><span><span data-icon="library"></span>Library</span><span><span data-icon="queue"></span>Queue</span><button type="button" id="mobile-review" aria-current="page"><span data-icon="inbox"></span>Needs review</button></nav>
+  <script src="mockup.js"></script>
+</body>
+</html>
