@@ -28,7 +28,7 @@ function body(ctx) {
   const st = ctx.phone;
   const build = s?.build;
   const update = local.updates;
-  const stale = ctx.ui.waitingUpdate || (build?.frontend_version && build.frontend_version !== ASSET_VERSION);
+  const stale = state.frontendUpdate || ctx.ui.waitingUpdate || (build?.frontend_version && build.frontend_version !== ASSET_VERSION);
   const connected = state.connected;
   const roots = s?.library_roots || [];
   const minimum = local.minimum ?? s?.recovery_minimum_percent ?? '';
@@ -89,7 +89,7 @@ export default {
   detail: true,
 
   signature(ctx) {
-    return [state.connected, state.authNeeded, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section].join('|');
+    return [state.connected, state.authNeeded, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section, state.frontendUpdate, ctx.ui.waitingUpdate].join('|');
   },
 
   render(ctx) {
@@ -108,10 +108,10 @@ export default {
     if (ctx.enter) {
       loadSettings();
       navigator.serviceWorker?.getRegistration().then(registration => {
-        if (registration?.waiting && !ctx.ui.waitingUpdate) { ctx.ui.waitingUpdate = true; ctx.rerender(); }
+        if (ctx.isCurrent?.() !== false && registration?.waiting && !ctx.ui.waitingUpdate) { ctx.ui.waitingUpdate = true; ctx.rerender(); }
       }).catch(() => {});
     }
-    if (ctx.enter && ctx.route.section) setTimeout(() => document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }));
+    const focusTimer = ctx.enter && ctx.route.section ? setTimeout(() => { if (ctx.isCurrent?.() !== false) document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }); }) : null;
     const min = root.querySelector('#set-min');
     // Re-renders keep this element (morph.js), so assign rather than add a listener.
     if (min) min.onchange = async () => {
@@ -124,6 +124,7 @@ export default {
       } catch (error) { local.minMsg = error.message; }
       local.saving = false; ctx.rerender();
     };
+    return () => clearTimeout(focusTimer);
   },
 
   onInput(el) {
@@ -138,7 +139,7 @@ export default {
     local.token = null;
     local.tokenMsg = value ? 'Token saved in this browser.' : 'Token cleared.';
     notify(ownAction(value ? 'Access token saved' : 'Access token cleared', 'Used for requests from this browser'));
-    refresh(); loadSettings();
+    refresh({ fresh: true }); loadSettings();
     ctx.rerender();
   },
 
@@ -157,12 +158,13 @@ export default {
       catch { local.copyMsg = 'Clipboard access is unavailable. Expand Diagnostics to copy and copy the text below.'; }
       ctx.rerender();
     },
-    'reload-assets': async () => {
+    'reload-assets': async (el, ev, ctx) => {
       const { confirmSheet } = await import('../overlay.js');
       if (!await confirmSheet({ title: 'Reload this tab?', body: 'Unsaved form choices will be lost. Only reload after finishing your review.', confirmLabel: 'Reload tab' })) return;
       const registration = await navigator.serviceWorker?.getRegistration();
+      if (ctx.isCurrent?.() === false) return;
       if (registration?.waiting) {
-        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+        navigator.serviceWorker.addEventListener('controllerchange', () => { if (ctx.isCurrent?.() !== false) location.reload(); }, { once: true });
         registration.waiting.postMessage('ACTIVATE_UPDATE');
       } else location.reload();
     },

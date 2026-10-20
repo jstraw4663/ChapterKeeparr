@@ -24,6 +24,10 @@ import { serverButton, offline, OFFLINE_REASON, reportError, cancelActions, canc
 const forms = new Map();     // jobId → form state; survives polling and navigation
 const details = new Map();   // jobId → full job record (with recovery_acceptance_preview)
 const detailVersions = new Map();
+const detailLoads = new Map();
+const detailErrors = new Map();
+const detailRevisions = new Map();
+const changedDetail = id => detailRevisions.set(id, (detailRevisions.get(id) || 0) + 1);
 const sources = new Map();   // jobId → current file duration in seconds (G-042)
 let selectedBook = loadDraft('selection')?.id;
 
@@ -35,11 +39,11 @@ function persist(book, ctx) {
 }
 
 function rememberDetail(id, job) {
-  details.delete(id); details.set(id, job);
+  details.delete(id); details.set(id, job); changedDetail(id);
   // Reports include transcripts; retain edits separately without keeping every report.
   while (details.size > 40) {
     const oldest = details.keys().next().value;
-    details.delete(oldest); detailVersions.delete(oldest);
+    details.delete(oldest); detailVersions.delete(oldest); detailErrors.delete(oldest); detailRevisions.delete(oldest);
   }
 }
 
@@ -85,24 +89,31 @@ function formFor(book) {
   return forms.get(book.id);
 }
 
-function ensureLoaded(book, ctx) {
-  const version = book.job.updated_at;
-  if (detailVersions.get(book.id) !== version || !details.has(book.id)) {
-    detailVersions.set(book.id, version);
-    details.set(book.id, null);
-    jobDetail(book.id).then(job => {
-      if (detailVersions.get(book.id) !== version) return;
-      rememberDetail(book.id, job); ctx.rerender();
-    }).catch(error => {
-      if (detailVersions.get(book.id) !== version) return;
-      details.set(book.id, { load_error: error.message }); ctx.rerender();
-    });
-  }
+function loadDetail(book, force = false) {
+  const version = book.job.updated_at, request = Symbol();
+  detailVersions.set(book.id, version); detailLoads.set(book.id, request); detailErrors.delete(book.id);
+  if (!details.has(book.id)) details.set(book.id, null);
+  jobDetail(book.id, { force }).then(job => {
+    if (detailLoads.get(book.id) !== request) return;
+    rememberDetail(book.id, job);
+  }).catch(error => {
+    if (detailLoads.get(book.id) === request) detailErrors.set(book.id, error.message);
+  }).finally(() => {
+    if (detailLoads.get(book.id) !== request) return;
+    detailLoads.delete(book.id); changedDetail(book.id); touch();
+  });
+}
+
+function ensureLoaded(book) {
+  if (detailVersions.get(book.id) !== book.job.updated_at || !details.has(book.id)) loadDetail(book);
   if (!sources.has(book.id)) {
     sources.set(book.id, null);
-    api.sourceInfo(book.id).then(info => { sources.set(book.id, info.duration_seconds); ctx.rerender(); }).catch(() => {});
+    api.sourceInfo(book.id).then(info => { sources.set(book.id, info.duration_seconds); touch(); }).catch(() => {});
   }
 }
+
+const acceptanceOptions = book => ({ connected: !offline(), authNeeded: state.authNeeded,
+  refreshing: detailLoads.has(book.id), refreshError: detailErrors.get(book.id) || '' });
 
 // ---------- sections ----------
 function header(book, list, idx, ctx) {
@@ -273,9 +284,9 @@ function detail(book, list, idx, ctx) {
   const inset = ctx.phone ? 'page-inset' : '';
   return html`<div class="review-detail col ${ctx.phone ? 'gap16' : 'gap20'} ${ctx.enter ? (ctx.phone ? 'pushin' : 'rise') : ''}" style="animation-delay:.12s;min-width:0">
     ${header(book, list, idx, ctx)}
-    ${details.get(book.id)?.load_error ? html`<div class="alert-bad" role="alert">${details.get(book.id).load_error} ${button({ label: 'Reload draft', act: 'reload-draft' })}</div>` : ''}
-    ${whatHappened(book, form, sit, ctx)}
-    ${nextSteps(book, form, sit, ctx)}
+    ${detailErrors.has(book.id) ? html`<div class="alert-bad" role="alert">${detailErrors.get(book.id)} ${button({ label: 'Reload draft', act: 'reload-draft' })}</div>` : ''}
+    ${!details.get(book.id) && detailLoads.has(book.id) ? html`<div class="${inset}" role="status" aria-label="Loading chapter evidence">${skeletonRows(5,72)}</div>` : html`${detailLoads.has(book.id) ? html`<span class="sr-only" role="status">Checking for updated chapter evidence…</span>` : ''}${whatHappened(book, form, sit, ctx)}${nextSteps(book, form, sit, ctx)}`}
+
     <div class="col ${ctx.phone ? 'gap12' : 'gap16'} ${inset}" style="margin-top:8px"><h2 class="eyebrow" style="padding:0 4px">Evidence</h2>${checksSection(book, ctx)}${historySection(book, ctx)}</div>
   </div>`;
 }
@@ -327,17 +338,18 @@ function readForm(book) {
 /** Finish one review in place, then open the next book rather than the list. */
 async function sentToQueue(book, body, ctx) {
   const previous = waiting(), index = previous.findIndex(b => b.id === book.id);
-  const content = document.querySelector('.review-detail');
-  audio.stop();
+  const content = ctx.isCurrent?.() === false ? null : document.querySelector('.review-detail');
+  if (ctx.isCurrent?.() !== false) audio.stop();
   if (content && document.documentElement.dataset.motion !== 'reduce') {
     content.classList.add('is-leaving');
     await new Promise(resolve => setTimeout(resolve, 180));
   }
-  await refresh();
+  await refresh({ fresh: true });
   const candidates = waiting();
   const next = previous.slice(index + 1).map(b => candidates.find(c => c.id === b.id)).find(Boolean) || candidates[0];
   notify({ kind: 'info', title: `${book.title} went back to the queue`, body, action: 'Open queue', href: `#/queue?job=${encodeURIComponent(book.id)}`, dest: 'queue', jobId: book.id, book, at: Date.now() });
   forms.delete(book.id); details.delete(book.id);
+  if (ctx.isCurrent?.() === false) return;
   if (next) location.hash = `#/review/${encodeURIComponent(next.id)}?continued=1`;
   else location.hash = '#/review?done=1';
   await glideToTop();
@@ -395,8 +407,9 @@ export default {
 
   signature(ctx) {
     const { book } = current(ctx);
-    const audioKey = book ? JSON.stringify(ctx.ui) + (details.get(book.id) ? 'd' : '') + (sources.get(book.id) || '') : '';
-    return [state.loaded, state.connected, state.sig, ctx.route.id, audioKey, book && JSON.stringify(forms.get(book.id) || {})].join('|');
+    const audioKey = book ? JSON.stringify([ctx.ui, detailRevisions.get(book.id) || 0, sources.get(book.id)]) : '';
+    const list = waiting().map(b => `${b.id}:${b.updatedAt}`).join(',');
+    return [state.loaded, state.connected, state.authNeeded, list, book?.updatedAt, ctx.route.id, audioKey, book && JSON.stringify(forms.get(book.id) || {})].join('|');
   },
 
   renderFooter(ctx) {
@@ -404,7 +417,7 @@ export default {
     const sit = situation(book);
     if (sit.key !== 'draft' || (ctx.ui.path?.[book.id] && ctx.ui.path[book.id] !== 'finalize')) return '';
     const f = draftForm(book, sit.preview, ctx);
-    return chapterSaveBar(sit.preview, f, acceptanceState(sit.preview, f, { connected: !offline(), authNeeded: state.authNeeded }));
+    return chapterSaveBar(sit.preview, f, acceptanceState(sit.preview, f, acceptanceOptions(book)));
   },
 
   render(ctx) {
@@ -485,8 +498,8 @@ export default {
     if (find) find.onkeydown = ev => {
       if (ev.key === 'Enter') { ev.preventDefault(); const { book } = current(ctx); if (book) searchEditions(book, ctx); }
     };
-    if (ctx.enter && ctx.route.query.has('match')) setTimeout(() => find?.focus());
-    return () => { unmountChapters(); window.removeEventListener('scroll', scrolled, true); document.removeEventListener('click', outside); root.onpointerover = root.onfocusin = root.onpointerout = root.onfocusout = null; };
+    const focusTimer = ctx.enter && ctx.route.query.has('match') ? setTimeout(() => { if (ctx.isCurrent?.() !== false) find?.focus(); }) : null;
+    return () => { clearTimeout(focusTimer); unmountChapters(); window.removeEventListener('scroll', scrolled, true); document.removeEventListener('click', outside); root.onpointerover = root.onfocusin = root.onpointerout = root.onfocusout = null; };
   },
 
   actions: {
@@ -497,10 +510,8 @@ export default {
     ...cancelActions,
     'review-list': (el, ev, ctx) => { ctx.ui.reviewListExpanded = !ctx.ui.reviewListExpanded; ctx.rerender(); },
     'reload-draft': (el, ev, ctx) => {
-      const { book } = current(ctx); if (!book) return;
-      details.set(book.id, null); detailVersions.set(book.id, book.job.updated_at);
-      jobDetail(book.id, { force: true }).then(job => { rememberDetail(book.id, job); ctx.rerender(); }).catch(error => { details.set(book.id, { load_error: error.message }); ctx.rerender(); });
-      ctx.rerender();
+      const { book } = current(ctx); if (!book || detailLoads.has(book.id)) return;
+      loadDetail(book, true); ctx.rerender();
     },
     choose: (el, ev, ctx) => { const { book } = current(ctx); if (book) { choose(ctx, book, el.dataset.arg); ctx.rerender(); } },
     prev: (el, ev, ctx) => move(ctx, -1),
@@ -593,7 +604,7 @@ export default {
       if (!p) return;
       const approval = draftApproval(p, f);
       const decisions = markerDecisions(p, approval);
-      const acceptance = acceptanceState(p, approval, { connected: !offline(), authNeeded: state.authNeeded });
+      const acceptance = acceptanceState(p, approval, acceptanceOptions(book));
       const setAccept = patch => { ctx.ui.accept = { ...(ctx.ui.accept || {}), [book.id]: { ...approval, ...patch } }; persist(book, ctx); ctx.rerender(); };
       if (!acceptance.enabled) { setAccept({ message: acceptance.problem }); return; }
       const min = acceptance.minimum;
@@ -615,7 +626,7 @@ export default {
     'phone-cancel': async (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
       const ok = await confirmSheet({ title: 'Cancel this job?', body: `${book.title} leaves the queue. Your source files stay where they are.`, confirmLabel: 'Cancel job' });
-      if (ok) { await cancelJob(book.id); location.hash = '#/review'; }
+      if (ok) { await cancelJob(book.id); if (ctx.isCurrent?.() !== false) location.hash = '#/review'; }
     },
   },
 };

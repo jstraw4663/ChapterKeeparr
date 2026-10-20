@@ -384,7 +384,7 @@ def create_app(store: Store | None = None) -> FastAPI:
 
         static_root = static.resolve()
         static_types = {".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2",
-                        ".png": "image/png", ".svg": "image/svg+xml"}
+                        ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon"}
 
         @app.get("/static/{name:path}")
         def static_file(name: str):

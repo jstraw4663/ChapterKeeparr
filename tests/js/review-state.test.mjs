@@ -63,3 +63,11 @@ test('explicit order overrides match server validation on either member of an in
   }
   assert.equal(acceptanceState(p, { ...f, decisions: { ...decisions, 4: { index: 4, action: 'published', section_id: '20', override_order: true } } }).enabled, false, 'overrides never allow duplicates');
 });
+
+test('retained evidence stays readable but cannot be saved during a refresh or after a refresh failure',()=>{
+ const form={...approval};
+ assert.equal(acceptanceState(preview,form,{refreshing:true}).enabled,false);
+ assert.match(acceptanceState(preview,form,{refreshError:'Offline'}).problem,/Reload current/);
+ assert.equal(acceptanceState(preview,form).enabled,true);
+ assert.equal(form.gap,true);
+});

@@ -39,7 +39,7 @@ export async function cancelJob(jobId, ctx) {
     const job = await api.cancel(jobId);
     if (job?.status === 'cancelled') expect(jobId, 'cancelled');
     notify(ownAction(job?.status === 'cancelled' ? 'Job cancelled' : 'Cancelling at the next safe point', `${book?.title || 'The book'} · source files untouched`, jobId));
-    await refresh();
+    await refresh({ fresh: true });
   } catch (error) { reportError(error, 'Couldn’t cancel the job'); }
 }
 
@@ -49,7 +49,7 @@ export async function retryJob(jobId) {
     await api.retry(jobId);
     expect(jobId, 'queued');
     notify({ kind: 'info', title: `${book?.title || 'Job'} queued again`, body: 'It starts when the converter is free', action: 'Watch', href: '#/queue', dest: 'queue', jobId, at: Date.now() });
-    await refresh();
+    await refresh({ fresh: true });
   } catch (error) { reportError(error, 'Couldn’t retry the job'); }
 }
 

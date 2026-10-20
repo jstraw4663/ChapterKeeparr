@@ -1,6 +1,7 @@
 // App state, polling and change events. No push channel exists yet
 // (DESIGN-GAP: G-003), so status changes come from diffing polls.
 
+import { resourceCache } from './resource-cache.js';
 import { api } from './api.js';
 import { deriveLibrary } from './books.js';
 import { isActive } from './status.js';
@@ -19,6 +20,7 @@ export const state = {
   lastSync: 0,
   settings: null,
   suggestions: null,      // filled by the Suggestions screen (partial, G-020)
+  frontendUpdate: false,   // waiting installed shell; never an automatic reload
   capped: false,
   sig: '',                // changes whenever any book's visible state changes
 };
@@ -28,6 +30,7 @@ const eventListeners = new Set();
 let previous = null;
 let timer = 0;
 let inflight = null;
+let followup = false;
 const expected = new Map(); // jobId → status key caused by the user's own action
 
 export const subscribe = fn => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -35,6 +38,10 @@ export const onEvents = fn => { eventListeners.add(fn); return () => eventListen
 const emit = () => listeners.forEach(fn => { try { fn(state); } catch (error) { console.error(error); } });
 /** Re-announce state after a screen changes shared state (e.g. the suggestions count). */
 export const touch = () => emit();
+export function setFrontendUpdate(ready) {
+  if (state.frontendUpdate === ready) return;
+  state.frontendUpdate = ready; emit();
+}
 
 export function counts() {
   let review = 0, active = 0, converting = null;
@@ -70,49 +77,56 @@ function apply(jobs) {
   state.sig = `${state.books.length}:${h}`;
 }
 
-export async function refresh() {
-  if (inflight) return inflight;
+/** A mutation can require one fresh read after an already-started poll. */
+export function refresh({ fresh = false } = {}) {
+  if (inflight) { if (fresh) followup = true; return inflight; }
   clearTimeout(timer);
   inflight = (async () => {
-    try {
-      const jobs = await api.listJobs(1000);
-      const events = diffJobs(previous, jobs, expected);
-      for (const event of events) if (expected.get(event.jobId)) expected.delete(event.jobId);
-      previous = snapshot(jobs);
-      apply(jobs);
-      state.loaded = true; state.connected = true; state.lastError = ''; state.authNeeded = false; state.lastSync = Date.now();
-      emit();
-      if (events.length) eventListeners.forEach(fn => fn(events));
-    } catch (error) {
-      state.connected = error.offline ? false : state.connected ?? true;
-      state.lastError = error.message;
-      state.authNeeded = error.status === 401;
-      if (!error.offline) state.loaded = true;
-      emit();
-    } finally {
-      inflight = null;
-      const busy = state.books.some(b => b.status.key === 'converting' || b.status.key === 'queued');
-      timer = setTimeout(refresh, document.hidden ? 60_000 : state.connected === false ? OFFLINE : busy ? FAST : SLOW);
-    }
-  })();
+    do {
+      followup = false;
+      try {
+        const jobs = await api.listJobs(1000);
+        if (followup) continue; // A known pre-mutation response must not flash back.
+        const events = diffJobs(previous, jobs, expected);
+        for (const event of events) if (expected.get(event.jobId)) expected.delete(event.jobId);
+        previous = snapshot(jobs);
+        apply(jobs);
+        state.loaded = true; state.connected = true; state.lastError = ''; state.authNeeded = false; state.lastSync = Date.now();
+        emit();
+        if (events.length) eventListeners.forEach(fn => fn(events));
+      } catch (error) {
+        if (followup) continue;
+        state.connected = error.offline ? false : state.connected ?? true;
+        state.lastError = error.message;
+        state.authNeeded = error.status === 401;
+        if (!error.offline) state.loaded = true;
+        emit();
+      }
+    } while (followup);
+  })().finally(() => {
+    inflight = null;
+    const busy = state.books.some(b => b.status.key === 'converting' || b.status.key === 'queued');
+    timer = setTimeout(refresh, document.hidden ? 60_000 : state.connected === false ? OFFLINE : busy ? FAST : SLOW);
+  });
   return inflight;
 }
 
-export async function loadSettings() {
-  try { state.settings = await api.settings(); emit(); } catch { /* shown as unknown in Settings */ }
-  return state.settings;
+let settingsPending = null;
+export function loadSettings() {
+  if (settingsPending) return settingsPending;
+  const previous = state.settings;
+  settingsPending = api.settings().then(value => {
+    // A completed settings save owns its newer value over this earlier read.
+    if (state.settings === previous) { state.settings = value; emit(); }
+    return state.settings;
+  }).catch(() => state.settings).finally(() => { settingsPending = null; });
+  return settingsPending;
 }
 
-/** Full job record (includes recovery_acceptance_preview), cached per updated_at. */
-const detailCache = new Map();
-export async function jobDetail(jobId, { force = false } = {}) {
-  const summary = state.byId.get(jobId)?.job;
-  const cached = detailCache.get(jobId);
-  if (!force && cached && summary && cached.updated_at === summary.updated_at) return cached;
-  const job = await api.job(jobId);
-  detailCache.set(jobId, job);
-  if (detailCache.size > 40) detailCache.delete(detailCache.keys().next().value);
-  return job;
+/** Read once per job version; pointer prefetch and the screen share the work. */
+const detailCache = resourceCache((jobId, options) => api.job(jobId, options));
+export function jobDetail(jobId, { force = false } = {}) {
+  return detailCache.read(jobId, state.byId.get(jobId)?.job.updated_at, { force }).promise;
 }
 
 export const isOffline = () => state.connected === false || (typeof navigator !== 'undefined' && navigator.onLine === false);

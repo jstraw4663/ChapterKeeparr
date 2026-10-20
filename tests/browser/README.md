@@ -51,3 +51,10 @@ The synthetic match-quality workflow runs both themes at 320/390/820/1440 px wit
 
 
 `branding.py` checks all four explicit/system preference combinations at 320/390/820/1440px, loads both local Manrope faces, verifies the correct original mark/wordmark and matching Paper/Ink background, and captures the real shell. Browser requests are restricted to local GETs. The full sweep checks Paper save-button color while retaining unchecked/checked consent and readiness checks; match-quality scans cover balanced wrapping under the new font. Updated PWA assets have separate `any` / `maskable` purposes. App branding uses no remote font or image hosts.
+
+
+## Ordered updates and real PWA coverage
+
+Run `python tests/browser/flow_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/flow` against the disposable server (or `--pwa-only` while checking worker lifecycle). Eight theme/390px/1024px/reduced/live-motion contexts hold actual read responses, progress another job, and verify zero selected-view DOM mutations for unrelated progress; focused input/caret/scroll retention; retained chapter evidence with save blocked during refresh; unchanged-token consent retention versus changed-token reset; single shared reads; chapter refresh failure/retry; late completion after leaving; latest rapid navigation; and one document boot through all hash navigation/polls. API mutations are blocked.
+
+A separate real-service-worker context installs/controls the app, queues a waiting update via a different worker script URL, changes tabs with no document reload, explicitly confirms Settings activation/reload, and reloads offline from the cached installed shell. SessionStorage boot counters prove which operations create a new document. This catches failures that a mocked worker or worker-blocked layout test cannot, including missing precache assets. API tests also fetch the entire shell list over the real static route and retain traversal/type-denial checks. Physical Safari/iOS or OS memory-pressure reloads are not simulated.

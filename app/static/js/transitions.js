@@ -12,6 +12,8 @@ import { NAV } from './router.js';
 
 const ORDER = NAV.map(item => item.name);   // sidebar order, used for tab direction
 let running = null;
+let generation = 0;
+let clearNames = () => {};
 
 const reduced = () => document.documentElement.dataset.motion === 'reduce';
 
@@ -57,9 +59,12 @@ const unname = els => els.forEach(el => { el.style.viewTransitionName = ''; });
  * `bookId` is the book whose cover/title should morph between the two screens.
  */
 export function transition(kind, update, { bookId = '' } = {}) {
+  const current = ++generation;
   running?.skipTransition?.();
+  clearNames(); running = null;
   const root = document.documentElement;
   if (kind === 'none' || !document.startViewTransition || document.hidden) {
+    delete root.dataset.vt;
     update();
     if (kind !== 'none') document.getElementById('view')?.animate?.([{ opacity: 0.5 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' });
     return;
@@ -67,8 +72,10 @@ export function transition(kind, update, { bookId = '' } = {}) {
   const before = nameShared(bookId);
   root.dataset.vt = reduced() ? 'fade' : kind;
   let after = [];
+  clearNames = () => { unname(before); unname(after); };
   // `update` may return a promise (e.g. covers decoding); the new state is captured when it settles.
   const vt = document.startViewTransition(async () => {
+    if (current !== generation) return;
     unname(before);
     const settling = update();
     after = nameShared(bookId);
@@ -78,8 +85,7 @@ export function transition(kind, update, { bookId = '' } = {}) {
   // A skipped or aborted animation still swaps the page; nothing to report.
   vt.ready.catch(() => {});
   vt.finished.catch(() => {}).finally(() => {
-    unname(after);
-    if (running === vt) { running = null; delete root.dataset.vt; }
+    if (running === vt) { clearNames(); clearNames = () => {}; running = null; delete root.dataset.vt; }
   });
 }
 

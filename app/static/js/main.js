@@ -2,7 +2,7 @@
 
 import { html } from './format.js';
 import { parse, legacyJobTarget, navFor } from './router.js';
-import { state, start, subscribe, onEvents, bookById, refresh } from './store.js';
+import { state, start, subscribe, onEvents, bookById, refresh, setFrontendUpdate } from './store.js';
 import { shellMarkup, applyAppearance, initShell, updateShell, setScreenChrome, shellActions, closeSearch, refreshSearch } from './shell.js';
 import { notify, reflowNotifications } from './notify.js';
 import { onPrefs } from './prefs.js';
@@ -36,15 +36,32 @@ let currentKey = '';
 const scrollByKey = new Map(); // route key → scroll position, for returning to a tab or list
 let rendering = false;
 let renderQueued = false;
+let navigation = 0;
+let visit = 0;
+let pendingNavigation = false;
+let displayedHash = null;
+let backgroundFrame = 0;
 
-function requestRender() {
+function requestRender(force = true) {
+  if (!force) {
+    if (!backgroundFrame) backgroundFrame = requestAnimationFrame(() => {
+      backgroundFrame = 0; render(false);
+    });
+    return;
+  }
   if (renderQueued) return;
   renderQueued = true;
-  queueMicrotask(() => { renderQueued = false; render(false, true); });
+  queueMicrotask(() => {
+    renderQueued = false;
+    cancelAnimationFrame(backgroundFrame); backgroundFrame = 0;
+    render(false, true);
+  });
 }
 
 function ctx(enter = false) {
-  return { route, state, ui, enter, phone: phoneQuery.matches, rerender: () => render(false, true) };
+  const owner = visit, hash = location.hash;
+  const isCurrent = () => owner === visit && hash === location.hash && !pendingNavigation;
+  return { route, state, ui, enter, phone: phoneQuery.matches, isCurrent, rerender: () => { if (isCurrent()) render(false, true); } };
 }
 
 /**
@@ -62,12 +79,11 @@ function render(enter = false, force = false, { patch = false, still = false } =
 }
 
 function renderView(enter, force, { patch, still }) {
-  if (!screen) return;
+  if (!screen || pendingNavigation || location.hash !== displayedHash) return;
   const view = document.getElementById('view');
   const c = ctx(enter);
   const sig = `${phoneQuery.matches}|${screen.signature ? screen.signature(c) : Math.random()}`;
   if (!force && !enter && sig === lastSig) return;
-  lastSig = sig;
   // Keep focus, caret and scroll across re-renders.
   const active = document.activeElement;
   const focusId = active && view.contains(active) ? active.id : '';
@@ -88,6 +104,8 @@ function renderView(enter, force, { patch, still }) {
     reflowNotifications();
     syncInks(view);
     unmount = screen.mount?.(view, c) || null;
+    // Rendering can initialize per-route forms; capture that settled state.
+    lastSig = `${phoneQuery.matches}|${screen.signature ? screen.signature(c) : Math.random()}`;
   } catch (error) {
     // Keep the shell usable and say what broke instead of leaving a blank page.
     console.error(error);
@@ -107,12 +125,16 @@ function renderView(enter, force, { patch, still }) {
 }
 
 function go() {
+  const requested = ++navigation;
+  pendingNavigation = true;
+  const hash = location.hash;
+  const current = () => requested === navigation && hash === location.hash;
   audio.stop();
   closeSearch();
   const parsed = parse(location.hash);
   if (parsed.redirect) { location.replace(parsed.redirect); return; }
   if (parsed.legacyJob) {
-    const target = () => location.replace(legacyJobTarget(bookById(parsed.legacyJob), parsed.match));
+    const target = () => { if (current()) location.replace(legacyJobTarget(bookById(parsed.legacyJob), parsed.match)); };
     if (state.loaded) target(); else refresh().then(target);
     return;
   }
@@ -125,6 +147,8 @@ function go() {
   // Tabs and lists come back where you left them; details open at the top.
   const restore = !next.id && (kind === 'pop' || kind.startsWith('tab')) ? scrollByKey.get(key) || 0 : 0;
   const swap = () => {
+    if (!current()) return;
+    pendingNavigation = false; displayedHash = hash; visit++;
     currentKey = key;
     if (!uiByRoute.has(key)) uiByRoute.set(key, {});
     ui = uiByRoute.get(key);
@@ -249,7 +273,7 @@ function boot() {
   subscribe(() => {
     updateShell(route);
     refreshSearch();
-    render(false);
+    requestRender(false);
     topOverlay()?.refresh?.();
   });
   onEvents(events => events.forEach(notify));
@@ -260,7 +284,13 @@ function boot() {
   go();
   start();
   if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').then(registration => {
-    const available = () => notify({ kind: 'info', title: 'A frontend update is ready', body: 'Finish your review, then open Settings to reload safely.', href: '#/settings/about', action: 'Settings', dest: null, at: Date.now() });
+    let announced = false;
+    const available = () => {
+      setFrontendUpdate(true);
+      if (announced) return;
+      announced = true;
+      notify({ kind: 'info', title: 'A frontend update is ready', body: 'Finish your review, then open Settings to reload safely.', href: '#/settings/about', action: 'Settings', dest: null, at: Date.now() });
+    };
     if (registration.waiting) available();
     registration.addEventListener('updatefound', () => {
       const worker = registration.installing;

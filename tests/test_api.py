@@ -34,6 +34,18 @@ class ApiTests(unittest.TestCase):
         self.client = TestClient(self.app)
         self.headers = {"Authorization": "Bearer test-token"}
 
+    def test_installed_pwa_can_fetch_every_precached_shell_asset(self):
+        import re
+        worker=(Path(__file__).resolve().parents[1]/'app/static/sw.js').read_text()
+        assets=re.findall(r"'(/static/[^']+)'",worker)+['/','/manifest.webmanifest']
+        for path in assets:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code,200)
+        icon=self.client.get('/static/favicon.ico')
+        self.assertEqual(icon.headers['content-type'],'image/x-icon')
+        self.assertEqual(self.client.get('/static/../api.py').status_code,404)
+        self.assertEqual(self.client.get('/static/fonts/OFL.txt').status_code,404)
+
     def test_auth_browse_and_path_restriction(self):
         self.assertEqual(self.client.get("/api/health").status_code, 200)
         self.assertEqual(self.client.get("/api/jobs").status_code, 401)

@@ -2,11 +2,13 @@ import { reviewModel, markerDecisions, remainingSections } from './chapter-revie
 import { assessMatches } from './review-quality.js';
 
 // Visibility is a preference; publication still requires the server's fingerprint checks.
-export function acceptanceState(preview, form = {}, { connected = true, authNeeded = false } = {}) {
+export function acceptanceState(preview, form = {}, { connected = true, authNeeded = false, refreshing = false, refreshError = '' } = {}) {
   const minimum = Number(form.min ?? preview?.default_minimum_percent);
   const percent = preview?.quality_policy && preview.markers ? assessMatches(preview, form).validated_percent : preview?.supported_percent;
   let problem = '';
   if (!preview?.ready || !preview.token) problem = 'Load a current, complete draft before saving.';
+  else if (refreshing) problem = 'Refreshing chapter evidence before saving…';
+  else if (refreshError) problem = 'Reload current chapter evidence before saving.';
   else if (!Number.isFinite(minimum) || minimum < 1 || minimum > 100) problem = 'Enter a minimum between 1 and 100%.';
   else if (!Number.isFinite(percent) || percent + 1e-9 < minimum) problem = `${percent?.toFixed(1) ?? 'Unknown'}% evidence-backed matches; the selected minimum is ${minimum}%. Review the unresolved chapters before deciding.`;
   else if (Array.isArray(preview.markers)) problem = chapterProblem(preview, form);
@@ -17,7 +19,7 @@ export function acceptanceState(preview, form = {}, { connected = true, authNeed
   else if (!problem && authNeeded) problem = 'Add the server’s access token in Settings before saving.';
   else if (!problem && form.busy) problem = 'Submitting your approval…';
   if (!problem && form.closing) problem = 'Finishing your decision…';
-  return { minimum, visible: Boolean(form.gap), enabled: !problem, problem };
+  return { minimum, visible: Boolean(form.gap), enabled: !problem, problem, refreshing: Boolean(refreshing) };
 }
 
 export function draftApproval(preview, previous = {}) {

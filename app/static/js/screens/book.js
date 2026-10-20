@@ -4,6 +4,7 @@
 
 import { html, clock, shortDate, bool } from '../format.js';
 import { icon } from '../icons.js';
+import { resourceCache } from '../resource-cache.js';
 import { api, needsServer } from '../api.js';
 import { state, bookById, touch } from '../store.js';
 import { reportOf } from '../status.js';
@@ -17,19 +18,17 @@ import * as audio from '../audio.js';
 import { checksOf, checkTimeline, gatesDetail, playCheck, durationOf } from './evidence.js';
 import { serverButton, reportError, retryJob } from './common.js';
 
-const chapters = new Map(); // jobId → { list, error, loading, updated }
+const chapters = resourceCache((id, options) => api.chapters(id, options));
+const observed = new WeakSet();
 const SHOW = 11;
 
-function loadChapters(book, ctx) {
-  const entry = chapters.get(book.id);
-  if (entry && entry.updated === book.updatedAt) return entry;
-  const next = { list: null, error: '', loading: true, updated: book.updatedAt };
-  chapters.set(book.id, next);
-  api.chapters(book.id)
-    .then(data => { next.list = data.chapters || []; next.duration = data.duration_seconds; })
-    .catch(error => { next.error = error.message; })
-    .finally(() => { next.loading = false; ctx.rerender(); });
-  return next;
+function loadChapters(book, force = false) {
+  const entry = chapters.read(book.id, book.updatedAt, { force });
+  if (!observed.has(entry)) {
+    observed.add(entry);
+    entry.promise.then(() => touch(), () => touch());
+  }
+  return entry;
 }
 
 function facts(book) {
@@ -57,7 +56,7 @@ function statusCard(book, ctx) {
   const now = audio.current();
   const evOpen = ctx.ui.open?.evidence ?? false;
   const evidence = rows.length ? html`
-    ${checkTimeline(rows, durationOf(book.job, chapters.get(book.id)?.duration), { small: true, label: 'Checked chapters across the book' })}
+    ${checkTimeline(rows, durationOf(book.job, chapters.get(book.id)?.value?.duration_seconds), { small: true, label: 'Checked chapters across the book' })}
     <h3 class="ghh"><button type="button" class="gh top-line" data-act="toggle" data-arg="evidence" aria-expanded="${bool(evOpen)}" aria-controls="evidence-body"><span class="chev">${icon('chevronRight', 18, { stroke: 2 })}</span><span style="font-size:14px;font-weight:650">Chapter check evidence</span><span class="summary">${passed} of ${rows.length}</span></button></h3>
     <div id="evidence-body" ${evOpen ? '' : 'hidden'}>${rows.map(r => html`<div class="row gap12" style="min-height:52px;border-top:1px solid var(--line)"><span class="ldot ${r.passed ? 'ok' : 'warn'}" style="width:22px;height:22px">${icon(r.passed ? 'check' : 'warn', 12, { stroke: 2.4 })}</span><span class="grow ell" style="font-size:14px;font-weight:650">${r.name}</span><span class="meta tabular">${r.seconds != null ? clock(r.seconds) : '—'}</span>${spotButton({ playing: now?.key === `chk:${book.id}:${r.n}`, label: r.name, act: 'evidence-play', arg: r.n, disabled: !r.excerpt, disabledReason: 'No saved audio for this check' })}</div>`)}</div>` : html`<p class="meta" style="padding:6px 0 12px">No chapter check evidence was recorded for this book.</p>`;
   return html`<section class="panel col gap8" style="padding:20px 22px 10px" aria-label="Status">
@@ -67,15 +66,16 @@ function statusCard(book, ctx) {
 }
 
 function chaptersPanel(book, ctx) {
-  const entry = loadChapters(book, ctx);
+  const entry = loadChapters(book);
+  const list = entry.value?.chapters;
   const filter = (ctx.ui.chf || '').trim().toLowerCase();
   const now = audio.current();
   let body;
-  if (entry.loading) body = skeletonRows(6, 48);
-  else if (entry.error) body = html`<p class="gapnote">${entry.error}</p>`;
-  else if (!entry.list.length) body = html`<p class="gapnote">This file has no embedded chapters.</p>`;
+  if (!list && entry.loading) body = skeletonRows(6, 48);
+  else if (!list && entry.error) body = html`<p class="gapnote">${entry.error}</p>${button({label:'Reload chapters',act:'chapters-reload',size:'sm'})}`;
+  else if (!list?.length) body = html`<p class="gapnote">This file has no embedded chapters.</p>`;
   else {
-    const all = entry.list.map((c, i) => ({ ...c, i, name: c.title || `Untitled chapter ${i + 1}` }));
+    const all = list.map((c, i) => ({ ...c, i, name: c.title || `Untitled chapter ${i + 1}` }));
     const matched = filter ? all.filter(c => c.name.toLowerCase().includes(filter)) : all;
     const shown = filter || ctx.ui.allChapters ? matched : matched.slice(0, SHOW);
     body = html`<div class="col">${shown.map(c => {
@@ -85,7 +85,8 @@ function chaptersPanel(book, ctx) {
     })}${!shown.length ? html`<p class="meta" style="padding:12px 6px">No chapter matches “${ctx.ui.chf}”.</p>` : ''}</div>
     ${!filter && !ctx.ui.allChapters && all.length > SHOW ? button({ label: `Show all ${all.length} chapters`, act: 'all-chapters', block: true, cls: 'mt10' }) : ''}`;
   }
-  const count = entry.list?.length;
+  if (entry.error && list) body = html`${body}<p class="meta" role="status">Couldn’t refresh chapters: ${entry.error}. Showing the last loaded list.</p>${button({label:'Reload chapters',act:'chapters-reload',size:'sm'})}`;
+  const count = list?.length;
   const search = html`<div class="inputwrap pill" style="${ctx.phone ? 'margin-bottom:6px;width:100%' : 'width:220px'}"><label for="ch-filter" class="sr">Find a chapter</label><span class="icon">${icon('search', 16)}</span><input id="ch-filter" class="input" type="search" placeholder="Find a chapter" value="${ctx.ui.chf || ''}" autocomplete="off"></div>`;
   if (ctx.phone) {
     return collapsible({ id: 'chapters', title: 'Chapters', summary: count ? `${count} · tap for 15s check` : '', open: ctx.ui.open?.chapters ?? true, body: html`${search}${body}` });
@@ -197,7 +198,7 @@ export default {
   /** Start the chapter request as soon as a link to this book is pressed. */
   prefetch(route) {
     const book = route.id && bookById(route.id);
-    if (book) loadChapters(book, { rerender: () => touch() });
+    if (book) loadChapters(book);
   },
   topbar: true,
   detail: true,
@@ -205,7 +206,7 @@ export default {
   signature(ctx) {
     const b = bookOf(ctx);
     const c = b && chapters.get(b.id);
-    return [state.loaded, state.sig, ctx.route.id, JSON.stringify(ctx.ui), c && `${c.loading}${c.error}${c.list?.length}`, audio.current()?.key].join('|');
+    return [state.loaded, state.connected, state.authNeeded, b?.updatedAt, ctx.route.id, JSON.stringify(ctx.ui), c && `${c.loading}:${c.revision}`, audio.current()?.key].join('|');
   },
 
   render(ctx) {
@@ -217,7 +218,7 @@ export default {
       return html`<div class="${phone ? 'page-inset' : ''}">${emptyState({ title: `${book.title} isn’t verified yet`, body: book.status.detail, action: button({ label: book.status.key === 'review' ? 'Review it' : 'Open in Queue', href: book.status.key === 'review' ? `#/review/${encodeURIComponent(book.id)}` : `#/queue?job=${encodeURIComponent(book.id)}` }) })}</div>`;
     }
     const { rows, passed, saved } = facts(book);
-    const chapterCount = chapters.get(book.id)?.list?.length;
+    const chapterCount = chapters.get(book.id)?.value?.chapters?.length;
     const line = [chapterCount != null ? `${chapterCount} chapters` : '', rows.length ? `${passed} of ${rows.length} checks passed` : '', saved ? `Saved ${saved}` : ''].filter(Boolean).join(' · ');
     const eyebrow = book.series ? `${book.series}${book.seriesPos ? ` · Book ${book.seriesPos}` : ''}` : book.author || '';
     if (phone) {
@@ -240,10 +241,11 @@ export default {
   },
 
   actions: {
+    'chapters-reload': (el, ev, ctx) => { const book=bookOf(ctx); if (!book || chapters.get(book.id)?.loading) return; loadChapters(book,true); ctx.rerender(); },
     'chapter-play': (el, ev, ctx) => {
       const book = bookOf(ctx);
       const entry = chapters.get(book?.id);
-      const c = entry?.list?.[Number(el.dataset.arg)];
+      const c = entry?.value?.chapters?.[Number(el.dataset.arg)];
       if (!c) return;
       audio.playChapter({ key: `ch:${book.id}:${el.dataset.arg}`, jobId: book.id, label: c.title || `Chapter ${Number(el.dataset.arg) + 1}`, start: c.start_seconds, end: c.end_seconds })
         .catch(error => reportError(error, 'Couldn’t play this chapter'));

@@ -87,7 +87,7 @@ export function chapterReviewView(p, f, { playing, warning = '', open = {} } = {
 }
 export function chapterSaveBar(p, f, acceptance) {
   const m = reviewModel(p, f);
-  const status = f.message || (m.canSave && !acceptance.enabled ? acceptance.problem : m.status);
+  const status = f.message || (acceptance.refreshing || (m.canSave && !acceptance.enabled) ? acceptance.problem : m.status);
   return html`<section class="cr-save" data-key="save-${p.token}" aria-label="Save reviewed chapter decisions" aria-busy="${bool(Boolean(f.busy))}"><div class="cr-save-status"><div class="col gap8 grow"><strong id="accept-status" role="status" aria-live="polite">${status}</strong><span id="accept-detail" class="sr-only">${acceptance.problem || 'Final validation runs before saving.'}</span>${completion(m, true)}</div>${control('Next open', 'cr-next', '', { iconEnd: 'chevronDown', disabled: !m.need, extra: { 'aria-label': 'Jump to next open decision' } })}</div><label class="checkbox"><input type="checkbox" id="accept-gap" name="gap" ${f.gap ? 'checked' : ''} ${f.busy ? 'disabled' : ''}><span>I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</span></label><div id="accept-action" ${acceptance.visible ? '' : 'hidden'}>${control(f.busy ? 'Submitting…' : 'Accept and save', 'accept', '', { kind: 'review-save', block: true, disabled: !acceptance.enabled, disabledReason: acceptance.problem, extra: { 'aria-describedby': 'accept-status accept-detail' } })}</div></section>`;
 }
 

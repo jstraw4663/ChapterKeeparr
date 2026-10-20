@@ -88,7 +88,7 @@ export default {
   topbar: true,
 
   signature(ctx) {
-    return [state.loaded, state.connected, state.sig, JSON.stringify(ctx.ui), ctx.route.query.toString()].join('|');
+    return [state.loaded, state.connected, state.authNeeded, state.sig, JSON.stringify(ctx.ui), ctx.route.query.toString()].join('|');
   },
 
   render(ctx) {
@@ -139,8 +139,8 @@ export default {
       io.observe(target);
     }
     const id = ctx.route.query.get('job');
-    if (id && ctx.enter) setTimeout(() => root.querySelector(`#job-${CSS.escape(id)}`)?.scrollIntoView({ block: 'center' }));
-    return () => io?.disconnect();
+    const focusTimer = id && ctx.enter ? setTimeout(() => { if (ctx.isCurrent?.() !== false) root.querySelector(`#job-${CSS.escape(id)}`)?.scrollIntoView({ block: 'center' }); }) : null;
+    return () => { clearTimeout(focusTimer); io?.disconnect(); };
   },
 
   actions: {

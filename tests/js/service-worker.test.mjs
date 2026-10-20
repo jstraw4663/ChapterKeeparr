@@ -33,3 +33,9 @@ test('a controlled tab keeps its installed shell assets and never caches API res
   handlers.fetch({ request: { method: 'GET', url: 'http://fixture/api/settings' }, respondWith: promise => { response = promise; } });
   assert.equal(response, undefined);
 });
+
+test('PWA navigation uses HTML from the same installed shell as its modules',async()=>{
+ const {handlers,calls,cached}=worker();let response;
+ handlers.fetch({request:{method:'GET',mode:'navigate',url:'http://fixture/'},respondWith:p=>{response=p;}});
+ assert.equal(await response,cached);assert.equal(calls.network,0);
+});

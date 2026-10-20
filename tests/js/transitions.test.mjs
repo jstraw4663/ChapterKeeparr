@@ -24,3 +24,17 @@ test('top-level tabs slide by sidebar order', () => {
   assert.equal(kindOf(r('queue'), r('library'), false), 'tab-left');
   assert.equal(kindOf(r('settings'), r('settings'), false), 'same');
 });
+
+test('a skipped navigation cannot swap an older screen after the latest screen', async t => {
+  const { transition } = await import('../../app/static/js/transitions.js');
+  const callbacks=[], finishes=[], effects=[], before=globalThis.document;
+  globalThis.document={hidden:false,documentElement:{dataset:{}},startViewTransition(callback){
+    callbacks.push(callback);return {skipTransition(){},ready:Promise.resolve(),finished:new Promise(resolve=>finishes.push(resolve))};
+  }};
+  t.after(()=>{if(before===undefined)delete globalThis.document;else globalThis.document=before;});
+  transition('push',()=>effects.push('old'));
+  transition('push',()=>effects.push('new'));
+  await callbacks[1]();await callbacks[0]();
+  finishes.forEach(resolve=>resolve());await Promise.resolve();await Promise.resolve();
+  assert.deepEqual(effects,['new']);
+});

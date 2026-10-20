@@ -12,15 +12,16 @@ export class ApiError extends Error {
 export const notAvailable = (gap, message) => ({ available: false, gap, message });
 export const needsServer = gap => `Needs server support (${gap})`;
 
-async function request(path, { method = 'GET', body, raw = false } = {}) {
+async function request(path, { method = 'GET', body, raw = false, signal } = {}) {
   const headers = new Headers();
   if (body !== undefined) headers.set('Content-Type', 'application/json');
   const token = getToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   let response;
   try {
-    response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
-  } catch {
+    response = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store', signal });
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
     throw new ApiError('Can’t reach the server.', 0);
   }
   if (!response.ok) {
@@ -46,7 +47,7 @@ export const api = {
   setRecoveryMinimum: percent => request('/api/settings/recovery', { method: 'PUT', body: { recovery_minimum_percent: percent } }),
 
   listJobs: (limit = 1000) => request(`/api/jobs?limit=${limit}`).then(d => (Array.isArray(d) ? d : d?.jobs || [])),
-  job: jobId => request(`/api/jobs/${id(jobId)}`),
+  job: (jobId, options) => request(`/api/jobs/${id(jobId)}`, options),
   cancel: jobId => request(`/api/jobs/${id(jobId)}/cancel`, { method: 'POST' }),
   retry: jobId => request(`/api/jobs/${id(jobId)}/retry`, { method: 'POST' }),
 
@@ -60,7 +61,7 @@ export const api = {
   discover: path => request('/api/discover', { method: 'POST', body: { path } }),
   submit: payload => request('/api/jobs', { method: 'POST', body: payload }),
 
-  chapters: jobId => request(`/api/jobs/${id(jobId)}/chapters`),
+  chapters: (jobId, options) => request(`/api/jobs/${id(jobId)}/chapters`, options),
   sourceInfo: jobId => request(`/api/jobs/${id(jobId)}/source-info`),
   mediaTicket: jobId => request(`/api/jobs/${id(jobId)}/media-token`, { method: 'POST' }),
   audioUrl: (jobId, ticket) => `/api/jobs/${id(jobId)}/audio?ticket=${encodeURIComponent(ticket)}`,

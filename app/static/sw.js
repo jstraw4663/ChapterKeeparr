@@ -1,4 +1,4 @@
-const CACHE = 'chapterkeeparr-shell-v16';
+const CACHE = 'chapterkeeparr-shell-v17';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
   '/static/brand/mark-dark.svg',
@@ -51,6 +51,7 @@ const SHELL = [
   '/static/js/shell.js',
   '/static/js/status.js',
   '/static/js/store.js',
+  '/static/js/resource-cache.js',
   '/static/js/ui.js',
   '/static/fonts/manrope-medium.woff2',
   '/static/fonts/manrope-extrabold.woff2',
@@ -80,7 +81,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/')));
+    // Keep HTML and JS from the same installed build. A waiting update never
+    // mixes a new network index with the active worker’s older modules.
+    event.respondWith(caches.open(CACHE).then(async cache => (await cache.match('/')) || fetch(request)));
     return;
   }
   if (SHELL.includes(url.pathname)) event.respondWith(caches.open(CACHE).then(async cache => {

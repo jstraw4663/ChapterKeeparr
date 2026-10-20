@@ -67,6 +67,7 @@ jobs:
           python tests/browser/bedlam_workflow.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/bedlam
           python tests/browser/match_quality.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/quality
           python tests/browser/branding.py --output /tmp/ck-ui-results/branding
+          python tests/browser/flow_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/flow
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:

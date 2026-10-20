@@ -1,5 +1,14 @@
 # ChapterKeeparr project context
 
+## Stable navigation, reads and PWA shell — 2026-10-20
+
+Jeremy reports most screens briefly opening and then appearing to reload, especially in the installed PWA. Reproduced an actual native-transition race: a skipped old update callback can still overwrite the latest screen. Added navigation generations, route-bound async rendering/focus/handoffs and frame-coalesced background patches. Relevant per-book signatures keep unrelated progress from remounting a selected book/review. The same canonical draft retains browser choices/consent; a real evidence change still resets approval.
+
+Loaded detail/chapter data now remains visible while a shared bounded cache revalidates it; superseded reads abort and cannot publish out of order. Evidence refresh/errors block save without removing the editor; book chapter failures retain their data and allow an explicit read retry. One post-mutation fresh poll runs after an already-started poll; known-stale results are skipped. Startup Settings reads cannot overwrite a newer successful save. No new polling loop, ASR, thread budget or media work.
+
+Real-worker testing found a branding regression: the worker precached favicon.ico while the server's static route denied that extension, preventing installation. Added the correct icon MIME type and an API test that fetches every shell entry. PWA navigations now serve the installed build's cached HTML with matching modules, and API calls stay uncached. Worker readiness now updates shared state so Settings cannot miss a just-installed update, and notices are deduplicated. Worker updates only activate/reload through the existing explicit Settings confirmation. Shell cache v17; local data and approval-token semantics are unchanged. Safari/OS process eviction is not proven or ruled out by Chromium testing. See VALIDATION.md and G-054.
+
+
 ## Full Chapter C brand kit — 2026-10-20
 
 Jeremy supplied ChapterKeeparr-Brand-Kit.zip and explicitly approved full Manrope typography, the Ink/Paper/Cream/Amber palette and Paper in place of the previous white save button. This overrides the older neutral/Figtree examples; workflow, consent, status semantics and publication safeguards are unchanged. Original outlined wordmarks and simplified small marks follow app light/dark/system preferences. Browser, Apple, PWA (separate maskable safe zones), README and both Unraid templates use supplied artwork. Assets and provenance are in assets/brand; GitHub social preview is supplied for manual upload, not configured remotely.

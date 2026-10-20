@@ -56,7 +56,7 @@ export default {
 
   signature(ctx) {
     const p = viewPrefs();
-    return [state.loaded, state.connected, state.authNeeded, state.sig, JSON.stringify(p), ctx.ui.limit, ctx.route.query.toString(), Boolean(state.settings)].join('|');
+    return [state.loaded, state.connected, state.authNeeded, state.sig, JSON.stringify(p), ctx.ui.limit, ctx.route.query.toString()].join('|');
   },
 
   render(ctx) {

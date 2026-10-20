@@ -125,8 +125,8 @@ async function start(ctx) {
     const title = books.length === 1 ? guessFromPath(books[0].path).title : `${created.length || data.jobs?.length || 0} books`;
     notify({ kind: 'info', title: `Queued: ${title}`, body: created.length ? 'It starts when the converter is free' : 'Already in the queue', action: 'View', href: '#/queue', dest: 'queue', jobId: data.jobs?.[0]?.id, at: Date.now() });
     Object.assign(job, { path: '', scan: null, selected: new Set(), busy: false, force: false });
-    await refresh();
-    location.hash = '#/queue';
+    await refresh({ fresh: true });
+    if (ctx.isCurrent?.() !== false) location.hash = '#/queue';
   } catch (error) {
     job.busy = false; job.error = error.message; ctx.rerender();
   }

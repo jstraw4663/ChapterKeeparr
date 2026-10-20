@@ -312,3 +312,8 @@ config-backup location, old image ID, and the copied-library test results.
 Both XML templates now include the Chapter C icon. An existing Unraid container keeps its saved template fields when its image is pulled. To update that icon, edit the container (Advanced view if needed), set its Icon URL to the one in the updated XML, and Apply. The preview template points to the feature branch asset; the stable template points to main, available after merge. Configuration and media mappings do not change.
 
 Installed phone/PWA icons are also cached by the OS. Load the updated app first; if its home-screen icon stays old, remove that shortcut and add/install it again. The app's updated service worker refreshes local assets separately. User preferences, authentication and source files are not modified by the artwork update.
+
+
+### Apply frontend/PWA flow fixes
+
+After pulling the new branch image, finish current review edits, then use Settings → About and updates → Reload after finishing review when an update is available. Confirm the reload to activate the waiting frontend. If a formerly broken worker has not installed yet, one deliberate app reload lets it install; return to Settings after the update notice. Do not clear site storage: that would remove browser-local choices and the saved access token. This flow update keeps choices for unchanged evidence; only genuinely changed draft tokens require fresh decisions/consent. Verify the new commit in Settings. Normal polling/tab navigation must not reload the document.
