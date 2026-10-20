@@ -6,6 +6,26 @@ The supplied screenshots and the US Audnexus timeline for `B0CDXWSS5D` exposed a
 
 The evidence archive received on October 20 was a valid 45-byte gzip containing an empty tar. No report, transcript or recording was present. Actual audio/word-timing and full-file comparison remain pending. The earlier export command incorrectly assumed reports lived directly under the job folder; workers use attempt folders and the actual clips can live beside the library-side report. No real book or deployed job was changed during this implementation.
 
+## Actual v2 evidence — October 20
+
+The replacement archive was verified: 21 regular files, one report plus ten WAVs and ten transcript JSONs. SHA-256: `092844df9c506a422d014e3927c433ea1826d82e14c8c006b092b43ec82d613b`. It contains the first five boundaries with initial/retry clips, not the complete audiobook. Its saved draft used `alignment-recovery-4` and reported 68/78 supported markers. These private excerpts/report remain outside the repository.
+
+All 78 saved local marker times pair with the published timeline within 0.037 seconds; the report's recording duration is 96431.063356 seconds versus the catalog's 96431.088 seconds. This supports retaining this file's boundaries, but does not prove complete audio or independently verify all chapters.
+
+| File marker | Saved transcript evidence | Current parser result |
+| --- | --- | --- |
+| 0:00.000 | Audible identification | Opening Credits remains a review suggestion |
+| 0:31.904 | Author acknowledgments; no section heading | OMG. What a floor! remains a review suggestion |
+| 9:41.335 | Isolated Prolog segment at retry offset 8.56 s | 1. Prologue, spoken named heading |
+| 31:58.061 | Part 1 / Havana, then Chapter 1 at offset 10.32 s | I. Havana - Chapter 1, spoken heading |
+| 51:47.852 | Chapter Two at offset 9.04 s | Chapter 2, spoken heading |
+
+Replaying the first-five saved transcripts with the current parser gives 69/78 supported after retaining the other saved evidence and running consistency checks. This is a partial replay, not a fresh full-book scan. Correcting the false match preserves Chapter 1's support and adds the true Prologue. The old preview alone demotes the bad assignment; explicitly redraft to generate corrected matches.
+
+Both problem WAVs were also independently decoded and transcribed with the app's current Faster-Whisper `small.en` CPU/int8 path, four threads and one worker. Both new transcripts matched the correct sections. The two 36-second excerpts took approximately 10.5 and 11.1 seconds of inference; the process peaked at approximately 1.0 GiB RSS in this cloud workspace. This is an excerpt smoke test, not an Unraid or full-library performance benchmark. Fresh word evidence is retained locally; no larger model or wider window was necessary.
+
+The remaining saved unresolved evidence includes part-prefixed Chapters 38/52, embedded Chapters 55/61 and Epilogue, plus Opening Credits/acknowledgments/Ending Skit/End Credits. Only the first-five WAVs were exported, so later candidates need a deployed redraft or separate excerpts. Do not infer unheard titles from timing or raise the audio score for manual decisions.
+
 ## Implemented
 
 - Shared, bounded-cache section semantics keep the raw label and separate kind, explicit chapter number and optional part context. Decorated Prologue/Epilogue labels are not chapter ordinals; the Bedlam part-prefixed Chapters 1/38/52 are recognized. Decimal chapters, arbitrary narrative references and repeated ambiguous chapter identities are not forced into numbered matches. Ordinary verification and EPUB number matching use the same parser as recovery.

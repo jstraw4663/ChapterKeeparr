@@ -1,4 +1,4 @@
-"""Semantic chapter identity and Bedlam regressions; all speech is synthetic."""
+"""Semantic chapter identity and Bedlam regressions; synthetic speech plus heading-only real-export regressions."""
 import copy
 import unittest
 from unittest.mock import patch
@@ -11,6 +11,22 @@ def transcript(text, words=None):
 
 
 class SectionIdentityTests(unittest.TestCase):
+    def test_exported_bedlam_segment_shapes_without_word_alignment(self):
+        # Heading-only extracts/times from the real v2 export. Surrounding prose
+        # is omitted; this guards the legacy cache's segment-only evidence.
+        remote = [dict(title='1. Prologue', start=581.333),
+                  dict(title='I. Havana - Chapter 1', start=1918.059)]
+        for boundary, clip, heading, start, end, title in [
+            (581.335, 573.335, ' Prolog', 8.56, 9.12, '1. Prologue'),
+            (1918.061, 1910.061, ' Chapter 1', 10.32, 12.56, 'I. Havana - Chapter 1'),
+        ]:
+            value = {'text': heading, 'segments': [dict(text=heading, start=start,
+                end=end, avg_logprob=-.35, no_speech_prob=.29)]}
+            with self.subTest(title=title):
+                result = recovery.identify_marker(value, boundary, clip, remote)
+                self.assertEqual(result['title'], title)
+                self.assertEqual(result['status'], 'supported')
+
     def test_section_and_part_ordinals_are_not_chapter_numbers(self):
         cases = {'1. Prologue': None, '2. Epilogue': None, 'I. Prolog': None,
             'I. Havana - Chapter 1': 1, 'II. The Father - Chapter 38': 38,

@@ -51,11 +51,17 @@ def design_edges(browser, base, rid, errors):
         expect(card).to_have_class('cr-card decided')
         if motion != 'reduce':
             page.wait_for_timeout(500)
-            before = page.evaluate('scrollY')
             card.locator('[data-act="cr-change"]').click()
-            card.locator('[data-act="cr-remove"]').click()
+            remove = card.locator('[data-act="cr-remove"]')
+            # Opening the card changes its height. Playwright can scroll to make
+            # Remove clickable; measure the app's decision from pointerdown,
+            # after that actionability scroll, rather than before opening it.
+            remove.evaluate("el=>el.addEventListener('pointerdown',()=>{window.ckDecisionScrollY=scrollY},{once:true})")
+            remove.click()
             expect(card).to_have_class('cr-card decided')
             page.wait_for_timeout(500)
+            before = page.evaluate('window.ckDecisionScrollY')
+            assert before is not None, 'Decision pointerdown was not observed'
             assert abs(page.evaluate('scrollY') - before) < 2, 'Desktop decision moved page'
         page.locator('[data-cr-more]').evaluate("el=>el.scrollIntoView({block:'center'})")
         page.wait_for_function("document.querySelectorAll('.cr-card').length >= 60")

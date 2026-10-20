@@ -1,5 +1,14 @@
 ## Bedlam section identity and full timeline — 2026-10-20
 
+## Actual Bedlam evidence and browser click baseline — 2026-10-20
+
+Final checks: 109 Python tests passed (15.680 seconds), including all nine JavaScript test files and frontend/design checks; JavaScript syntax and git diff checks pass. The corrected reconciled workflows pass with Chromium 151.0.7922.34 (the CI browser), both themes, 390px reduced motion and 1024px live motion, with notification timer checks. The focused Bedlam workflows pass all four theme/390px/1024px contexts and axe scans. The earlier unchanged 216-observation sweep passed in CI before its actionability-baseline failure.
+
+Verified the 21-file v2 archive, decoded all ten WAV headers and replayed the first-five saved transcripts. Both problem WAVs were additionally transcribed through the actual current CPU/int8 small.en path (four threads/one worker): correct Prologue and Havana / Chapter 1 matches; approximately 21.6 seconds combined inference and 1.0 GiB process peak RSS on cloud hardware. No source audio, deployed job or container changed. Report/catalog boundaries differ at most 0.037 seconds; this is not complete-audio proof. Full-book rescanning and Tower resource behavior remain unvalidated.
+
+The browser scroll regression baseline now records Remove pointerdown after Playwright actionability scrolling, retaining the strict <2 px post-decision displacement assertion and live animations. This corrects the failed a892f0d CI measurement without weakening the user-visible behavior check.
+
+
 - **108 Python tests passed** in 24.489 seconds, including real generated-media finalization, unchanged audio, original backup, first-marker protection, conflicting IDs/order and PyAV runtime checks. Seven new semantic/export tests plus an automatic-match replacement test cover the new behavior. The generated removal test now explicitly accepts the released published section.
 - **Seven frontend/design/syntax checks** pass after final copy changes; **all nine JS test files** pass. Regression cases cover editable automatic matches, released section identity, unchanged recognition percentages, non-duplicated progress, chronological original/planned labels and manual rename/keep/removal.
 - Synthetic Bedlam browser case passes in light/dark at **390 and 1024px**, with zero page errors and **four axe-core WCAG 2.2 AA scans**. Covers current draft over stale checks, formerly false Prologue assignment, four timing suggestions, filters, existing/planned titles, original-match edit/restore, persisted polling state and unchanged save guards. These are illustrative transcripts, not actual-book listening evidence.

@@ -1,5 +1,12 @@
 # ChapterKeeparr project context
 
+## Actual Bedlam excerpts and CI actionability check — 2026-10-20
+
+The populated v2 archive confirms the identity collision. All 78 saved local/catalog boundaries differ by at most 0.037 seconds. Replaying first-five cached transcripts and independently transcribing both problem WAVs with CPU/int8 small.en produces Prologue at 581.335 s and Havana / Chapter 1 at 1918.061 s. First-five replay yields 69/78 after retaining later saved evidence, not a full-book verification. Audio/report remain outside Git; source and deployed job are unchanged. See the updated Bedlam repair guide. Added a heading-only regression for the actual legacy segment shapes.
+
+The owner-run a892f0d workflow and its PR run failed the desktop scroll assertion: it measured before reopening the card, including Playwright actionability scrolling. The test now measures at Remove pointerdown and still asserts no app-induced displacement after animated completion. No app scroll or accessibility rule is disabled. A new owner-run build is needed for this test-only follow-up; no release was triggered.
+
+
 ## Bedlam identity and complete review timeline — 2026-10-20
 
 Implemented Jeremy's approved section-identity and workflow changes. Shared semantics distinguish decorated Prologue/Epilogue labels from numbered chapters and recognize part-prefixed Chapters 1/38/52. Recovery can identify timed named headings and demotes contradictory legacy/order/timing evidence before it becomes a hard UI anchor. Preview, acceptance and saved plans share the normalized interpretation; original evidence and source/audio checks are retained. Versioned draft tokens require fresh consent after this semantic update. The existing transcript/model cache is retained; no new model, GPU path or worker/thread expansion was introduced.
