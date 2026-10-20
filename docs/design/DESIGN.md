@@ -1,3 +1,5 @@
+> Brand update approved by Jeremy on 2026-10-20: Manrope Medium / ExtraBold replaces Figtree; Ink / Paper / Cream surfaces and Amber primary actions replace the prior neutral palette. `tokens.css` is authoritative for accessible theme variants. The consent-gated save action uses Paper (#F7F2E8) with Ink text in both themes. Existing screen hierarchy, status semantics, spacing, shared components and motion remain. Outlined brand wordmarks use original supplied artwork. This amendment supersedes conflicting typography, palette and white-button examples below.
+
 # ChapterKeeparr design system
 
 This is the source of truth for how ChapterKeeparr looks, moves and behaves. If code and this file disagree, this file wins until someone updates it on purpose.

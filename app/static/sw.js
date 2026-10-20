@@ -1,6 +1,14 @@
-const CACHE = 'chapterkeeparr-shell-v15';
+const CACHE = 'chapterkeeparr-shell-v16';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
+  '/static/brand/mark-dark.svg',
+  '/static/brand/mark-light.svg',
+  '/static/brand/wordmark-dark.svg',
+  '/static/brand/wordmark-light.svg',
+  '/static/brand/og-image.png',
+  '/static/favicon.ico',
+  '/static/icon-maskable-192.png',
+  '/static/icon-maskable-512.png',
   '/static/js/scroll.js',
   '/static/js/chapter-review.js',
   '/static/js/review-quality.js',
@@ -44,7 +52,8 @@ const SHELL = [
   '/static/js/status.js',
   '/static/js/store.js',
   '/static/js/ui.js',
-  '/static/fonts/figtree-latin.woff2',
+  '/static/fonts/manrope-medium.woff2',
+  '/static/fonts/manrope-extrabold.woff2',
   '/static/styles.css',
   '/static/tokens.css',
 ];

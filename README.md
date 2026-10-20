@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/logo-horizontal-on-dark.svg">
+    <img alt="ChapterKeeparr" src="assets/brand/logo-horizontal-on-light.svg" width="360">
+  </picture>
+</p>
+
 # ChapterKeeparr 0.5.0 (alpha)
 
 This release starts the alignment-recovery plan: persisted timing diagnostics, bounded search recovery, file minutes during matching, and an on-demand local-marker audio/EPUB draft. Use **Review markers from audio** after selecting an ASIN. Drafts do not publish or change your audiobook; unresolved sections remain visible. See `PROJECT-CONTEXT.md` for implementation status and real-book findings.

@@ -1,4 +1,6 @@
-@font-face{font-family:Figtree;font-style:normal;font-weight:300 900;font-display:swap;src:url("/static/fonts/figtree-latin.woff2") format("woff2")}
+/* The supplied static weights cover the existing body/heading hierarchy. */
+@font-face{font-family:Manrope;font-style:normal;font-weight:300 600;font-display:swap;src:url("/static/fonts/manrope-medium.woff2") format("woff2")}
+@font-face{font-family:Manrope;font-style:normal;font-weight:601 900;font-display:swap;src:url("/static/fonts/manrope-extrabold.woff2") format("woff2")}
 /* ChapterKeeparr UI. Spec: docs/design/DESIGN.md. Colours, shadows, radii and easing
    come only from tokens.css; the only raw colours are on-cover pills (§3). */
 
@@ -420,8 +422,6 @@ a.logrow:hover{background:var(--hover)}
 .rail{position:sticky;top:0;z-index:2;width:var(--sidebar);height:100dvh;flex-shrink:0;padding:24px 16px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:28px;overflow:hidden;transition:width .55s var(--ease),background-color .45s ease,border-color .45s ease}
 .brand{display:flex;align-items:center;gap:12px;height:44px;padding:0 7px;text-decoration:none;color:var(--ink);flex-shrink:0}
 .brand .word{font-size:18px;font-weight:750;letter-spacing:-.015em}
-.logo rect{fill:var(--ink)}
-.logo path{fill:none;stroke:var(--bg);stroke-width:1.8;stroke-linecap:round}
 .nav{display:flex;flex-direction:column;gap:4px}
 .side{position:relative;display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border-radius:12px;border:0;background:transparent;font-size:15px;font-weight:600;color:var(--muted);text-decoration:none;text-align:left;flex-shrink:0;width:100%}
 .side:hover{background:var(--hover);color:var(--ink)}
@@ -1046,3 +1046,18 @@ html[data-motion="reduce"] .cr-body,html[data-motion="reduce"] .cr-sum,html[data
   .cr-change-preview>.title-pair{grid-column:1/-1;grid-row:2}
   .cr-change-preview>.icon{grid-column:2;grid-row:1}
 }
+
+/* Original brand assets follow the app preference, including system theme. */
+.brand-symbol,.brand-wordmark{display:inline-flex;flex-shrink:0;align-items:center}
+.brand-symbol img{width:100%;height:100%}
+.brand-wordmark{width:159px;height:20px}
+.brand-wordmark img{width:100%;height:auto}
+.brand-on-dark{display:none}
+.brand-on-light{display:block}
+:root[data-theme="dark"] .brand-on-light{display:none}
+:root[data-theme="dark"] .brand-on-dark{display:block}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .brand-on-light{display:none}
+  :root:not([data-theme="light"]) .brand-on-dark{display:block}
+}
+@media(max-width:767px){.mh-word .brand-wordmark{width:143px;height:18px}}

@@ -8,6 +8,7 @@
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support></Support>
+  <Icon>https://raw.githubusercontent.com/jstraw4663/ChapterKeeparr/feat/responsive-review-workspace/assets/brand/container-icon.png</Icon>
   <Project>https://github.com/jstraw4663/ChapterKeeparr</Project>
   <Overview>Isolated test install: use copied books and a fresh config directory. Requires a published public GHCR image. Workers start paused: verify paths and Settings build identity before enabling them. See the included UNRAID-INSTALL.md migration guide.</Overview>
   <Category>MediaApp:Other</Category>

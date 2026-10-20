@@ -65,7 +65,7 @@ def main():
                     measured = page.evaluate('''() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth,
                       duplicates: [...document.querySelectorAll('[id]')].map(e=>e.id).filter((id,i,all)=>all.indexOf(id)!==i),
                       titleWidth: document.querySelector('.revhead h2')?.getBoundingClientRect().width,
-                      fontLoaded: document.fonts.check('15px Figtree') })''')
+                      fontLoaded: document.fonts.check('500 15px Manrope') && document.fonts.check('800 15px Manrope') })''')
                     assert measured['scrollWidth'] <= width + 1, (theme, route, measured)
                     assert measured['duplicates'] == [], (route, measured)
                     assert measured['fontLoaded'], route
@@ -82,7 +82,7 @@ def main():
             gap.check(); expect(save).to_be_visible(); expect(save).to_be_disabled()
             save.scroll_into_view_if_needed()
             page.screenshot(path=str(output / ('review-consent-' + theme + '.png')), full_page=False, animations='disabled')
-            assert save.evaluate("e=>getComputedStyle(e).backgroundColor") == 'rgb(255, 255, 255)'
+            assert save.evaluate("e=>getComputedStyle(e).backgroundColor") == 'rgb(247, 242, 232)'
             expect(gap).to_be_focused()
             gap.uncheck(); expect(save).to_be_hidden()
             gap.check()

@@ -115,7 +115,7 @@ def main():
             ready()
             gap = page.locator('#accept-gap'); save = page.locator('[data-act="accept"]')
             expect(save).to_be_hidden(); gap.check(); expect(save).to_be_visible(); expect(save).to_be_disabled()
-            assert save.evaluate('e=>getComputedStyle(e).backgroundColor') == 'rgb(255, 255, 255)'
+            assert save.evaluate('e=>getComputedStyle(e).backgroundColor') == 'rgb(247, 242, 232)'
             gap.uncheck(); expect(save).to_be_hidden(); gap.check()
             page.locator('[data-act="cr-lower"]').click()
             # Real decision controls, including an inline rename and undo via Change.

@@ -175,3 +175,7 @@ Order warnings link to the affected Chapter checks row and reveal it beyond the 
 Draft cards, decided summaries and mobile checks use the same side-by-side Existing / Proposed boxes. Both outlines stretch to the taller content, and long text wraps inside each half. Radio rings stay empty on every unselected recommendation; only the clicked choice fills during the transition.
 
 Changes at a glance replaces the dual barcode-like lanes with real planned title-change, marker-removal and kept-title counts, plus open decisions. Counts link to the first relevant row; up to three timestamped before/after examples link to their evidence; View all changes opens Chapter checks with Changed selected. With no selected changes, examples are explicitly unselected suggestions. The number of overview rows stays bounded for long books. Controls wrap at narrow panel widths, targets remain >=44 px, and the same capabilities exist on desktop and phone. The footer retains its compact decision-completion bar and explicit save consent.
+
+## 2026-10-20: full brand approval
+
+Jeremy approved Manrope and the complete Ink / Paper / Cream / Amber theme in place of the earlier Figtree/neutral styling. Accept and save now uses brand Paper with Ink text in both themes, superseding the earlier white-button requirement; it is still hidden until consent and guarded by every existing readiness check. Labels and status colors retain their meaning. Shared tokens carry accessible text variants, and paired boxes retain equal heights under the new font.

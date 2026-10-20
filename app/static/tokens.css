@@ -4,20 +4,29 @@
 
 :root,
 :root[data-theme="light"] {
-  --bg:#FAFAF8;
-  --surface:#FFFFFF;
-  --raised:#F2F2EF;
-  --ink:#121211;
-  --muted:#62625D;
-  --line:#E5E5E0;
-  --hover:#EFEFEB;
-  --track:#E3E3DE;
-  --field:#FBFBF9;
-  --primary:#121211;
-  --primary-ink:#FFFFFF;
-  --warn:#8F5E00;
-  --warn-bg:#F7EACB;
-  --warn-line:#EAD3A0;
+  /* Original brand palette; status colors retain their semantic purpose. */
+  --ck-ink:#1F1D1A;
+  --ck-ink-raised:#2B2925;
+  --ck-cream:#F3EDE2;
+  --ck-paper:#F7F2E8;
+  --ck-amber:#E0A83E;
+  --ck-amber-deep:#B8801C;
+  --ck-stone:#7D766B;
+  --ck-stone-light:#C2B6A0;
+  --bg:var(--ck-paper);
+  --surface:#FFFCF7;
+  --raised:var(--ck-cream);
+  --ink:var(--ck-ink);
+  --muted:#625C53;
+  --line:#DED5C5;
+  --hover:#EBE3D6;
+  --track:#D6CBB8;
+  --field:#FFFCF7;
+  --primary:var(--ck-amber);
+  --primary-ink:var(--ck-ink);
+  --warn:#805817;
+  --warn-bg:#F0E0BE;
+  --warn-line:#D6B577;
   --ok:#2B6A39;
   --ok-bg:#E2EFE4;
   --bad:#B23A1C;
@@ -32,11 +41,11 @@
   --shadow-fab:0 10px 26px rgba(0,0,0,.3);
   --shadow-cdot:0 0 0 2px rgba(0,0,0,.3);
   --scrim:rgba(0,0,0,.45);
-  --bar:rgba(250,250,248,.88);
-  --knob:#FFFFFF;
+  --bar:rgba(247,242,232,.9);
+  --knob:var(--ck-paper);
   --sweep:rgba(255,255,255,.5);
-  --focus-ring:rgba(128,128,128,.18);
-  --warn-ring:rgba(233,179,78,.2);
+  --focus-ring:rgba(224,168,62,.24);
+  --warn-ring:rgba(224,168,62,.2);
 
   /* Fixed colours for things drawn on cover art (DESIGN.md §3, on-cover pills). */
   --on-cover:#FFFFFF;
@@ -52,7 +61,7 @@
   --cp-optimized-bg:#E4F2E6; --cp-optimized-dot:#2B6A39;
   --cp-muted-fg:#62625D; --cp-muted-dot:#9D9D97;
 
-  --font:'Figtree', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font:'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono:ui-monospace, SFMono-Regular, Menlo, monospace;
   --ease:cubic-bezier(.32,.72,0,1);
   --ease-enter:cubic-bezier(.2,.7,.2,1);
@@ -68,8 +77,8 @@
   --radius-input:12px;
   --radius-sheet:26px;
   --radius-pill:999px;
-  --review-save:var(--on-cover);
-  --review-save-ink:var(--cp-ink);
+  --review-save:var(--ck-paper);
+  --review-save-ink:var(--ck-ink);
   --review-save-line:var(--muted);
   --tap:44px;
   --sidebar:248px;
@@ -79,52 +88,52 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg:#0F0F0E;
-    --surface:#171716;
-    --raised:#1F1F1D;
-    --ink:#F4F4F1;
-    --muted:#9D9D97;
-    --line:#292927;
-    --hover:#222220;
-    --track:#2C2C2A;
-    --field:#141413;
-    --primary:#F4F4F1;
-    --primary-ink:#0F0F0E;
-    --warn:#E9B34E;
-    --warn-bg:#2E2513;
-    --warn-line:#4A3A18;
+    --bg:var(--ck-ink);
+    --surface:#25231F;
+    --raised:var(--ck-ink-raised);
+    --ink:var(--ck-cream);
+    --muted:#A39B8F;
+    --line:#454037;
+    --hover:#353127;
+    --track:#4B4438;
+    --field:#211F1B;
+    --primary:var(--ck-amber);
+    --primary-ink:var(--ck-ink);
+    --warn:var(--ck-amber);
+    --warn-bg:#3A2E19;
+    --warn-line:#6B522B;
     --ok:#7FC98C;
     --ok-bg:#16291B;
     --bad:#F08A6C;
     --bad-bg:#33180F;
     --shadow:0 20px 50px rgba(0,0,0,.6);
     --scrim:rgba(0,0,0,.55);
-    --bar:rgba(15,15,14,.86);
+    --bar:rgba(31,29,26,.9);
     color-scheme:dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg:#0F0F0E;
-  --surface:#171716;
-  --raised:#1F1F1D;
-  --ink:#F4F4F1;
-  --muted:#9D9D97;
-  --line:#292927;
-  --hover:#222220;
-  --track:#2C2C2A;
-  --field:#141413;
-  --primary:#F4F4F1;
-  --primary-ink:#0F0F0E;
-  --warn:#E9B34E;
-  --warn-bg:#2E2513;
-  --warn-line:#4A3A18;
+  --bg:var(--ck-ink);
+  --surface:#25231F;
+  --raised:var(--ck-ink-raised);
+  --ink:var(--ck-cream);
+  --muted:#A39B8F;
+  --line:#454037;
+  --hover:#353127;
+  --track:#4B4438;
+  --field:#211F1B;
+  --primary:var(--ck-amber);
+  --primary-ink:var(--ck-ink);
+  --warn:var(--ck-amber);
+  --warn-bg:#3A2E19;
+  --warn-line:#6B522B;
   --ok:#7FC98C;
   --ok-bg:#16291B;
   --bad:#F08A6C;
   --bad-bg:#33180F;
   --shadow:0 20px 50px rgba(0,0,0,.6);
   --scrim:rgba(0,0,0,.55);
-  --bar:rgba(15,15,14,.86);
+  --bar:rgba(31,29,26,.9);
   color-scheme:dark;
 }

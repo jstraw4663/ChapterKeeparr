@@ -305,3 +305,10 @@ migration steps above. Never use `down --volumes` as a migration step.
 
 Keep a deployment record: date, image tag and digest, Settings commit/version,
 config-backup location, old image ID, and the copied-library test results.
+
+
+### Brand artwork refresh
+
+Both XML templates now include the Chapter C icon. An existing Unraid container keeps its saved template fields when its image is pulled. To update that icon, edit the container (Advanced view if needed), set its Icon URL to the one in the updated XML, and Apply. The preview template points to the feature branch asset; the stable template points to main, available after merge. Configuration and media mappings do not change.
+
+Installed phone/PWA icons are also cached by the OS. Load the updated app first; if its home-screen icon stays old, remove that shortcut and add/install it again. The app's updated service worker refreshes local assets separately. User preferences, authentication and source files are not modified by the artwork update.

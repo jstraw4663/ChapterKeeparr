@@ -1,5 +1,12 @@
 # ChapterKeeparr project context
 
+## Full Chapter C brand kit — 2026-10-20
+
+Jeremy supplied ChapterKeeparr-Brand-Kit.zip and explicitly approved full Manrope typography, the Ink/Paper/Cream/Amber palette and Paper in place of the previous white save button. This overrides the older neutral/Figtree examples; workflow, consent, status semantics and publication safeguards are unchanged. Original outlined wordmarks and simplified small marks follow app light/dark/system preferences. Browser, Apple, PWA (separate maskable safe zones), README and both Unraid templates use supplied artwork. Assets and provenance are in assets/brand; GitHub social preview is supplied for manual upload, not configured remotely.
+
+Two supplied static font weights are converted without subsetting to local WOFF2, 60,544 bytes combined, with original copyright/OFL. The UI retains its existing hierarchy through body/heading ranges. Shared accessible theme tokens are mirrored in app/static and docs/design; warning text/muted text use contrast-safe amber/stone variants rather than recoloring original artwork. Service worker shell v16 replaces the old Figtree asset. No runtime dependency, font service, media work or extra model/thread is added. Unraid's stored Icon field and existing installed-PWA icons can require an independent refresh; pulling an image does not rewrite an existing template.
+
+
 ## Evidence-backed review and readable changes — 2026-10-20
 
 Jeremy approved original audio plus validated explicit published matches for the save minimum. The new pure metadata policy checks source binding, stable broad audio anchors, precise duration agreement, unique near-boundary timing and order. Original speech evidence stays separate; names/keep/remove never add credit, and all original markers remain in the denominator. The server recomputes the score and records both evidence categories in the receipt. Duplicate identities/numbers, inversions, title conflicts and interior unassigned numbered sections produce linked review warnings with part-aware numbering. Existing publication, gap consent, source fingerprint, original backup, preserved times and unchanged-audio checks remain.

@@ -51,7 +51,10 @@ export function icon(name, size = 20, { stroke = 1.8, label = '' } = {}) {
   return raw(`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" ${a11y}>${body}</svg>`);
 }
 
-export const logo = (size = 30) => raw(`<svg class="logo" width="${size}" height="${size}" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><rect width="30" height="30" rx="8"/><path d="M9.5 8.5h7.5a3 3 0 0 1 3 3v10h-7.5a3 3 0 0 1-3-3z"/><path d="M13.5 12.8h3.2M13.5 16.3h3.2"/></svg>`);
+// Brand artwork is served locally; outlined lettering needs no additional font.
+export const logo = (size = 30) => raw(`<span class="brand-symbol" style="width:${size}px;height:${size}px" aria-hidden="true"><img class="brand-on-light" src="/static/brand/mark-light.svg" width="${size}" height="${size}" alt=""><img class="brand-on-dark" src="/static/brand/mark-dark.svg" width="${size}" height="${size}" alt=""></span>`);
+export const wordmark = () => raw('<span class="brand-wordmark" aria-hidden="true"><img class="brand-on-light" src="/static/brand/wordmark-light.svg" width="159" height="20" alt=""><img class="brand-on-dark" src="/static/brand/wordmark-dark.svg" width="159" height="20" alt=""></span>');
+
 
 /** Progress ring around a nav icon (sidebar collapsed / phone tab bar). pct 0–100. */
 export function ring(cls, pct, size = 34) {

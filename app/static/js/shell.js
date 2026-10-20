@@ -3,7 +3,7 @@
 // offline banner and search overlay (§8 Search).
 
 import { html, bool } from './format.js';
-import { icon, logo, ring } from './icons.js';
+import { icon, logo, wordmark, ring } from './icons.js';
 import { NAV } from './router.js';
 import { state, counts, refresh } from './store.js';
 import { getPrefs, setPrefs, rememberRecent } from './prefs.js';
@@ -22,7 +22,7 @@ export function shellMarkup() {
   <a class="skip" href="#view" data-act="skip-content">Skip to content</a>
   <div class="app">
     <aside class="rail" aria-label="Sidebar">
-      <a class="brand" href="#/" aria-label="ChapterKeeparr, Library">${logo(30)}<span class="lbl word">ChapterKeeparr</span></a>
+      <a class="brand" href="#/" aria-label="ChapterKeeparr, Library">${logo(30)}<span class="lbl word">${wordmark()}</span></a>
       <nav class="nav" aria-label="Primary">
         ${NAV.map(item => html`<a class="side" href="${item.href}" data-nav="${item.name}" aria-label="${item.label}">
           <span class="glyph">${icon(item.icon, 20)}${item.name === 'queue' ? ring('qring', 0) : ''}</span><span class="lbl">${item.label}</span>
@@ -53,7 +53,7 @@ export function shellMarkup() {
     </main>
   </div>
   <header class="mh" data-mh>
-    <a class="mh-brand" href="#/" aria-label="ChapterKeeparr home"><span class="mh-logo">${logo(28)}</span><span class="mh-word">ChapterKeeparr</span></a>
+    <a class="mh-brand" href="#/" aria-label="ChapterKeeparr home"><span class="mh-logo">${logo(28)}</span><span class="mh-word">${wordmark()}</span></a>
     <div class="mh-search">
       <button type="button" class="mh-sbtn" data-act="msearch-open" aria-label="Search">${icon('search', 22)}</button>
       <label for="m-q" class="sr">Search your library</label>
