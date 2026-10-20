@@ -14,6 +14,7 @@ In another terminal:
 ```sh
 python tests/browser/ui_regression.py --output /tmp/ck-ui-results
 python tests/browser/reconciled_workflows.py --output /tmp/ck-ui-results/reconciled
+python tests/browser/bedlam_workflow.py --output /tmp/ck-ui-results/bedlam
 ```
 
 Use `--chromium /usr/bin/chromium` for an installed system browser, `--interactions-only` while iterating on a workflow, and `--axe /path/to/axe.min.js` for WCAG 2.2 AA checks at 390 and 1024 px. CI supplies the pinned axe-core 4.10.3 script and checks its SHA-256 before use.
@@ -25,3 +26,5 @@ The generated screenshots and JSON report are development evidence. They do not 
 The reconciled workflows additionally check ordered chapter choices, inline rename/Change, reload persistence, token invalidation, save handoff, hydrated notification covers and three simultaneous stable notification slots across polling, dismissal and viewport changes. They intercept all writes.
 
 A synthetic 180-marker override also checks the initial 30-card bound, progressive reveal, explicit order override, bulk Undo, first-marker protection, desktop scroll stability, reduced motion, and notification hover/focus pause and resumed expiry.
+
+The synthetic Bedlam workflow exercises decorated and part-prefixed identities, a formerly false automatic Prologue match, current-draft precedence over stale checks, paired titles, filters and editable matched rows in both themes at 390/1024px. Its transcripts are illustrative; real-recording validation requires a populated evidence archive.

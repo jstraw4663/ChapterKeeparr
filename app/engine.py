@@ -327,6 +327,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from functools import lru_cache
 
 
 def finite_score(value, fallback):
@@ -347,11 +348,47 @@ NUMBER_PATTERN = '|'.join(re.escape(k) for k in sorted(NUMBER_WORDS, key=len, re
 LEADING = re.compile(r'^\s*(?:chapter\s+)?(\d{1,3}|' + NUMBER_PATTERN + r')(?=\s*[,.:!?;]|\s*$)', re.I)
 
 
+SECTION_SEMANTICS_VERSION = 'section-identity-1'
+SPECIAL_SECTIONS = {
+    'prologue': ('prologue', 'prolog'), 'epilogue': ('epilogue', 'epilog'),
+    'interlude': ('interlude',), 'credits': ('opening credits', 'closing credits', 'end credits'),
+    'front_matter': ('dedication', 'acknowledgments', 'acknowledgements', 'introduction',
+                     'preface', 'foreword', 'afterword', 'epigraph'),
+}
+
+
+@lru_cache(maxsize=2048)
+def section_identity(title):
+    """Keep the label intact; separate chapter numbers from section/part ordinals.
+
+    A numeric decoration on a Prologue is not a spoken Chapter 1. Only an
+    explicit chapter heading may follow a delimited part prefix; arbitrary
+    occurrences of numbers or 'chapter' within prose are not identities.
+    """
+    raw = title.strip()
+    s = re.sub(r'[–—]', '-', raw.casefold())
+    undecorated = re.sub(r'^(?:\d{1,3}|[ivxlcdm]+)[.)]\s*', '', s)
+    for kind, aliases in SPECIAL_SECTIONS.items():
+        if any(re.match(re.escape(alias) + r'(?:\b|$)', undecorated) for alias in aliases):
+            # Keep named variants distinct (e.g. opening versus closing credits).
+            canonical = next(alias for alias in aliases if re.match(re.escape(alias) + r'\b', undecorated))
+            names = aliases if kind in ('prologue', 'epilogue') else (canonical,)
+            return {'raw': raw, 'kind': kind, 'number': None, 'part': None, 'aliases': names}
+    part = re.fullmatch(r'((?:part\s+)?(?:[ivxlcdm]+|\d+)(?:[.)]?\s+.*?)?)\s*[-:]\s*(chapter\s+.+)', s)
+    candidate = part[2] if part else undecorated if undecorated.startswith('chapter ') else s
+    if re.match(r'^(?:chapter\s+)?\d+[.,:]\d', candidate):
+        return {'raw': raw, 'kind': 'named', 'number': None, 'part': part[1] if part else None, 'aliases': (norm(raw),)}
+    number = LEADING.match(candidate.replace('-', ' '))
+    if number is None:
+        # An explicit hyphen-separated title is another common chapter label.
+        number = LEADING.match(candidate.split(' - ', 1)[0])
+    n = int(number[1]) if number and number[1].isdigit() else NUMBER_WORDS.get(number[1]) if number else None
+    return {'raw': raw, 'kind': 'chapter' if n is not None else 'named', 'number': n,
+            'part': part[1] if part else None, 'aliases': (norm(raw),)}
+
+
 def chapter_number(title):
-    s = title.strip().casefold().replace('-', ' ')
-    m = LEADING.match(s)
-    if not m: return None
-    return int(m[1]) if m[1].isdigit() else NUMBER_WORDS.get(m[1])
+    return section_identity(title)['number']
 
 
 def tokens(text):

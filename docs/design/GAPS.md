@@ -369,3 +369,9 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - UI now: uses the file duration from `GET /api/jobs/{id}/source` (G-042) when it has loaded, otherwise the latest known marker or section time, so ticks near the end can sit slightly too far right until the duration arrives. Marked `// DESIGN-GAP: G-050` in `chapter-review.js`.
 - Proposed contract: add `duration_seconds` (number, or null when unknown) to `recovery_acceptance_preview`, copied from `recovery_draft.duration_seconds`. No other change.
 - Owner: backend · Status: placeholder in UI
+
+### G-051 · Conflicting section identities and a complete planned-title timeline
+- Request: distinguish decorated section labels from chapter ordinals, make automatically matched rows editable, and show Existing / Planned titles throughout the timeline.
+- Backend: shared semantic parser; derived conflict validation; preview marker `reason` / `conflict`; versioned draft tokens; automatic-match replacement releases its former section for reassignment or optional-section consent. Raw evidence, original timestamps, audio and backup checks remain.
+- UI: chronological paired titles with current-draft precedence, live browser decisions, All / Needs attention / Changed filters, Listen / Change and restore; unknown coverage says not matched, never missing audio. Dense timeline targets are grouped for accessibility; every row is individually editable. Reusing cached speech does not turn timing suggestions/manual edits into audio confirmation.
+- Status: implemented; actual Bedlam recording validation pending because the supplied archive was empty. See `docs/plans/bedlam-identity-repair.md` and `VALIDATION.md`.

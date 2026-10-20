@@ -117,6 +117,7 @@ class AcceptedPublicationTests(unittest.TestCase):
         self.assertIn('exceptions',flow.present(saved)['overall'])
     def test_real_save_with_rename_and_navigation_removal(self):
         answer=approval(self.report)
+        answer['optional_sections'].append('2.0')  # Removing a confirmed marker releases its section.
         answer['marker_decisions']=[{'index':1,'action':'keep'},{'index':2,'action':'rename','title':'Custom name'},
                                     {'index':3,'action':'remove','confirmed':True},{'index':4,'action':'keep'}]
         self.job['review_answer']['finalization']=answer
@@ -232,3 +233,19 @@ class OrderOverrideTests(unittest.TestCase):
         self.assertTrue(acceptance.manual_assignments(r,a)['3.0']['override_order'])
         ds[3]=dict(index=4,action='published',section_id='3.0',override_order=True)
         with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+
+class MatchedCorrectionTests(unittest.TestCase):
+    def test_replacing_a_supported_match_requires_a_decision_for_its_released_section(self):
+        r=report_fixture();a=approval(r)
+        a['marker_decisions']=[dict(index=1,action='suggested'),dict(index=2,action='suggested'),
+                               dict(index=3,action='published',section_id='3.0'),dict(index=4,action='keep')]
+        a['optional_sections']=[]
+        with self.assertRaisesRegex(engine.NeedsReview,'Explicitly accept'):
+            acceptance.validate(r,a)
+        a['optional_sections']=['2.0']
+        info=acceptance.validate(r,a)
+        self.assertEqual([s['id'] for s in info['sections']],['2.0'])
+        self.assertEqual(info['supported_percent'],75)
+        a['marker_decisions'][3]=dict(index=4,action='published',section_id='2.0',override_order=True)
+        a['optional_sections']=[]
+        self.assertEqual(acceptance.validate(r,a)['sections'],[])

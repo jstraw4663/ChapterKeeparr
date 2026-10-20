@@ -49,7 +49,12 @@ def main():
                 page.goto(base + '/' + route, wait_until='networkidle')
                 expect(page.locator('#view h1')).to_be_visible()
                 page.evaluate('document.fonts.ready')
-                page.wait_for_function("!document.documentElement.dataset.vt && (document.querySelector('.rail')?.getAnimations() || []).every(a => a.playState !== 'running')")
+                # These are settled layout/color snapshots. Offscreen entrance
+                # fades can remain pending until painted, so freezing them is
+                # more reliable than waiting for every animation to finish.
+                # Live motion is tested separately in reconciled_workflows.py.
+                page.add_style_tag(content='*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important}')
+                page.wait_for_function("!document.documentElement.dataset.vt")
 
             for width, height in ([] if args.interactions_only else sizes):
                 for route in routes:

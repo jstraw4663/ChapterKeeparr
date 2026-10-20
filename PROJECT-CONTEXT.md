@@ -1,5 +1,18 @@
 # ChapterKeeparr project context
 
+## Bedlam identity and complete review timeline — 2026-10-20
+
+Implemented Jeremy's approved section-identity and workflow changes. Shared semantics distinguish decorated Prologue/Epilogue labels from numbered chapters and recognize part-prefixed Chapters 1/38/52. Recovery can identify timed named headings and demotes contradictory legacy/order/timing evidence before it becomes a hard UI anchor. Preview, acceptance and saved plans share the normalized interpretation; original evidence and source/audio checks are retained. Versioned draft tokens require fresh consent after this semantic update. The existing transcript/model cache is retained; no new model, GPU path or worker/thread expansion was introduced.
+
+Chapter checks show chronological Existing / Planned title pairs with current-draft precedence, live local decisions, filters, Listen and Change. Automatic matches can be edited/restored; replacing/removing a matched marker releases its published section for reassignment/explicit consent. Counts describe decisions; unknown coverage is not called missing audio; skipping is never a suggested match. Dense timeline hit targets are grouped, with each chapter still individually available in the list.
+
+The uploaded bedlam-review.tar.gz was only 45 bytes and contained no files. Actual recording/word-timing validation remains pending. A checked read-only exporter now uses the SQLite job's recorded report/attempt paths, verifies first-five-marker clips and archive contents, caps inputs at 25 MiB and refuses incomplete/empty output. The old hand-written export assumed the wrong folder layout.
+
+Validation: 108 Python tests passed, including generated-media publication/backup/unchanged-audio checks; all nine JavaScript test files and seven frontend/design/syntax checks pass. Synthetic Bedlam workflows pass in both themes at 390/1024px, including matched-row correction/restore and axe scans; reconciled/180-marker/motion/notification workflows pass. The full settled-layout sweep passes 216 observations across nine route states/twelve sizes/both themes, plus 36 axe scans and focused consent/rail/keyboard/settings interactions.
+
+See [the repair and export guide](docs/plans/bedlam-identity-repair.md). No real audiobook/job/configuration or registry image was changed; Jeremy retains image/release control.
+
+
 ## Reconciled container source and testable review UI — 2026-10-19
 
 Merged Jeremy's uploaded active-container source with the responsive-review branch using shared ancestor `5055ded`. The prior GitHub branch was missing deployed manual-assignment/retry/recognition work; those implementations and tests are now preserved alongside the existing build diagnostics, public GHCR/Unraid installation kit and PyAV compatibility fix. The archive manifest is historical provenance in `docs/provenance`, not this build's identity. See [the reconciliation record](docs/provenance/container-source-reconciliation.md).

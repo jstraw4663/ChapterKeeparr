@@ -969,4 +969,14 @@ html[data-motion="reduce"] .cr-body,html[data-motion="reduce"] .cr-sum,html[data
 @keyframes review-exit{to{opacity:0;transform:translateY(-6px)}}
 
 .cr-fieldset{border:0;padding:0;margin:0;min-width:0}
+.crow.check-compare{grid-template-columns:62px minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start}
+.check-title{min-width:0;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
+.check-actions{align-items:center;flex-shrink:0;padding:8px 0}
+@container review (max-width:700px){.crow.check-compare{grid-template-columns:1fr auto}.check-compare .check-title{grid-column:1/-1}.check-compare>.pill{grid-column:2;grid-row:1;white-space:normal}.check-compare .check-title .meta{font-size:11px}}
+@media(max-width:767px){.crow.check-compare{grid-template-columns:1fr auto;padding:10px 0;gap:6px}.check-compare .check-title{grid-column:1/-1}.check-compare>.pill{grid-column:2;grid-row:1;white-space:normal}.check-compare .check-title .meta{font-size:11px}}
 .note-card.stack-note{padding:12px;display:flex;flex-direction:column;gap:8px}
+
+.check-filters .sgb{padding-inline:8px;min-width:44px;font-size:13px}
+.cr-mark.needed{background:var(--warn)}.cr-mark.missing{background:var(--bad)}.cr-mark.chosen{background:var(--ink)}
+.cr-cluster:after{display:none}.cr-cluster>span{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 3px;border-radius:var(--radius-pill);background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:11px}
+.cr-timeline-help>span:nth-child(2){text-align:center;max-width:70%}

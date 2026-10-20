@@ -1,4 +1,4 @@
-import { reviewModel, markerDecisions } from './chapter-review.js';
+import { reviewModel, markerDecisions, remainingSections } from './chapter-review.js';
 
 // Visibility is a preference; publication still requires the server's fingerprint checks.
 export function acceptanceState(preview, form = {}, { connected = true, authNeeded = false } = {}) {
@@ -45,6 +45,6 @@ function chapterProblem(preview, form) {
     if (retained.some(other => other.rank > rank && !other.override && !override)) return 'Outside the surrounding chapter order';
     used.add(id); retained.push({ rank, override });
   }
-  if ((preview.sections || []).some(s => !form.sections?.includes(s.id) && !decisions.some(d => d.action === 'published' && d.section_id === s.id))) return 'Decide whether to assign or save without each missing section.';
+  if (remainingSections(preview, form).some(s => !form.sections?.includes(s.id))) return 'Decide whether to assign or save without each unmatched section.';
   return '';
 }

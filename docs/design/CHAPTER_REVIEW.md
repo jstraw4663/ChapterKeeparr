@@ -155,3 +155,7 @@ This replaces DESIGN.md §12 "Sending a book back from Needs review returns to t
 - `preview.markers`, `published_sections`/`sections`, `missing_sections`, `supported_percent`, `default_minimum_percent`, `coverage_warnings` and `requires_gap_acceptance` give everything above. Kind tags and between-neighbours are derived client side. If something isn't derivable (for example "likely extra boundary"), add a GAPS row with a proposed field.
 - Optional sections ("Save without it") keep the consent the server checks today.
 - Very large books (hundreds of unconfirmed markers): the list must stay smooth. If more than about 60 cards are open, render the cards for the first 30 and an "N more" row that loads more as you scroll. Don't paginate.
+
+## 2026-10-20: complete timeline and conflicting matches
+
+The Chapter checks evidence panel shows all existing/planned title pairs in timestamp order, with filters and Listen/Change. Automatically matched rows can be corrected and restored; their original speech percentage is never raised by manual decisions. Unknown sections are described as not matched, and skipping a section is not suggested. Counts include decisions, not just local markers. Nearby timeline targets share a 44px group jump while the complete list keeps each chapter individually accessible. Details and remaining audio-validation limits are in `docs/plans/bedlam-identity-repair.md`.

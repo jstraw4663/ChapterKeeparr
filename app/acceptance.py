@@ -20,12 +20,19 @@ def references(report):
 
 
 def token(report):
-    return recovery.digest([report.get('recovery_draft'), report.get('source_manifest'),
+    return recovery.digest([engine.SECTION_SEMANTICS_VERSION, recovery.ALGORITHM_VERSION, report.get('recovery_draft'), report.get('source_manifest'),
                             report.get('edition'), report.get('coverage_warnings'), references(report)])
 
 
-def preview(report, default=95):
+def reviewed_draft(report):
     draft = copy.deepcopy(report.get('recovery_draft') or {})
+    if draft.get('markers'):
+        recovery.finalize_draft(draft, references(report))
+    return draft
+
+
+def preview(report, default=95):
+    draft = reviewed_draft(report)
     remote = references(report)
     markers = draft.get('markers', [])
     if not markers:
@@ -41,6 +48,7 @@ def preview(report, default=95):
                          'supported': m.get('status') == 'supported', 'excerpt': m.get('audio_excerpt'),
                          'reference_id': str(m['reference_start']) if m.get('status') == 'supported' else None,
                          'transcript': m.get('transcript') or '',
+                         'reason': m.get('reason') or '', 'conflict': bool(m.get('prior_match') and m.get('status') != 'supported'),
                          'removable': i > 0} for i,m in enumerate(markers)],
             'sections': [{'id': str(c['start']), 'title': c['title']} for c in draft.get('missing_sections',[])],
             'published_sections': [{'id': str(c['start']), 'title': c['title']} for c in remote],
@@ -63,6 +71,15 @@ def validate(report, answer):
         raise engine.NeedsReview('Supported marker coverage is below the selected minimum.')
     assignments = manual_assignments(report, answer)
     remaining = [s for s in info['sections'] if s['id'] not in assignments]
+    if answer.get('marker_decisions') is not None:
+        by_index = {d['index']: d for d in answer['marker_decisions']}
+        retained = set(assignments)
+        for i, marker in enumerate(reviewed_draft(report)['markers'], 1):
+            if marker.get('status') == 'supported' and by_index[i]['action'] not in ('published', 'remove'):
+                retained.add(str(marker['reference_start']))
+        # Replacing an automatic match releases its old section for another
+        # marker or explicit optional-section consent, just like manual edits.
+        remaining = [{'id': str(c['start']), 'title': c['title']} for c in references(report) if str(c['start']) not in retained]
     if set(answer.get('optional_sections',[])) != {s['id'] for s in remaining}:
         raise engine.NeedsReview('Explicitly accept each unlocated published section as optional for this book.')
     if answer.get('marker_decisions') is not None:
@@ -71,7 +88,7 @@ def validate(report, answer):
         raise engine.NeedsReview('Accept retaining the original labels and times of unresolved markers.')
     if answer.get('accept_possible_gap') is not True:
         raise engine.NeedsReview('Separately accept unresolved content coverage for this recording.')
-    draft = report['recovery_draft']
+    draft = reviewed_draft(report)
     markers = draft['markers']
     if len(markers) != draft.get('total_markers'):
         raise engine.NeedsReview('The draft does not contain every original marker.')
@@ -96,7 +113,7 @@ def validate(report, answer):
 
 def manual_assignments(report, answer):
     """Resolve IDs against this exact draft; labels supplied by the client are ignored."""
-    markers = report['recovery_draft']['markers']
+    markers = reviewed_draft(report)['markers']
     decisions = answer.get('marker_decisions')
     if decisions is None:
         return {}
@@ -135,7 +152,7 @@ def manual_assignments(report, answer):
 
 def marker_plan(report, answer):
     """Explicit navigation edits; recognition coverage always uses the original draft."""
-    markers = report['recovery_draft']['markers']
+    markers = reviewed_draft(report)['markers']
     decisions = answer.get('marker_decisions')
     if decisions is None:
         return [{'start_seconds':m['old_seconds'], 'title':m['title'] if m['status']=='supported' else m.get('old_title','')} for m in markers]
@@ -171,6 +188,7 @@ def finalize(args, prior, answer, folder):
     """Retag the exact reviewed audio; preserve source tracks and original M4B backup."""
     info = validate(prior, answer)
     report = copy.deepcopy(prior)
+    report['recovery_draft'] = reviewed_draft(prior)
     report.pop('review_reason',None); report.pop('reason',None)
     report['checks'] = []
     if getattr(args,'evidence_report_path',None):

@@ -249,11 +249,14 @@ const chapters = chapterController({
 });
 
 function checksSection(book, ctx) {
-  const rows = checksOf(book.job);
+  const job = details.get(book.id) || book.job;
+  const p = job.recovery_acceptance_preview;
+  const f = p?.ready ? draftForm(book, p, ctx) : {};
+  const rows = checksOf(job, { preview: p, form: f });
   const passed = rows.filter(r => r.passed).length;
   const summary = rows.length ? `${passed} of ${rows.length} ${rows[0].draft ? 'heard' : 'passed'}` : 'Not run yet';
   const body = rows.length
-    ? html`<div class="col gap14" style="padding-bottom:8px">${ctx.phone ? '' : checkTimeline(rows, durationOf(book.job, sources.get(book.id)))}${checkRows(book.job, rows, ctx)}</div>`
+    ? html`<div class="col gap14" style="padding-bottom:8px">${ctx.phone ? '' : checkTimeline(rows, durationOf(job, sources.get(book.id)))}${checkRows(job, rows, { ...ctx, editMatches: Boolean(p?.ready), reviewBusy: Boolean(f.busy) })}</div>`
     : html`<p class="gapnote" style="margin-bottom:12px">Chapter checks haven’t run yet. They start once the edition is confirmed.</p>`;
   return collapsible({ id: 'checks', title: 'Chapter checks', summary, open: ctx.ui.open?.checks ?? false, body });
 }
@@ -488,6 +491,9 @@ export default {
 
   actions: {
     ...chapters.actions,
+    'cr-edit-match': (el, ev, ctx) => { const { book } = current(ctx); if (!book) return; choose(ctx, book, 'finalize'); ctx.rerender(); chapters.actions['cr-edit-match'](el, ev, ctx); },
+    'chapter-filter': (el, ev, ctx) => { ctx.ui.checkFilter = el.dataset.arg; ctx.ui.checkLimit = 50; ctx.rerender(); },
+    'chapter-check-more': (el, ev, ctx) => { ctx.ui.checkLimit = (ctx.ui.checkLimit || 50)+50; ctx.rerender(); },
     ...cancelActions,
     'review-list': (el, ev, ctx) => { ctx.ui.reviewListExpanded = !ctx.ui.reviewListExpanded; ctx.rerender(); },
     'reload-draft': (el, ev, ctx) => {
@@ -500,7 +506,7 @@ export default {
     prev: (el, ev, ctx) => move(ctx, -1),
     next: (el, ev, ctx) => move(ctx, 1),
     'check-open': (el, ev, ctx) => { const n = Number(el.dataset.arg); ctx.ui.check = ctx.ui.check === n ? null : n; ctx.rerender(); },
-    'check-play': (el, ev, ctx) => { const { book } = current(ctx); if (book) playCheck(book.job, el.dataset.arg, checksOf(book.job)).catch(error => reportError(error, 'Couldn’t play this check')); },
+    'check-play': (el, ev, ctx) => { const { book } = current(ctx); if (book) { const job = details.get(book.id) || book.job; playCheck(job, el.dataset.arg, checksOf(job, { preview: job.recovery_acceptance_preview, form: ctx.ui.accept?.[book.id] })).catch(error => reportError(error, 'Couldn’t play this check')); } },
     'marker-play': (el, ev, ctx) => {
       const { book } = current(ctx);
       const m = details.get(book.id)?.recovery_acceptance_preview?.markers?.find(m => m.index === Number(el.dataset.arg));

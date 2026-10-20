@@ -8,8 +8,35 @@ import math
 import shutil
 import resource
 import sys
+import re
+import statistics
 
-ALGORITHM_VERSION = 'alignment-recovery-5'
+ALGORITHM_VERSION = 'alignment-recovery-6'
+
+
+def embedded_named_headings(segment, boundary, clip_start):
+    """Named headings embedded after prose need aligned, confident words and a pause."""
+    from . import engine
+    found = set()
+    words = segment.get('words') or []
+    for i, word in enumerate(words):
+        token = engine.tokens(word.get('word', ''))
+        kind = 'prologue' if token in (['prolog'], ['prologue']) else 'epilogue' if token in (['epilog'], ['epilogue']) else None
+        if kind is None or not i:
+            continue
+        prefix = engine.tokens(' '.join(w.get('word', '') for w in words[max(0, i-3):i]))
+        if any(t in prefix for t in ('in', 'the', 'read', 'reading', 'previous', 'next', 'remember', 'recall', 'from', 'during')):
+            continue
+        try:
+            start, end, probability = float(word['start']), float(word['end']), float(word.get('probability', 0))
+            prior_end = float(words[i-1]['end'])
+            if (all(math.isfinite(v) for v in (start, end, probability, prior_end))
+                    and 0 < end-start <= 4 and start-prior_end >= .35 and probability >= .7
+                    and boundary-2.1 <= clip_start+start <= boundary+8):
+                found.add(kind)
+        except (KeyError, TypeError, ValueError):
+            pass
+    return found
 
 
 def embedded_headings(segment, boundary, clip_start):
@@ -97,6 +124,7 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
     """Identify from speech, never from a track's index or existing title."""
     from . import engine
     observed = set()
+    named_kinds = set()
     good = []
     for segment in transcript.get('segments', []):
         at = clip_start + float(segment.get('start', 0))
@@ -104,32 +132,46 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
         if not all(math.isfinite(x) for x in (at, lp, ns)) or lp < -1 or ns > .6:
             continue
         observed.update(embedded_headings(segment, boundary, clip_start))
+        named_kinds.update(embedded_named_headings(segment, boundary, clip_start))
         if boundary - 2.1 <= at <= boundary + 8:
             good.append(segment.get('text',''))
             number = engine.spoken_heading(segment.get('text', ''))
             if number is not None: observed.add(number)
+            heading = re.match(r'^\s*(prolog(?:ue)?|epilog(?:ue)?)(?:\s*[.!?:;,]|\s*$)', segment.get('text', ''), re.I)
+            if heading:
+                named_kinds.add('prologue' if heading[1].lower().startswith('prolog') else 'epilogue')
     candidates = [c for c in remote if engine.chapter_number(c['title']) in observed]
-    if len(observed) == 1 and len(candidates) == 1:
+    named = [c for c in remote if engine.section_identity(c['title'])['kind'] in named_kinds]
+    if len(observed) == 1 and len(candidates) == 1 and not named_kinds:
         return dict(title=candidates[0]['title'], reference_start=candidates[0]['start'],
                     status='supported', confidence='spoken heading', source='local speech',
                     reason='Spoken chapter identity supports retaining this existing marker; draft only.')
     if not observed:
-        named = []
+        if len(named_kinds) > 1:
+            return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                        source='local speech', reason='Multiple named headings heard near this marker.')
         for chapter in remote:
             title = engine.norm(chapter['title'])
             if engine.chapter_number(chapter['title']) is not None: continue
+            if engine.section_identity(chapter['title'])['kind'] in ('prologue', 'epilogue'): continue
             aliases = [title]
             if title.startswith('chapter '):
                 aliases.append('interlude '+title[len('chapter '):])
             if any(engine.norm(text) == alias or engine.norm(text).startswith(alias+' ')
                    for text in good for alias in aliases if len(engine.tokens(alias)) >= 2 or alias in ('prologue','epilogue')):
-                named.append(chapter)
+                if chapter not in named: named.append(chapter)
         if len(named) == 1:
             return dict(title=named[0]['title'],reference_start=named[0]['start'],status='supported',
                         confidence='spoken named heading',source='local speech',
                         reason='A unique spoken named heading supports retaining this marker; draft only.')
         if len(named) > 1:
             return dict(title=None,reference_start=None,status='unresolved',confidence='ambiguous',source='local speech',reason='Multiple named sections heard near this marker.')
+        if named_kinds:
+            return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                        source='local speech', reason='Spoken named heading has no unique section in this edition.')
+    if observed and named_kinds:
+        return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                    source='local speech', reason='Conflicting numbered and named headings heard near this marker.')
     # Only unique, distinctive text openings; never assign EPUB titles by list order.
     if not observed and evidence:
         hits = [e for e in evidence.get('entries',[]) if len(set(engine.tokens(e.get('opening',''))[:18])) >= 8
@@ -147,10 +189,38 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
 
 
 def finalize_draft(draft, remote):
-    counts = Counter(m['reference_start'] for m in draft['markers'] if m['reference_start'] is not None)
+    from . import engine
+    markers = draft['markers']
+    ranks = {c['start']: i for i, c in enumerate(remote)}
+    def conflict(marker, reason):
+        marker.setdefault('prior_match', {k: marker.get(k) for k in ('title', 'reference_start', 'confidence', 'source')})
+        marker.update(status='unresolved', confidence='ambiguous', reason=reason)
+    for marker in markers:
+        if marker.get('status') == 'supported' and marker.get('confidence') == 'spoken heading' and engine.chapter_number(marker.get('title') or '') is None:
+            conflict(marker, 'Numbered speech was assigned to a named section. Review this match with the current heading parser.')
+    counts = Counter(m['reference_start'] for m in markers if m.get('status') == 'supported' and m.get('reference_start') is not None)
     for marker in draft['markers']:
         if marker['reference_start'] is not None and counts[marker['reference_start']] > 1:
-            marker.update(status='unresolved', confidence='ambiguous', reason='The same published chapter was heard at multiple local markers.')
+            conflict(marker, 'The same published chapter was heard at multiple local markers.')
+    # Do not use an inverted recognition pair as fixed bounds for other markers.
+    highest = None
+    for marker in markers:
+        if marker.get('status') != 'supported' or marker.get('reference_start') not in ranks: continue
+        if highest and ranks[highest['reference_start']] > ranks[marker['reference_start']]:
+            conflict(highest, 'Recognized sections conflict with the surrounding chapter order.')
+            conflict(marker, 'Recognized sections conflict with the surrounding chapter order.')
+        if highest is None or ranks[marker['reference_start']] > ranks[highest['reference_start']]: highest = marker
+    # With enough consistent anchors, a large isolated residual is a conflict,
+    # never a license to move a timestamp or invent the nearest chapter identity.
+    anchors = [m for m in markers if m.get('status') == 'supported' and m.get('reference_start') in ranks and m.get('old_seconds') is not None]
+    if len(anchors) >= 6:
+        offsets = [m['old_seconds']-m['reference_start'] for m in anchors]
+        center = statistics.median(offsets)
+        spread = statistics.median(abs(t-center) for t in offsets)
+        if spread <= 2:
+            for m, offset in zip(anchors, offsets):
+                if abs(offset-center) > max(60, 6*spread+2):
+                    conflict(m, 'Speech identity conflicts with the otherwise consistent chapter timing. Review this match.')
     found = {m['reference_start'] for m in draft['markers'] if m['status'] == 'supported'}
     draft['missing_sections'] = [c for c in remote if c['start'] not in found]
     draft['supported_count'] = sum(m['status'] == 'supported' for m in draft['markers'])

@@ -32,35 +32,53 @@ function card(item, f, playing) {
       }
     }
   }
-  const tag = item.type === 'missing' ? ['In the edition, not in your file', 'bad'] : KIND[item.kind];
+const tag = item.type === 'missing' ? ['Published section not matched to a marker', 'warn'] : KIND[item.kind];
   return html`<section class="cr-card ${item.type === 'missing' ? 'missing' : ''} ${closing ? 'closing' : ''}" data-key="${key(item)}" data-cr-item="${item.id}" tabindex="-1" aria-label="${item.original || item.title}">
     <div class="cr-sum" aria-hidden="true" inert><div>${summary(closing || item)}</div></div>
     <div class="cr-body" ${closing ? 'inert' : ''}><div class="col gap12">
       <div class="cr-card-head"><span class="mono">${hms(item.seconds)}</span><span class="cr-kind ${tag[1]}">${tag[0]}</span>${item.type === 'marker' ? html`<span class="meta">In your file: <strong>${item.original}</strong></span>` : ''}</div>
       ${item.type === 'missing' ? html`<h3>${item.title}</h3>` : ''}${between(item)}
+      ${item.marker?.conflict ? html`<p class="note">${item.marker.reason}</p>` : ''}
+      ${item.blockedBy ? html`<div class="col gap8"><p class="meta">Another assignment may be blocking this match. Review it before leaving this section unassigned.</p>${control(`Review match at ${hms(item.blockedBy.seconds)}`, 'cr-edit-match', `m${item.blockedBy.index}`, { size: 'sm' })}</div>` : ''}
       ${item.type === 'marker' ? html`<button type="button" class="cr-listen" data-act="cr-play" data-arg="${item.index}" ${!item.marker.excerpt || f.busy ? 'disabled' : ''} aria-pressed="${bool(playing === item.index)}"><span class="cr-play">${icon(playing === item.index ? 'pause' : 'play', 20)}</span><span class="clamp2">${item.marker.transcript || 'No spoken text saved for this marker.'}</span><span class="sr-only">Listen to a 15-second excerpt</span></button>` : ''}
       ${choices}
+      ${item.marker?.supported ? control('Keep the original audio match', 'cr-match-reset', item.id, { size: 'sm' }) : ''}
     </div></div></section>`;
 }
 function completion(m, small = false) {
-  return html`<div class="cr-completion ${small ? 'mini' : ''}" role="img" aria-label="${m.confirmed} confirmed by audio, ${m.decided} decided by you, ${m.need} need you"><span style="width:${m.bar.ok}%" class="confirmed"></span><span style="width:${m.bar.done}%" class="chosen"></span><span style="width:${m.bar.need}%" class="needed"></span></div>`;
+  return html`<div class="cr-completion ${small ? 'mini' : ''}" role="img" aria-label="${m.untouchedConfirmed} unchanged audio matches, ${m.decided} decided by you, ${m.need} need you"><span style="width:${m.bar.ok}%" class="confirmed"></span><span style="width:${m.bar.done}%" class="chosen"></span><span style="width:${m.bar.need}%" class="needed"></span></div>`;
 }
 export function chapterReviewView(p, f, { duration, playing, warning = '', open = {} } = {}) {
   const m = reviewModel(p, f), end = timelineEnd(p, duration), limit = f.revealed || 30;
   const ticks = (p.published_sections || p.sections).map(s => ({ seconds: Number(s.seconds ?? s.id), title: s.title, id: `s${s.id}`, edition: true }));
   ticks.push(...p.markers.map(x => ({ seconds: x.seconds, title: x.suggested_title || x.title, id: `m${x.index}`, supported: x.supported })));
-  const tick = t => {
-    const item = m.items.find(i => i.id === t.id);
-    return item ? html`<button type="button" class="cr-tick ${t.edition ? 'edition' : 'file'} ${item.decided ? 'chosen' : item.type === 'missing' ? 'missing' : 'needed'}" style="left:${Math.min(100, 100 * t.seconds / end)}%" data-act="cr-jump" data-arg="${t.id}" aria-label="${t.title} at ${hms(t.seconds)}; ${item.decided ? 'decided' : 'needs a decision'}"></button>` : html`<span class="cr-mark ${t.edition ? 'edition' : 'file'} ${t.supported ? 'confirmed' : ''}" style="left:${Math.min(100, 100 * t.seconds / end)}%" aria-hidden="true"></span>`;
+  const itemById = new Map(m.items.map(item => [item.id, item]));
+  const lane = values => {
+    const active = values.filter(t => itemById.has(t.id)).sort((a,b) => a.seconds-b.seconds);
+    const groups = [];
+    for (const t of active) {
+      const last = groups.at(-1);
+      // Keep 44px targets apart even in the narrowest supported lane. The
+      // individual marks remain visible; every chapter is editable in the list.
+      if (last && (t.seconds-last.seconds)/end < .34) last.items.push(t);
+      else groups.push({ seconds:t.seconds, items:[t] });
+    }
+    return html`${values.map(t => {
+      const item = itemById.get(t.id);
+      return html`<span class="cr-mark ${t.edition ? 'edition' : 'file'} ${item ? item.decided ? 'chosen' : item.type === 'missing' ? 'missing' : 'needed' : t.supported ? 'confirmed' : ''}" style="left:${Math.min(100,100*t.seconds/end)}%" aria-hidden="true"></span>`;
+    })}${groups.map(group => {
+      const target = group.items.find(t => !itemById.get(t.id)?.decided) || group.items[0];
+      return html`<button type="button" class="cr-tick cr-cluster" style="left:${Math.min(100,100*group.seconds/end)}%" data-act="cr-jump" data-arg="${target.id}" aria-label="${group.items.length} nearby chapter decisions; jump to ${target.title} at ${hms(target.seconds)}">${group.items.length > 1 ? html`<span>${group.items.length}</span>` : ''}</button>`;
+    })}`;
   };
   return html`<div class="chapter-review col gap16">
     <div class="col gap8"><h3>${m.headline}</h3><p class="meta">${m.subline}</p>${m.recs.length ? control(`Accept ${m.recs.length} suggestions`, 'cr-suggestions', '', { disabled: Boolean(f.busy || f.closing) }) : ''}${f.bulkUndo ? html`<p class="meta" role="status">Applied ${f.bulk?.length || 0} suggestions. Each one is marked in the list. ${control('Undo', 'cr-undo', '', { size: 'sm' })}</p>` : ''}</div>
-    ${completion(m)}<div class="cr-legend"><span><i class="confirmed"></i>Confirmed by audio</span><span><i class="chosen"></i>Decided by you</span><span><i class="needed"></i>Needs you</span><span><i class="missing"></i>Missing from your file</span></div>
-    <div class="cr-timeline" role="group" aria-label="Chapter timeline"><span>Edition</span><div class="cr-lane">${ticks.filter(t => t.edition).map(tick)}</div><span>Your file</span><div class="cr-lane">${ticks.filter(t => !t.edition).map(tick)}</div><div class="cr-timeline-help"><span>Start</span><span>Tap a mark to jump to it</span><span>End</span></div></div>
-    ${m.blocked ? html`<div class="cr-blocked" role="note"><span class="icon">${icon('alert', 22)}</span><div class="col gap4 grow"><strong>${percentText(m.pct)} identified by audio · your minimum is ${percentText(m.min)}.</strong><span class="meta">Saving is blocked until you lower the minimum for this book.</span></div>${control('Lower for this book', 'cr-lower', '', { disabled: Boolean(f.busy || f.closing) })}</div>` : ''}
+    ${completion(m)}<div class="cr-legend"><span><i class="confirmed"></i>Confirmed by audio</span><span><i class="chosen"></i>Decided by you</span><span><i class="needed"></i>Needs you</span><span><i class="missing"></i>Not matched to a marker</span></div>
+    <div class="cr-timeline" role="group" aria-label="Chapter timeline"><span>Edition</span><div class="cr-lane">${lane(ticks.filter(t => t.edition))}</div><span>Your file</span><div class="cr-lane">${lane(ticks.filter(t => !t.edition))}</div><div class="cr-timeline-help"><span>Start</span><span>Tap a group to review; every chapter is listed below.</span><span>End</span></div></div>
+    ${m.blocked ? html`<div class="cr-blocked" role="note"><span class="icon">${icon('alert', 22)}</span><div class="col gap4 grow"><strong>${percentText(m.pct)} identified by audio · your minimum is ${percentText(m.min)}.</strong><span class="meta">Resolve the audio checks or explicitly lower the minimum for this book.</span></div>${control('Lower for this book', 'cr-lower', '', { disabled: Boolean(f.busy || f.closing) })}</div>` : ''}
     <div class="cr-list">${m.items.slice(0, limit).map(item => card(item, f, playing))}</div>
     ${m.items.length > limit ? html`<div data-cr-more>${control(`Show more decisions (${m.items.length - limit} left)`, 'cr-more')}</div>` : ''}
-    ${collapsible({ id: 'chapter-confirmed', title: `${m.confirmed} markers confirmed by audio`, summary: 'No action needed', open: open['chapter-confirmed'] || false, body: html`<div class="col gap8">${m.confirmedRows.map(row => html`<div class="row gap12"><span class="mono meta">${hms(row.seconds)}</span><span>${row.name}</span></div>`)}` })}
+    ${collapsible({ id: 'chapter-confirmed', title: `${m.confirmedRows.length} unchanged audio matches`, summary: 'Review any match', open: open['chapter-confirmed'] || false, body: html`<div class="col gap8">${m.confirmedRows.map(row => html`<div class="row gap12"><span class="mono meta">${hms(row.seconds)}</span><span class="grow">${row.name}</span>${control('Change', 'cr-edit-match', `m${row.index}`, { size: 'sm' })}</div>`)}` })}
     ${collapsible({ id: 'chapter-advanced', title: 'Advanced', open: open['chapter-advanced'] || false, body: html`<div class="col gap12">${field({ id: 'accept-min', label: 'Minimum identified markers for this book (%)', type: 'number', value: f.min ?? p.default_minimum_percent, extra: { min: 1, max: 100, step: .1, inputmode: 'decimal' } })}${(p.coverage_warnings || []).map(w => html`<p class="meta">${w}</p>`)}<p class="meta">Edits are saved in this browser. Manual choices do not increase the percentage confirmed by audio. Retained timestamps and audio stay unchanged; no missing marker is invented.${warning ? ` ${warning}` : ''}</p></div>` })}
     ${f.message ? html`<p class="note" role="status">${f.message}</p>` : ''}
   </div>`;
@@ -114,6 +132,17 @@ export function chapterController({ get, update, play }) {
     'cr-keep': (el, ev, ctx) => pick(ctx, { type: 'keep', index: Number(el.dataset.arg.slice(1)) }, el.dataset.arg),
     'cr-remove': (el, ev, ctx) => { const d = data(ctx), item = d?.model.items.find(i => i.id === el.dataset.arg); if (item?.marker.removable) pick(ctx, { type: 'remove', index: item.index }, item.id); },
     'cr-change': (el, ev, ctx) => change(ctx, (f, d) => clearChoice(d.p, f, el.dataset.arg)),
+    'cr-edit-match': (el, ev, ctx) => {
+      const d = data(ctx); if (!d || d.f.busy) return;
+      const marker = d.p.markers.find(m => `m${m.index}` === el.dataset.arg); if (!marker) return;
+      if (marker.supported) change(ctx, f => clearChoice(d.p, f, el.dataset.arg));
+      jump(ctx, el.dataset.arg);
+    },
+    'cr-match-reset': (el, ev, ctx) => change(ctx, (f, d) => {
+      const index = Number(el.dataset.arg.slice(1)); if (!d.p.markers.find(m => m.index === index)?.supported) return f;
+      const decisions = { ...f.decisions }, editingMatches = { ...f.editingMatches };
+      delete decisions[index]; delete editingMatches[index]; return { ...f, decisions, editingMatches, message: '' };
+    }),
     'cr-rename': (el, ev, ctx) => { change(ctx, f => ({ ...f, inline: { ...f.inline, [el.dataset.arg]: 'rename' } })); document.getElementById(`rename-${el.dataset.arg}`)?.focus({ preventScroll: true }); },
     'cr-inline': (el, ev, ctx) => change(ctx, f => ({ ...f, inline: { ...f.inline, [el.dataset.arg]: null } })),
     'cr-use-name': (el, ev, ctx) => { const d = data(ctx), item = d?.model.items.find(i => i.id === el.dataset.arg); const title = document.getElementById(`rename-${el.dataset.arg}`)?.value.trim(); if (item && title && title.length <= 200 && !/[\x00-\x1f]/.test(title)) pick(ctx, { type: 'rename', index: item.index, title }, item.id); },

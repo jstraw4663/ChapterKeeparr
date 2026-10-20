@@ -87,9 +87,9 @@ test('missing chapters offer Save without it and the 2 nearest undecided markers
   assert.equal(item(model, 's28'), undefined, 'Early is marker 2’s nearest choice, so it isn’t missing yet');
   assert.equal(item(model, 's145'), undefined);
   const card = item(model, 's120');
-  assert.equal(card.options[0].label, 'Save without it');
-  assert.equal(card.options[0].sub, 'Its audio stays inside Opening');
-  assert.equal(card.options[0].rec, true);
+  assert.equal(card.options[0].label, 'Save without a separate marker');
+  assert.equal(card.options[0].sub, 'Accept that this section has no assigned marker; its audio is not removed.');
+  assert.equal(card.options[0].rec, false);
   assert.deepEqual(card.options.slice(1).map(o => o.label), ['Start it at 0:02:20', 'Start it at 0:00:30']);
   assert.equal(card.options[1].sub, 'Uses the marker “Original marker 3” · 20s later');
   assert.equal(card.options[2].sub, 'Uses the marker “Original marker 2” · 2 min earlier');
@@ -136,14 +136,14 @@ test('save needs every item decided, the minimum met and the gap box ticked', ()
   let f = {};
   let m = reviewModel(p, f);
   assert.equal(m.need, 2);
-  assert.equal(m.headline, '2 markers need you');
-  assert.equal(m.subline, '2 of 3 confirmed by audio · 0 decided by you');
+  assert.equal(m.headline, '2 decisions need you');
+  assert.equal(m.subline, '2 of 3 originally matched by audio · 0 decided by you');
   assert.equal(m.status, '2 left to decide');
   assert.equal(m.canSave, false);
   f = applyChoice(f, { type: 'section', index: 2, sectionId: '98' });
   f = applyChoice(f, { type: 'skip', sectionId: '300' });
   m = reviewModel(p, f);
-  assert.equal(m.headline, 'Every marker has a decision');
+  assert.equal(m.headline, 'Every decision is ready');
   assert.equal(m.status, 'Tick the box to save');
   assert.equal(m.canSave, false);
   m = reviewModel(p, { ...f, gap: true });
@@ -219,4 +219,39 @@ test('bulk undo preserves subsequent individual edits and restores optional choi
   assert.equal(undone.decisions[4], undefined);
   assert.equal(undone.decisions[6].action, 'keep');
   assert.deepEqual(undone.sections, ['360', '120']);
+});
+
+test('correcting an automatic match frees its old identity and the full timeline stays chronological', async () => {
+  const {chapterTimeline, remainingSections} = await import('../../app/static/js/chapter-review.js');
+  const p=preview({markers:[{at:0,ref:0},{at:581.333},{at:1918.059,ref:581.333},{at:3107.849,ref:3107.849}],
+    published:[{at:0,title:'Opening Credits'},{at:581.333,title:'1. Prologue'},{at:1918.059,title:'I. Havana - Chapter 1'},{at:3107.849,title:'Chapter 2'}],missing:[1918.059]});
+  const blocked=reviewModel(p,{});
+  assert.equal(item(blocked,'m2').blockedBy.index,3);
+  assert.equal(item(blocked,'s1918.059').options[0].rec,false,'skipping is never the suggested resolution of a conflict');
+  let f=clearChoice(p,{},'m3');
+  assert.ok(item(reviewModel(p,f),'m3'),'automatic matches can be opened for correction');
+  f=applyChoice(f,{type:'section',index:3,sectionId:'1918.059'});
+  assert.deepEqual(remainingSections(p,f).map(s=>s.id),['581.333'],'replaced recognition releases its previous section');
+  assert.ok(item(reviewModel(p,f),'m2').options.some(o=>o.label==='1. Prologue'));
+  f=applyChoice(f,{type:'section',index:2,sectionId:'581.333'});
+  assert.equal(remainingSections(p,f).length,0);
+  const rows=chapterTimeline(p,f);
+  assert.deepEqual(rows.map(r=>r.seconds),[0,581.333,1918.059,3107.849]);
+  assert.equal(rows[1].original,'Original marker 2');assert.equal(rows[1].planned,'1. Prologue');
+  assert.equal(rows[2].planned,'I. Havana - Chapter 1');assert.equal(rows[2].manual,true);
+  assert.equal(rows[2].passed,false,'manual corrections are not relabelled audio matches');
+  const model=reviewModel(p,f);
+  assert.equal(model.confirmed,3,'editing does not inflate the original recognition count');
+  assert.ok(model.bar.ok+model.bar.done+model.bar.need<=100.00001,'edited matches are not double-counted in the bar');
+});
+
+test('the timeline preserves explicit rename, keep and removal without hiding current labels', async () => {
+  const {chapterTimeline}=await import('../../app/static/js/chapter-review.js');
+  const p=preview({markers:[{at:0,ref:0},{at:100},{at:200},{at:300}],published:[{at:0,title:'Opening'}]});
+  const f={decisions:{2:{index:2,action:'rename',title:'My name'},3:{index:3,action:'keep'},4:{index:4,action:'remove',confirmed:true}}};
+  const rows=chapterTimeline(p,f);
+  assert.equal(rows[0].original,'Original marker 1');assert.equal(rows[0].planned,'Opening');
+  assert.equal(rows[1].planned,'My name');assert.equal(rows[1].changed,true);
+  assert.equal(rows[2].planned,'Original marker 3');assert.equal(rows[2].needsAttention,false);
+  assert.match(rows[3].planned,/removed.*audio retained/);
 });

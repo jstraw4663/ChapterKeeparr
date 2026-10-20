@@ -12,9 +12,18 @@ export function markerDecisions(p, f) {
   return (p.markers || []).map(m => ({ index: m.index, action: m.supported ? 'suggested' : 'keep', ...(f.decisions?.[m.index] || {}) }));
 }
 
+export const retainedSectionId = (marker, decision) => decision?.action === 'remove' ? null : decision?.action === 'published' ? decision.section_id : marker.reference_id;
+
+function reviewSections(p, used) {
+  const ids = new Set((p.sections || []).map(s => s.id));
+  for (const m of p.markers) if (m.supported && m.reference_id != null && !used.has(m.reference_id)) ids.add(m.reference_id);
+  return sectionsOf(p).filter(s => ids.has(s.id));
+}
+
 export function remainingSections(p, f) {
-  const assigned = new Set(markerDecisions(p, f).filter(d => d.action === 'published').map(d => d.section_id));
-  return p.sections.filter(s => !assigned.has(s.id));
+  const decisions = markerDecisions(p, f);
+  const assigned = new Set(p.markers.map((m, i) => retainedSectionId(m, decisions[i])).filter(id => id != null));
+  return reviewSections(p, assigned).filter(s => !assigned.has(s.id));
 }
 
 export function assignmentIssue(p, f, index, section) {
@@ -92,7 +101,8 @@ export function clearChoice(p, f, id) {
   if (id.startsWith('m')) {
     const decisions = { ...f.decisions };
     delete decisions[Number(id.slice(1))];
-    return { ...f, decisions, bulk, message: '' };
+    const index = Number(id.slice(1));
+    return { ...f, decisions, bulk, ...(p.markers.find(m => m.index === index)?.supported ? { editingMatches: { ...f.editingMatches, [index]: true } } : {}), message: '' };
   }
   const sectionId = id.slice(1);
   const decisions = { ...f.decisions };
@@ -176,6 +186,7 @@ export const KIND = {
   far: ['Nearest chapter is far', 'warn'],
   extra: ['No chapter starts here', 'warn'],
   noaudio: ['No audio saved', 'muted'],
+  conflict: ['Review conflicting match', 'warn'],
   // Not in the spec's list: an unconfirmed marker none of the five describe (nearest 10–60 s away, no rival).
   plain: ['Not confirmed by audio', 'warn'],
 };
@@ -216,7 +227,10 @@ function markerItem(p, f, m, ctx) {
   const prev = [...ctx.anchors].filter(a => a.index < m.index).pop();
   const next = ctx.anchors.find(a => a.index > m.index);
   const joins = previousRetained(ctx, m);
-  const base = { id, type: 'marker', index: m.index, seconds: m.seconds, decided, marker: m, original: m.title || 'Untitled marker', between: between(prev, next), decision: d };
+  const blockedSection = ctx.sections.find(s => Math.abs(publishedSeconds(s)-m.seconds) <= 5 && ctx.used.has(s.id));
+  const blocker = blockedSection && ctx.markers.find(other => other.index !== m.index && retainedSectionId(other, ctx.byIndex.get(other.index)) === blockedSection.id);
+  const base = { id, type: 'marker', index: m.index, seconds: m.seconds, decided, marker: m, original: m.title || 'Untitled marker', between: between(prev, next), decision: d,
+    blockedBy: blocker ? { index: blocker.index, seconds: blocker.seconds } : null };
   if (decided) {
     // Decided rows only need what was chosen; options are worked out when the card reopens.
     const was = `was “${base.original}”`;
@@ -231,7 +245,7 @@ function markerItem(p, f, m, ctx) {
   }
   const inOrder = inOrderSections(ctx, m);
   const rec = ctx.recs.get(m.index);
-  const kind = kindOf({ inOrder, seconds: m.seconds, recommended: rec != null && inOrder.some(s => s.id === rec), excerpt: m.excerpt });
+  const kind = m.conflict ? 'conflict' : kindOf({ inOrder, seconds: m.seconds, recommended: rec != null && inOrder.some(s => s.id === rec), excerpt: m.excerpt });
   const sectionChoice = (s, outOfOrder = false) => ({
     key: `${outOfOrder ? 'out' : 'sec'}:${s.id}`, label: s.title,
     sub: `Published ${hms(publishedSeconds(s))} · ${relTime(publishedSeconds(s), m.seconds)}${outOfOrder ? ' · outside the usual order' : ''}`,
@@ -283,7 +297,7 @@ function missingItem(p, f, s, ctx) {
   const decided = Boolean(assigned) || skipped;
   const at = assigned && ctx.markers.find(m => m.index === assigned.index);
   const options = decided ? [] : [
-    { key: 'skip', label: 'Save without it', sub: `Its audio stays inside ${prev?.title || 'the previous chapter'}`, rec: true, choice: { type: 'skip', sectionId: s.id } },
+    { key: 'skip', label: 'Save without a separate marker', sub: 'Accept that this section has no assigned marker; its audio is not removed.', rec: false, choice: { type: 'skip', sectionId: s.id } },
     ...startCandidates(p, f, s, ctx).map(m => ({
       key: `start:${m.index}`, label: `Start it at ${hms(m.seconds)}`,
       sub: `Uses the marker “${m.title || 'Untitled marker'}” · ${relTime(m.seconds, t)}`,
@@ -292,6 +306,7 @@ function missingItem(p, f, s, ctx) {
   ];
   return {
     id: `s${s.id}`, type: 'missing', sectionId: s.id, title: s.title, seconds: t, decided,
+    blockedBy: !decided ? ctx.markers.filter(m => m.supported && Math.abs(m.seconds-t) <= 5).map(m => ({ index: m.index, seconds: m.seconds }))[0] : null,
     between: between(prev, next, true), options,
     final: s.title, note: decided ? (skipped ? 'Saved without its own chapter' : `Starts at ${hms(at?.seconds)}`) : '',
   };
@@ -305,14 +320,15 @@ export function reviewModel(p, f) {
   const ctx = plan(p, f);
   const recs = recommendations(p, f, ctx);
   ctx.recs = new Map(recs.map(r => [r.index, r.section_id]));
-  const markers = ctx.markers.filter(m => !m.supported).map(m => markerItem(p, f, m, ctx));
+  const markers = ctx.markers.filter(m => !m.supported || f.editingMatches?.[m.index] || f.decisions?.[m.index]).map(m => markerItem(p, f, m, ctx));
   ctx.claimed = new Set(markers.filter(m => !m.decided && m.kind !== 'extra').map(m => m.nearest));
-  const missing = (p.sections || []).map(s => missingItem(p, f, s, ctx)).filter(Boolean);
+  const missing = reviewSections(p, ctx.used).map(s => missingItem(p, f, s, ctx)).filter(Boolean);
   const items = [...markers, ...missing].sort((a, b) => a.seconds - b.seconds || (a.type === 'missing') - (b.type === 'missing'));
   const decided = items.filter(i => i.decided).length;
   const need = items.length - decided;
   const confirmed = p.supported ?? ctx.markers.filter(m => m.supported).length;
   const total = p.total ?? ctx.markers.length;
+  const untouchedConfirmed = ctx.markers.filter(m => m.supported && !f.editingMatches?.[m.index] && !f.decisions?.[m.index]).length;
   const minText = f.min ?? p.default_minimum_percent;
   const min = Number(minText);
   const validMin = minText !== '' && Number.isFinite(min) && min >= 1 && min <= 100;
@@ -326,14 +342,32 @@ export function reviewModel(p, f) {
         : !gap ? 'Tick the box to save' : 'Ready to save';
   const unit = 100 / Math.max(1, total + missing.length);
   return {
-    items, decided, need, confirmed, total, pct, min, validMin, blocked, gap, canSave, status,
+    items, decided, need, confirmed, untouchedConfirmed, total, pct, min, validMin, blocked, gap, canSave, status,
     recs: recs.length >= 2 ? recs : [],
     lowerTo: Math.max(1, Math.floor(pct + 1e-9)),
-    bar: { ok: confirmed * unit, done: decided * unit, need: need * unit },
-    headline: need === 0 ? 'Every marker has a decision' : `${need} ${need === 1 ? 'marker needs' : 'markers need'} you`,
-    subline: `${confirmed} of ${total} confirmed by audio · ${decided} decided by you`,
-    confirmedRows: ctx.markers.filter(m => m.supported).map(m => ({ seconds: m.seconds, name: m.suggested_title || m.title })),
+    bar: { ok: untouchedConfirmed * unit, done: decided * unit, need: need * unit },
+    headline: need === 0 ? 'Every decision is ready' : `${need} ${need === 1 ? 'decision needs' : 'decisions need'} you`,
+    subline: `${confirmed} of ${total} originally matched by audio · ${decided} decided by you`,
+    confirmedRows: ctx.markers.filter(m => m.supported && !f.editingMatches?.[m.index] && !f.decisions?.[m.index]).map(m => ({ index: m.index, seconds: m.seconds, name: savedName(ctx, m) })),
   };
+}
+
+/** Whole-file preview, in timestamp order, from the exact publication decisions. */
+export function chapterTimeline(p, f = {}) {
+  const sections = new Map(sectionsOf(p).map(s => [s.id, s]));
+  const decisions = new Map(markerDecisions(p, f).map(d => [d.index, d]));
+  return p.markers.map(m => {
+    const d = decisions.get(m.index), manual = Boolean(f.decisions?.[m.index]);
+    const planned = d.action === 'remove' ? 'Marker removed · audio retained'
+      : d.action === 'published' ? sections.get(d.section_id)?.title || 'Choose a current section'
+        : d.action === 'rename' ? d.title?.trim() || 'Enter a name'
+          : d.action === 'suggested' ? m.suggested_title || m.title : m.title;
+    return { n: m.index, name: planned || m.title || 'Untitled marker', original: m.title || 'Untitled marker',
+      planned: planned || 'No proposal', seconds: m.seconds, passed: Boolean(m.supported && !manual),
+      manual, changed: d.action === 'remove' || planned !== m.title, needsAttention: Boolean((!m.supported || m.conflict) && !manual),
+      conflict: Boolean(m.conflict && !manual), pending: false, draft: true,
+      transcript: m.transcript || '', excerpt: m.excerpt || null, reason: m.reason || '' };
+  }).sort((a, b) => a.seconds-b.seconds || a.n-b.n);
 }
 
 /**
