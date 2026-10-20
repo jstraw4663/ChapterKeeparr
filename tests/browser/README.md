@@ -28,3 +28,19 @@ The reconciled workflows additionally check ordered chapter choices, inline rena
 A synthetic 180-marker override also checks the initial 30-card bound, progressive reveal, explicit order override, bulk Undo, first-marker protection, desktop scroll stability, reduced motion, and notification hover/focus pause and resumed expiry.
 
 The synthetic Bedlam workflow exercises decorated and part-prefixed identities, a formerly false automatic Prologue match, current-draft precedence over stale checks, paired titles, filters and editable matched rows in both themes at 320/390/820/1024/1440px. It checks shared unselected suggestions, accepted-title synchronization, stable original audio counts, aligned 44px actions and axe scans at all five sizes. Screenshots disable finite CSS animations to capture settled states; live motion stays covered by reconciled_workflows.py. Its transcripts are illustrative; the actual two-clip validation is documented separately in the Bedlam guide.
+
+## Accessibility snapshots and intermittent failures
+
+Every axe scan goes through `browser_support.audit_accessibility()`: wait for fonts and the route transition, apply a temporary high-specificity timing override, paint the settled state, run all existing WCAG 2/2.1/2.2 A/AA rules once, then remove the override even on failure. No contrast rule, element or assertion is excluded, no palette changes, and no automatic retry is used. The 216-layout snapshots use the same override; live motion, scrolling and notification timers retain normal CSS in the dedicated workflows.
+
+Why the specificity matters: the app's `html[data-motion="reduce"] *` declarations use `!important` and retain 200 ms fades. An ordinary `* { animation-duration:0s!important }` loses the cascade. Rapid viewport changes reveal the Activity card while its text and ancestors fade, so a scan can observe low effective contrast even though the final theme tokens pass. `networkidle` and the route-transition flag do not wait for CSS resize/element fades.
+
+`accessibility_stability.py` runs in CI before the full browser sweep. It repeats the rapid resize sequence three times in each theme, deliberately holds the actual Activity-card fade to reproduce the contrast failure, and verifies the settled scan passes. An isolated static low-contrast document must still fail, and success/failure paths must restore normal CSS. Run it against the disposable server with:
+
+```sh
+python tests/browser/accessibility_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/stability
+```
+
+Each scan now stores its complete `*-axe.json` report, including selectors, contrast data and failure summaries. Unexpected failures also save `*-axe-failure.png` to the existing `ui-regression-results` workflow artifact. Files named `expected-negative-*` and `raw-fade-*` are deliberate negative controls; their recorded violations are expected when the script succeeds. Other violations fail the job immediately.
+
+If the test job fails, the dependent image job is skipped and no replacement image is published. Compare the failed/passed run's commit and inspect the first assertion/report, rather than treating repeated workflow runs as a repair. Earlier failures may have a different cause (for example the already-corrected Playwright actionability-scroll baseline).

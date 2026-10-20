@@ -98,6 +98,8 @@ Work happens on branches and reaches `main` through pull requests; GitHub runs t
 
 A tag with a suffix (`v0.6.0-rc1`) publishes only that tag, not `:latest`. Running the workflow by hand from a branch (Actions → CI and release → Run workflow) publishes a sanitized branch tag (copy the exact tag from the build output) for trying a build in a separate container. Only Jeremy triggers releases; see the first-publish steps in the [install guide](deploy/UNRAID-INSTALL.md).
 
+If **test** fails, **image** is skipped and Unraid continues to pull the last successfully published build. Browser failures include detailed reports in the `ui-regression-results` artifact; see [CI browser diagnostics](tests/browser/README.md#accessibility-snapshots-and-intermittent-failures).
+
 ## Model revision and rebuilds
 
 The Docker build downloads the CTranslate2 `small.en` model into `/opt/models/small.en`, so the runtime does not need model downloads. The default Hugging Face revision is the full commit `d1d751a5f8271d482d14ca55d9e2deeebbae577f`. You can override it at build time with `MODEL_REVISION=<commit-id> docker compose build`; avoid `main` when you need the exact same model snapshot on later rebuilds. Model files and all Python dependencies are part of the image. The model is licensed under MIT; see the [upstream model card](https://huggingface.co/Systran/faster-whisper-small.en).

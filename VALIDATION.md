@@ -1,3 +1,11 @@
+## Accessibility release-gate timing — 2026-10-20
+
+Inspected GitHub runs 19 and 20: identical 3f57161 commit, contrast failure versus successful test/image. Runs 16, 10 and 9 show the same contrast race; run 13 is the separate already-corrected scroll baseline. No image is published when the dependent test job fails.
+
+Reproduced the failing `.s > .ell` selector in both themes by holding the actual Activity-card fade at low opacity. The corrected shared static-audit timing override beats the app's reduced-motion !important rules; both settled scans pass. Three rapid viewport sequences in each theme also pass. Permanent low-contrast negative controls still raise color-contrast failures, and both success/failure paths restore normal CSS. The test gate adds no retries, exclusions, color adjustments or new dependency; live-motion/timer cases are separate. Full JSON contrast/failure summaries and screenshots enter the existing artifact.
+
+109 unit tests pass (34.485 s), including frontend/design/JavaScript checks. The full responsive sweep passes 216 viewport/theme observations and 36 axe scans. Reconciled workflows pass both themes plus the 390px reduced-motion and 1024px live-motion large-draft/timer cases. All ten Bedlam theme/viewport contexts and their axe scans pass with the shared scanner. In total, the normal CI path runs 56 passing static axe scans plus deliberate fade/static negative controls. These are local Chromium 151.0.7922.34 runs against worker-disabled generated media; no production job, application styles, recording or container was changed.
+
 ## Chapter checks consistency — 2026-10-20
 
 109 Python tests pass (24.457 seconds), including frontend/design/syntax checks and all nine JS test files. Added semantic UI regressions show suggestions in the comparison without selecting them or modifying the actual save plan, manual decisions, Changed filtering or audio evidence. Choosing/keeping/reopening a marker preserves those distinctions.

@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 from urllib.request import urlopen
 from playwright.sync_api import sync_playwright, expect
+from browser_support import audit_accessibility
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from app import acceptance, recovery
 
@@ -104,9 +105,7 @@ def main():
                     box=row.bounding_box();assert box['width']>200
                 page.screenshot(path=str(output/f'timeline-{theme}-{width}.png'),full_page=False,animations='disabled')
                 if args.axe:
-                    page.add_script_tag(path=args.axe)
-                    violations=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))}")
-                    assert not violations,violations
+                    audit_accessibility(page,args.axe,output,f'bedlam-{theme}-{width}')
                 results.append({'theme':theme,'width':width,'result':'passed'});ctx.close()
                 print(f'{theme} {width}px: Bedlam collision, timeline, filters and matched edits passed',flush=True)
         browser.close()

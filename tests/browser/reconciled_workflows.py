@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from urllib.request import urlopen
 from playwright.sync_api import sync_playwright, expect
+from browser_support import audit_accessibility
 
 
 def design_edges(browser, base, rid, errors):
@@ -218,9 +219,7 @@ def main():
                 page.wait_for_function("!document.documentElement.dataset.vt")
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
             if args.axe:
-                page.add_script_tag(path=args.axe)
-                violations = page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))}")
-                assert violations == [], violations
+                audit_accessibility(page, args.axe, output, 'notifications-' + theme)
             ctx.close(); results.append({'theme':theme,'workflow':'pass','notifications':'pass'})
             print(theme + ': review decisions, draft reset, handoff and notifications passed', flush=True)
         design_edges(browser, base, rid, page_errors)

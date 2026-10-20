@@ -1,5 +1,12 @@
 # ChapterKeeparr project context
 
+## Deterministic accessibility release gate — 2026-10-20
+
+GitHub runs 19/20 used the same 3f57161 commit; 19 failed a contrast scan and 20 succeeded. Runs 16, 10 and 9 show the same Activity-card/resize contrast race. The earlier run 13 scroll baseline is a separate corrected issue. Image jobs are gated by tests, so a failed test publishes no image.
+
+Root cause reproduced with the actual Activity-card fade: reduced-motion CSS still runs 200 ms fades and uses stronger !important selectors than the old snapshot freeze. networkidle/route readiness does not imply resize/element animation completion. All static axe scans now share a temporary high-specificity timing override, paint the settled state, retain every WCAG/contrast rule and restore normal CSS in finally. The dedicated live motion/scroll/timer cases stay enabled. Full JSON reports and failure screenshots enter existing CI artifacts. A new stability check repeats rapid resizing in both themes, holds the actual fade to reproduce the defect, and proves static low-contrast text still fails; it also verifies timing overrides are removed on both success and failure. No app, media, worker, container or image behavior changed; no retries or release triggers were added.
+
+
 ## Chapter checks consistency — 2026-10-20
 
 Chapter checks now displays the same shared, unique in-order suggestions as the review cards, explicitly Not selected until accepted. Display-only proposals do not change the publication plan, original speech score, decision set or consent. Current choices/Undo/Change/restore update the comparison immediately; Changed continues to describe the selected plan. Reopened automatic matches appear in Needs attention.

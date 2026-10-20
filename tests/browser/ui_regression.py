@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.request import urlopen
 
 from playwright.sync_api import sync_playwright, expect
+from browser_support import SETTLED_CSS, audit_accessibility
 
 
 def main():
@@ -53,7 +54,7 @@ def main():
                 # fades can remain pending until painted, so freezing them is
                 # more reliable than waiting for every animation to finish.
                 # Live motion is tested separately in reconciled_workflows.py.
-                page.add_style_tag(content='*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition-duration:0s!important;transition-delay:0s!important}')
+                page.add_style_tag(content=SETTLED_CSS)
                 page.wait_for_function("!document.documentElement.dataset.vt")
 
             for width, height in ([] if args.interactions_only else sizes):
@@ -72,9 +73,7 @@ def main():
                         assert measured['titleWidth'] >= 180, (route, measured)
                     observations.append({'theme': theme, 'route': route, **measured})
                     if args.axe and width in [390, 1024]:
-                        page.add_script_tag(path=args.axe)
-                        violations = page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return r.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.map(n=>n.target)}));}")
-                        assert violations == [], (theme, width, route, violations)
+                        audit_accessibility(page, args.axe, output, f'{theme}-{width}-route-{routes.index(route)}')
 
             print(f'{theme}: {len(observations)} viewport observations passed', flush=True)
             ready('#/review/' + rid, 390)
