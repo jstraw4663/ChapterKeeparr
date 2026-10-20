@@ -254,7 +254,7 @@ function checksSection(book, ctx) {
   const f = p?.ready ? draftForm(book, p, ctx) : {};
   const rows = checksOf(job, { preview: p, form: f });
   const passed = rows.filter(r => r.passed).length;
-  const summary = rows.length ? `${passed} of ${rows.length} ${rows[0].draft ? 'heard' : 'passed'}` : 'Not run yet';
+  const summary = rows.length ? rows[0].draft ? `${p?.supported ?? passed}/${rows.length} audio matches` : `${passed} of ${rows.length} passed` : 'Not run yet';
   const body = rows.length
     ? html`<div class="col gap14" style="padding-bottom:8px">${ctx.phone ? '' : checkTimeline(rows, durationOf(job, sources.get(book.id)))}${checkRows(job, rows, { ...ctx, editMatches: Boolean(p?.ready), reviewBusy: Boolean(f.busy) })}</div>`
     : html`<p class="gapnote" style="margin-bottom:12px">Chapter checks haven’t run yet. They start once the edition is confirmed.</p>`;

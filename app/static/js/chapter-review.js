@@ -356,15 +356,18 @@ export function reviewModel(p, f) {
 export function chapterTimeline(p, f = {}) {
   const sections = new Map(sectionsOf(p).map(s => [s.id, s]));
   const decisions = new Map(markerDecisions(p, f).map(d => [d.index, d]));
+  const proposals = new Map(recommendations(p, f).map(r => [r.index, sections.get(r.section_id)?.title]));
   return p.markers.map(m => {
     const d = decisions.get(m.index), manual = Boolean(f.decisions?.[m.index]);
+    const reviewing = Boolean(f.editingMatches?.[m.index] && !manual);
+    const proposal = !manual && !m.supported ? proposals.get(m.index) || null : null;
     const planned = d.action === 'remove' ? 'Marker removed · audio retained'
       : d.action === 'published' ? sections.get(d.section_id)?.title || 'Choose a current section'
         : d.action === 'rename' ? d.title?.trim() || 'Enter a name'
           : d.action === 'suggested' ? m.suggested_title || m.title : m.title;
     return { n: m.index, name: planned || m.title || 'Untitled marker', original: m.title || 'Untitled marker',
       planned: planned || 'No proposal', seconds: m.seconds, passed: Boolean(m.supported && !manual),
-      manual, changed: d.action === 'remove' || planned !== m.title, needsAttention: Boolean((!m.supported || m.conflict) && !manual),
+      proposal, reviewing, manual, changed: d.action === 'remove' || planned !== m.title, needsAttention: Boolean((!m.supported || m.conflict || reviewing) && !manual),
       conflict: Boolean(m.conflict && !manual), pending: false, draft: true,
       transcript: m.transcript || '', excerpt: m.excerpt || null, reason: m.reason || '' };
   }).sort((a, b) => a.seconds-b.seconds || a.n-b.n);

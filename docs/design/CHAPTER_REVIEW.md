@@ -159,3 +159,9 @@ This replaces DESIGN.md §12 "Sending a book back from Needs review returns to t
 ## 2026-10-20: complete timeline and conflicting matches
 
 The Chapter checks evidence panel shows all existing/planned title pairs in timestamp order, with filters and Listen/Change. Automatically matched rows can be corrected and restored; their original speech percentage is never raised by manual decisions. Unknown sections are described as not matched, and skipping a section is not suggested. Counts include decisions, not just local markers. Nearby timeline targets share a 44px group jump while the complete list keeps each chapter individually accessible. Details and remaining audio-validation limits are in `docs/plans/bedlam-identity-repair.md`.
+
+## 2026-10-20: Chapter checks consistency
+
+Chapter checks displays the same unique in-order suggestions as the cards, marked Suggested / Not selected until an explicit choice. These display-only proposals never modify the actual planned title, decisions, Changed filter, audio evidence or save readiness. Accepting, Undo, Change and restore recompute the shared suggestions and title comparison from the current draft. The Changed filter describes the selected save plan; Needs attention includes matches reopened for review.
+
+Wide panels show aligned Time / Existing title / Proposed title / Evidence or decision / Actions columns with one header. Listen and Change share a horizontal row with 44px targets. Panels at 680px or narrower stack labelled title pairs and place the actions below them; this responds to panel width independently of viewport/sidebar width. Times use h:mm:ss, matching the cards. Row selection still opens the transcript. The header retains the original audio-match count while manual decisions have a separate status and ink timeline dots, explained by a legend. Neither manually accepting a timing suggestion nor editing an audio match changes the original recognition percentage.

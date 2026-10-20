@@ -1,5 +1,12 @@
 # ChapterKeeparr project context
 
+## Chapter checks consistency — 2026-10-20
+
+Chapter checks now displays the same shared, unique in-order suggestions as the review cards, explicitly Not selected until accepted. Display-only proposals do not change the publication plan, original speech score, decision set or consent. Current choices/Undo/Change/restore update the comparison immediately; Changed continues to describe the selected plan. Reopened automatic matches appear in Needs attention.
+
+Desktop comparisons use aligned headings and inline Listen/Change; narrow panels stack labelled title pairs using a 680px container query. All timestamps use h:mm:ss. Manual decisions have their own ink timeline dots/legend, and the original audio-match count stays stable across edits. Row selection still reveals transcripts. No new API, model, inference, dependency or audiobook write was introduced. Service-worker shell v14 refreshes these assets.
+
+
 ## Actual Bedlam excerpts and CI actionability check — 2026-10-20
 
 The populated v2 archive confirms the identity collision. All 78 saved local/catalog boundaries differ by at most 0.037 seconds. Replaying first-five cached transcripts and independently transcribing both problem WAVs with CPU/int8 small.en produces Prologue at 581.335 s and Havana / Chapter 1 at 1918.061 s. First-five replay yields 69/78 after retaining later saved evidence, not a full-book verification. Audio/report remain outside Git; source and deployed job are unchanged. See the updated Bedlam repair guide. Added a heading-only regression for the actual legacy segment shapes.

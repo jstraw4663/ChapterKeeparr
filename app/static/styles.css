@@ -969,11 +969,33 @@ html[data-motion="reduce"] .cr-body,html[data-motion="reduce"] .cr-sum,html[data
 @keyframes review-exit{to{opacity:0;transform:translateY(-6px)}}
 
 .cr-fieldset{border:0;padding:0;margin:0;min-width:0}
-.crow.check-compare{grid-template-columns:62px minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:start}
-.check-title{min-width:0;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
-.check-actions{align-items:center;flex-shrink:0;padding:8px 0}
-@container review (max-width:700px){.crow.check-compare{grid-template-columns:1fr auto}.check-compare .check-title{grid-column:1/-1}.check-compare>.pill{grid-column:2;grid-row:1;white-space:normal}.check-compare .check-title .meta{font-size:11px}}
-@media(max-width:767px){.crow.check-compare{grid-template-columns:1fr auto;padding:10px 0;gap:6px}.check-compare .check-title{grid-column:1/-1}.check-compare>.pill{grid-column:2;grid-row:1;white-space:normal}.check-compare .check-title .meta{font-size:11px}}
+.chapter-checks{container:chapter-checks / inline-size}
+.panel[data-collapsible="checks"]>.ghh .title{white-space:nowrap}
+.panel[data-collapsible="checks"]>.ghh .summary{white-space:normal;overflow:visible;text-align:right}
+.check-heading,.check-entry{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:12px;align-items:center}
+.check-heading{color:var(--muted);font-size:12px;padding-top:4px}
+.check-columns,.crow.check-compare{display:grid;grid-template-columns:68px minmax(0,1fr) minmax(0,1fr) 110px;gap:12px;align-items:center;padding:8px 4px}
+.crow.check-compare{font-size:14px;min-height:64px}
+.check-compare>.pill{justify-self:start;white-space:normal}
+.check-title{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere;font-size:14px;line-height:1.4}
+.check-title-label{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.check-proposal-note{font-size:12px}
+.check-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.check-actions .btn{min-height:44px;padding-inline:10px}
+.check-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px}
+.check-legend>span{display:inline-flex;align-items:center;gap:6px}
+.check-chosen{background:var(--ink)}
+.timeline .pt.chosen{border-color:var(--ink);background:var(--ink)}
+@container chapter-checks (max-width:680px){
+  .check-heading{display:none}
+  .check-entry{grid-template-columns:minmax(0,1fr);gap:0;padding:8px 0}
+  .crow.check-compare{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 4px}
+  .check-compare>.pill{grid-column:2;grid-row:1;justify-self:end}
+  .check-title{grid-column:1/-1;display:grid;grid-template-columns:68px minmax(0,1fr);gap:4px 8px}
+  .check-title-label{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;font-size:12px}
+  .check-proposal-note{grid-column:2}
+  .check-actions{justify-self:end;padding-top:4px}
+}
 .note-card.stack-note{padding:12px;display:flex;flex-direction:column;gap:8px}
 
 .check-filters .sgb{padding-inline:8px;min-width:44px;font-size:13px}

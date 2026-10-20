@@ -1,3 +1,9 @@
+## Chapter checks consistency — 2026-10-20
+
+109 Python tests pass (24.457 seconds), including frontend/design/syntax checks and all nine JS test files. Added semantic UI regressions show suggestions in the comparison without selecting them or modifying the actual save plan, manual decisions, Changed filtering or audio evidence. Choosing/keeping/reopening a marker preserves those distinctions.
+
+The full browser sweep passes 216 viewport/theme observations, 36 axe scans and focused workflow checks. Expanded Bedlam checks cover 320/390/820/1024/1440px in both themes, shared suggested titles, Not selected → Your decision transitions, stable audio-match counts, inline 44px actions, filters, automatic-match correction/restore and guarded save readiness. Writes are intercepted against a generated worker-disabled fixture. Settled screenshots disable finite animations; the motion behavior is separately covered by the existing reconciled workflow. No actual book, job, container or image was changed.
+
 ## Bedlam section identity and full timeline — 2026-10-20
 
 ## Actual Bedlam evidence and browser click baseline — 2026-10-20

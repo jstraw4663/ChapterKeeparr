@@ -255,3 +255,26 @@ test('the timeline preserves explicit rename, keep and removal without hiding cu
   assert.equal(rows[2].planned,'Original marker 3');assert.equal(rows[2].needsAttention,false);
   assert.match(rows[3].planned,/removed.*audio retained/);
 });
+
+test('chapter checks share suggestions without accepting them or changing the save plan', async () => {
+  const {chapterTimeline}=await import('../../app/static/js/chapter-review.js');
+  const p=preview({markers:[{at:0},{at:31.9},{at:581.3,ref:581.3}],
+    published:[{at:0,title:'Opening Credits'},{at:31.9,title:'Front matter'},{at:581.3,title:'Prologue'}]});
+  const f={}; const before=JSON.stringify({p,f});
+  let rows=chapterTimeline(p,f);
+  assert.equal(rows[0].proposal,'Opening Credits');
+  assert.equal(rows[1].proposal,'Front matter');
+  assert.equal(rows[0].planned,'Original marker 1','unselected suggestion never becomes the save plan');
+  assert.equal(rows[0].manual,false);assert.equal(rows[0].passed,false);assert.equal(rows[0].needsAttention,true);
+  assert.equal(rows[0].changed,false,'Changed describes the selected plan, not pending suggestions');
+  assert.equal(JSON.stringify({p,f}),before,'preview never selects a suggestion');
+  const chosen=applyChoice(f,{type:'section',index:1,sectionId:'0'});
+  rows=chapterTimeline(p,chosen);
+  assert.equal(rows[0].proposal,null);assert.equal(rows[0].planned,'Opening Credits');
+  assert.equal(rows[0].manual,true);assert.equal(rows[0].passed,false);
+  assert.equal(chapterTimeline(p,clearChoice(p,chosen,'m1'))[0].proposal,'Opening Credits');
+  rows=chapterTimeline(p,{decisions:{1:{index:1,action:'keep'}}});
+  assert.equal(rows[0].proposal,null);assert.equal(rows[0].planned,'Original marker 1');
+  rows=chapterTimeline(p,clearChoice(p,{},'m3'));
+  assert.equal(rows[2].reviewing,true);assert.equal(rows[2].needsAttention,true);
+});

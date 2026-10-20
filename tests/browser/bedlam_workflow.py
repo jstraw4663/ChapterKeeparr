@@ -34,7 +34,7 @@ def main():
     with sync_playwright() as pw:
         browser=pw.chromium.launch(executable_path=args.chromium,headless=True)
         for theme in ['light','dark']:
-            for width in [390,1024]:
+            for width in [320,390,820,1024,1440]:
                 ctx=browser.new_context(viewport={'width':width,'height':900},reduced_motion='reduce',service_workers='block',color_scheme=theme)
                 ctx.add_init_script("localStorage.setItem('chapterkeeparr.prefs.v1',JSON.stringify({theme:'"+theme+"',reduceMotion:true}));")
                 ctx.route('**/*',lambda route:route.continue_() if route.request.method=='GET' and route.request.url.startswith(base+'/') else route.abort())
@@ -47,6 +47,19 @@ def main():
                 page.locator('[data-act="toggle"][data-arg="checks"]').click()
                 expect(page.locator('[data-check-row]')).to_have_count(7)
                 expect(page.locator('[data-check-row="4"]')).to_contain_text('Conflicting match')
+                first=page.locator('[data-check-row="1"]')
+                expect(first.locator('[data-check-proposed]')).to_have_text('Opening Credits')
+                expect(first).to_contain_text('Not selected')
+                expect(first).to_contain_text('Suggested')
+                expect(page.locator('[data-check-row="2"] [data-check-proposed]')).to_have_text('OMG. What a floor!')
+                # Rows compact to a stable five-column comparison where space
+                # permits; narrow panels stack titles and keep actions inline.
+                controls=first.locator('.check-actions button').all()
+                play,change=[control.bounding_box() for control in controls]
+                assert abs(play['y']+play['height']/2-change['y']-change['height']/2)<1,(play,change)
+                assert min(play['height'],play['width'],change['height'],change['width'])>=44
+                page.locator('[data-collapsible="checks"]').evaluate("el=>window.scrollTo({top:el.getBoundingClientRect().top+scrollY-90,behavior:'instant'})")
+                page.screenshot(path=str(output/f'checks-before-{theme}-{width}.png'),full_page=False,animations='disabled')
                 expect(page.locator('#view')).not_to_contain_text('Stale old check')
                 page.locator('[data-act="chapter-filter"][data-arg="attention"]').click()
                 expect(page.locator('[data-check-row]')).to_have_count(4)
@@ -55,6 +68,12 @@ def main():
                 expect(page.locator('[data-check-row="3"]')).to_contain_text('1. Prologue')
                 expect(page.locator('[data-check-row="4"]')).to_contain_text('I. Havana - Chapter 1')
                 expect(page.locator('[data-check-row="4"]')).to_contain_text('Your decision')
+                expect(first).not_to_contain_text('Not selected')
+                expect(first).to_contain_text('Your decision')
+                expect(first.locator('[data-check-proposed]')).to_have_text('Opening Credits')
+                # Evidence count describes the original speech result and must
+                # not fall as a user accepts or edits a match.
+                expect(page.locator('[data-act="toggle"][data-arg="checks"]')).to_contain_text('3/7 audio matches')
                 page.locator('[data-act="chapter-filter"][data-arg="attention"]').click()
                 expect(page.locator('[data-check-row]')).to_have_count(0)
                 page.locator('[data-act="chapter-filter"][data-arg="all"]').click()
@@ -83,7 +102,7 @@ def main():
                 assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
                 for row in page.locator('[data-check-row]').all():
                     box=row.bounding_box();assert box['width']>200
-                page.screenshot(path=str(output/f'timeline-{theme}-{width}.png'),full_page=False)
+                page.screenshot(path=str(output/f'timeline-{theme}-{width}.png'),full_page=False,animations='disabled')
                 if args.axe:
                     page.add_script_tag(path=args.axe)
                     violations=page.evaluate("async()=>{const r=await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa','wcag22aa']}});return r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))}")
