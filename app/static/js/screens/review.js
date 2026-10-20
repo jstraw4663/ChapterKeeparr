@@ -17,7 +17,7 @@ import { loadDraft, saveDraft, clearDraft, acceptedDraft } from '../review-draft
 import { confirmSheet } from '../overlay.js';
 import { markerDecisions, remainingSections } from '../chapter-review.js';
 import { chapterReviewView, chapterSaveBar, chapterController } from '../chapter-review-view.js';
-import { glideToTop } from '../scroll.js';
+import { glideTo, glideToTop } from '../scroll.js';
 import { checksOf, checkTimeline, checkRows, playCheck, durationOf, gatesDetail, technical, alignmentPlot, bestDiagnostics } from './evidence.js';
 import { serverButton, offline, OFFLINE_REASON, reportError, cancelActions, cancelJob } from './common.js';
 
@@ -506,6 +506,18 @@ export default {
     prev: (el, ev, ctx) => move(ctx, -1),
     next: (el, ev, ctx) => move(ctx, 1),
     'check-open': (el, ev, ctx) => { const n = Number(el.dataset.arg); ctx.ui.check = ctx.ui.check === n ? null : n; ctx.rerender(); },
+    'chapter-overview': (el, ev, ctx) => {
+      ctx.ui.open = { ...ctx.ui.open, checks:true }; ctx.ui.checkFilter = el.dataset.arg;
+      ctx.ui.checkLimit = 50; ctx.rerender();
+      requestAnimationFrame(() => { const target=document.querySelector('.chapter-checks .check-compare') || document.querySelector('[data-act="toggle"][data-arg="checks"]'); if(target) { target.focus({preventScroll:true}); glideTo(target,{top:ctx.phone?76:96,bar:'.cr-save'}); } });
+    },
+    'chapter-warning': (el, ev, ctx) => {
+      const n = Number(el.dataset.arg);
+      ctx.ui.open = { ...ctx.ui.open, checks:true }; ctx.ui.checkFilter = 'all';
+      ctx.ui.checkLimit = Math.max(ctx.ui.checkLimit || 50, Math.ceil(n/50)*50); ctx.ui.check = n;
+      ctx.rerender();
+      requestAnimationFrame(() => { const target=document.querySelector(`[data-check-row="${n}"] .check-compare`); if(target) { target.focus({preventScroll:true}); glideTo(target,{top:ctx.phone?76:96,bar:'.cr-save'}); } });
+    },
     'check-play': (el, ev, ctx) => { const { book } = current(ctx); if (book) { const job = details.get(book.id) || book.job; playCheck(job, el.dataset.arg, checksOf(job, { preview: job.recovery_acceptance_preview, form: ctx.ui.accept?.[book.id] })).catch(error => reportError(error, 'Couldn’t play this check')); } },
     'marker-play': (el, ev, ctx) => {
       const { book } = current(ctx);

@@ -1,5 +1,14 @@
 # ChapterKeeparr project context
 
+## Evidence-backed review and readable changes — 2026-10-20
+
+Jeremy approved original audio plus validated explicit published matches for the save minimum. The new pure metadata policy checks source binding, stable broad audio anchors, precise duration agreement, unique near-boundary timing and order. Original speech evidence stays separate; names/keep/remove never add credit, and all original markers remain in the denominator. The server recomputes the score and records both evidence categories in the receipt. Duplicate identities/numbers, inversions, title conflicts and interior unassigned numbered sections produce linked review warnings with part-aware numbering. Existing publication, gap consent, source fingerprint, original backup, preserved times and unchanged-audio checks remain.
+
+Existing/Proposed boxes now use balanced wrapping columns with equal-height outlines in both review sections. Unselected options stay empty. The dense Edition/Your file strips are replaced with a bounded Changes at a glance comparison list and real change/removal/kept/open counts; links open relevant rows or all Changed checks on desktop and phones. Shell v15 includes the new pure scoring module. No new model, dependency, thread or per-choice network request is introduced.
+
+Evidence tokens now bind the normalized reviewed draft and policy version. Previously saved local choices/consent must be selected again once after this upgrade; cached audio evidence can be reused. Canonical normalization itself stays token-stable during finalization, while source/evidence changes invalidate approval. Local validation and limitations are recorded in VALIDATION.md. Actual Bedlam evidence replay was read-only and used the earlier exported report, not the latest deployed 72/78 scan. No Unraid image, real audiobook or deployed job was changed. Jeremy retains image workflow/release control.
+
+
 ## Deterministic accessibility release gate — 2026-10-20
 
 GitHub runs 19/20 used the same 3f57161 commit; 19 failed a contrast scan and 20 succeeded. Runs 16, 10 and 9 show the same Activity-card/resize contrast race. The earlier run 13 scroll baseline is a separate corrected issue. Image jobs are gated by tests, so a failed test publishes no image.

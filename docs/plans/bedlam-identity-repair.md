@@ -74,3 +74,10 @@ A successful run prints its verified file list. Attach that archive for audio re
 - [Audnexus US chapter metadata](https://api.audnex.us/books/B0CDXWSS5D/chapters?region=us).
 - [Audnexus US recording metadata](https://api.audnex.us/books/B0CDXWSS5D?region=us).
 - Current source and tests in this branch; prior catalog responses/reproductions remain in the development workspace's `chapterkeeparr-bedlam-investigation` folder.
+
+
+## Approved evidence-backed review follow-up — 2026-10-20
+
+The save minimum may now count explicit, unique catalog selections backed by strict whole-recording timing evidence, while preserving original audio support separately. Eligibility requires a complete SHA-256-bound scan, at least six stable audio anchors spanning half the recording, <=0.7 s offset spread, precise total durations within 2 s, <=2 s residual and >=10 s advantage over competing sections/local markers. Combined decisions must retain six anchors and pass order/number checks. Renaming, keeping, removing and overridden order never add credit. This conservative rule may leave different or edited editions below the minimum; it is not a probability of complete audio.
+
+Read-only replay of the earlier v2 exported report under the current semantic normalization produces 67/78 original audio matches; all eleven unresolved boundaries have unique eligible selections and hypothetical explicit choices yield 78/78 evidence-backed matches with no sequence warnings. This is not the user's newer deployed 72/78 scan, fresh full-book listening, a publication or a source-file modification. Browser tests use a separate generated 8/10 -> 10/10 fixture. Audio evidence and all final source/backup/audio guards remain required. Policy tokens change once on upgrade, so reapply decisions/consent against the current preview; no new ASR is required solely for scoring.

@@ -1,12 +1,14 @@
 import { reviewModel, markerDecisions, remainingSections } from './chapter-review.js';
+import { assessMatches } from './review-quality.js';
 
 // Visibility is a preference; publication still requires the server's fingerprint checks.
 export function acceptanceState(preview, form = {}, { connected = true, authNeeded = false } = {}) {
   const minimum = Number(form.min ?? preview?.default_minimum_percent);
+  const percent = preview?.quality_policy && preview.markers ? assessMatches(preview, form).validated_percent : preview?.supported_percent;
   let problem = '';
   if (!preview?.ready || !preview.token) problem = 'Load a current, complete draft before saving.';
   else if (!Number.isFinite(minimum) || minimum < 1 || minimum > 100) problem = 'Enter a minimum between 1 and 100%.';
-  else if (!Number.isFinite(preview.supported_percent) || preview.supported_percent + 1e-9 < minimum) problem = `${preview.supported_percent?.toFixed(1) ?? 'Unknown'}% identified; the selected minimum is ${minimum}%. Review the unresolved chapters before deciding.`;
+  else if (!Number.isFinite(percent) || percent + 1e-9 < minimum) problem = `${percent?.toFixed(1) ?? 'Unknown'}% evidence-backed matches; the selected minimum is ${minimum}%. Review the unresolved chapters before deciding.`;
   else if (Array.isArray(preview.markers)) problem = chapterProblem(preview, form);
   else if ((preview.sections || []).some(s => !(form.sections || []).includes(s.id))) problem = 'Confirm every section you accept as optional.';
   else if (preview.unresolved_markers?.length && !form.preserve) problem = 'Confirm that unidentified markers keep their names and times.';

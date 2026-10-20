@@ -25,6 +25,16 @@ export function iconButton({ icon: ic, label, act, arg, cls = 'icb', disabled = 
   return html`<button type="button"${attrs({ class: cls, 'aria-label': label, title: disabled && disabledReason ? disabledReason : label, 'data-act': act, 'data-arg': arg, disabled, ...extra })}>${icon(ic, size)}</button>`;
 }
 
+/** Shared two-column chapter comparison, including narrow phone panels. */
+export function titleComparison({ existing, proposed, note = '' }) {
+  return html`<span class="title-pair"><span class="pair-cell"><span class="meta">Existing</span><strong>${existing}</strong></span><span class="pair-cell"><span class="meta">Proposed</span><strong data-check-proposed>${proposed}</strong>${note ? html`<span class="meta pair-note">${note}</span>` : ''}</span></span>`;
+}
+
+export function chapterWarnings(issues) {
+  if (!issues?.length) return '';
+  return html`<section class="chapter-warnings col gap8" aria-label="Chapter order warnings"><strong>${issues.length} chapter-order ${issues.length === 1 ? 'warning' : 'warnings'}</strong>${issues.slice(0,5).map(issue => button({label:issue.message,icon:'alert',iconEnd:'chevronDown',act:'chapter-warning',arg:issue.indexes.at(-1),cls:'chapter-warning-link'}))}${issues.length>5 ? button({label:'View all flagged chapters',act:'chapter-warning',arg:issues[5].indexes.at(-1)}) : ''}</section>`;
+}
+
 /**
  * A button that opens a short list of choices below it (search-style drop-down, SEARCH §edition).
  * Open state lives in the screen's ui.menu; main.js closes it on pick, outside click and Esc.

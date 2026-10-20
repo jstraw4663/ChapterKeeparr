@@ -4,7 +4,7 @@
 
 import { html, clock, bool } from '../format.js';
 import { reportOf } from '../status.js';
-import { spotButton, ldot, button, segmented } from '../ui.js';
+import { spotButton, ldot, button, segmented, titleComparison } from '../ui.js';
 import { chapterTimeline, hms } from '../chapter-review.js';
 import * as audio from '../audio.js';
 
@@ -61,17 +61,16 @@ export function checkRows(job, rows, ctx) {
       <div class="check-list" role="list" aria-label="Chapter title comparison">
       ${visible.slice(0, limit).map(r => {
         const open = ctx.ui.check === r.n;
-        const label = r.manual ? 'Your decision' : r.conflict ? 'Conflicting match' : r.reviewing ? 'Reviewing match' : r.proposal ? 'Suggested' : r.passed ? 'Audio match' : 'Needs review';
+        const label = r.issues?.length ? 'Sequence warning' : r.validated ? 'Validated choice' : r.manual ? 'Your decision' : r.conflict ? 'Conflicting match' : r.reviewing ? 'Reviewing match' : r.proposal ? 'Suggested' : r.passed ? 'Audio match' : 'Needs review';
         return html`<div class="checkrow" data-check-row="${r.n}" data-key="chapter-check-${r.n}" role="listitem"><div class="check-entry">
           <button type="button" class="crow check-compare" data-act="check-open" data-arg="${r.n}" aria-expanded="${bool(open)}">
             <span class="meta tabular">${hms(r.seconds)}</span>
-            <span class="check-title"><span class="meta check-title-label">Existing</span><strong>${r.original}</strong></span>
-            <span class="check-title"><span class="meta check-title-label">Proposed</span><strong data-check-proposed>${r.proposal || r.planned}</strong>${r.proposal ? html`<span class="meta check-proposal-note">Not selected</span>` : r.needsAttention && !r.reviewing ? html`<span class="meta check-proposal-note">Original kept until you decide</span>` : ''}</span>
+            ${titleComparison({existing:r.original, proposed:r.proposal || r.planned, note:r.proposal ? 'Not selected' : r.validated ? 'Timing and order checked' : r.needsAttention && !r.manual && !r.reviewing ? 'Original kept until you decide' : ''})}
             <span class="pill sm ${r.conflict || r.needsAttention ? 'tone-warn' : r.manual ? 'tone-muted' : r.passed ? 'tone-ok' : 'tone-muted'}">${label}</span>
           </button>
           <div class="check-actions">${spotButton({ playing: now?.key === `chk:${job.id}:${r.n}`, label: `${r.name} at ${hms(r.seconds)}`, act: 'check-play', arg: r.n, cls: 'playbtn', disabled: !r.excerpt, disabledReason: 'No saved audio for this check' })}
           ${ctx.editMatches ? button({ label: 'Change', act: 'cr-edit-match', arg: `m${r.n}`, size: 'sm', disabled: ctx.reviewBusy, extra: { 'aria-label': `Change match at ${clock(r.seconds)}` } }) : ''}</div>
-        </div>${open ? html`<p class="opened transcript">${r.transcript || 'No transcript was saved for this check.'}${r.reason ? html` · ${r.reason}` : ''}</p>` : ''}</div>`;
+        </div>${r.issues?.length ? html`<div class="check-issues">${r.issues.map(issue=>html`<p class="meta warn-text">${issue.message}</p>`)}</div>` : ''}${open ? html`<p class="opened transcript">${r.transcript || 'No transcript was saved for this check.'}${r.reason ? html` · ${r.reason}` : ''}</p>` : ''}</div>`;
       })}</div>
       ${!visible.length ? html`<p class="meta">No chapters match this filter.</p>` : ''}
       ${visible.length > limit ? button({ label: `Show more chapters (${visible.length-limit} left)`, act: 'chapter-check-more' }) : ''}

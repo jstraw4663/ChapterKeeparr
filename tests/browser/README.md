@@ -15,6 +15,7 @@ In another terminal:
 python tests/browser/ui_regression.py --output /tmp/ck-ui-results
 python tests/browser/reconciled_workflows.py --output /tmp/ck-ui-results/reconciled
 python tests/browser/bedlam_workflow.py --output /tmp/ck-ui-results/bedlam
+python tests/browser/match_quality.py --output /tmp/ck-ui-results/quality
 ```
 
 Use `--chromium /usr/bin/chromium` for an installed system browser, `--interactions-only` while iterating on a workflow, and `--axe /path/to/axe.min.js` for WCAG 2.2 AA checks at 390 and 1024 px. CI supplies the pinned axe-core 4.10.3 script and checks its SHA-256 before use.
@@ -44,3 +45,6 @@ python tests/browser/accessibility_stability.py --axe /tmp/axe.min.js --output /
 Each scan now stores its complete `*-axe.json` report, including selectors, contrast data and failure summaries. Unexpected failures also save `*-axe-failure.png` to the existing `ui-regression-results` workflow artifact. Files named `expected-negative-*` and `raw-fade-*` are deliberate negative controls; their recorded violations are expected when the script succeeds. Other violations fail the job immediately.
 
 If the test job fails, the dependent image job is skipped and no replacement image is published. Compare the failed/passed run's commit and inspect the first assertion/report, rather than treating repeated workflow runs as a repair. Earlier failures may have a different cause (for example the already-corrected Playwright actionability-scroll baseline).
+
+
+The synthetic match-quality workflow runs both themes at 320/390/820/1440 px with live motion. It checks 80% original audio -> 100% validated coverage after two eligible choices, Undo, arbitrary-name non-credit, consent/save readiness, empty unselected radios, equal-height wrapping title pairs, change-summary counts and links/Changed filtering, and sequence-warning navigation. All eight contexts receive axe scans when `--axe` is supplied. Only generated fixtures are used and writes are intercepted. The Python suite separately tests server/client scoring parity and a real generated-media save at the combined minimum, with original backups and unchanged AAC. The frontend suite now imports/renders the view as well as parsing JavaScript; ten JS test files run in CI.

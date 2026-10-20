@@ -6,7 +6,7 @@ import os
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from . import engine, flow, inspection, recovery
+from . import engine, flow, inspection, recovery, review_quality
 
 
 def references(report):
@@ -20,7 +20,7 @@ def references(report):
 
 
 def token(report):
-    return recovery.digest([engine.SECTION_SEMANTICS_VERSION, recovery.ALGORITHM_VERSION, report.get('recovery_draft'), report.get('source_manifest'),
+    return recovery.digest([review_quality.VERSION, engine.SECTION_SEMANTICS_VERSION, recovery.ALGORITHM_VERSION, reviewed_draft(report), report.get('source_manifest'),
                             report.get('edition'), report.get('coverage_warnings'), references(report)])
 
 
@@ -40,6 +40,8 @@ def preview(report, default=95):
     if remote:
         recovery.finalize_draft(draft, remote)
     supported = sum(m.get('status') == 'supported' for m in markers)
+    eligible, quality_reason = review_quality.eligibility(draft, remote)
+    section_meta, identities = review_quality.metadata(remote, markers)
     return {'token': token(report), 'supported_percent': 100*supported/len(markers),
             'default_minimum_percent': default, 'supported': supported, 'total': len(markers),
             'ready': bool(draft.get('complete') and not draft.get('invalidated') and remote),
@@ -49,9 +51,12 @@ def preview(report, default=95):
                          'reference_id': str(m['reference_start']) if m.get('status') == 'supported' else None,
                          'transcript': m.get('transcript') or '',
                          'reason': m.get('reason') or '', 'conflict': bool(m.get('prior_match') and m.get('status') != 'supported'),
+                         'eligible_reference_ids': eligible[i],
                          'removable': i > 0} for i,m in enumerate(markers)],
             'sections': [{'id': str(c['start']), 'title': c['title']} for c in draft.get('missing_sections',[])],
-            'published_sections': [{'id': str(c['start']), 'title': c['title']} for c in remote],
+            'published_sections': section_meta,
+            'quality_policy': {'version': review_quality.VERSION, 'minimum_audio_anchors': 6,
+                               'identities': identities, 'reason': quality_reason},
             'unresolved_markers': [{'index': i+1, 'title': m.get('old_title') or 'Untitled marker',
                                     'seconds': m['old_seconds']} for i,m in enumerate(markers) if m.get('status')!='supported'],
             'coverage_warnings': report.get('coverage_warnings') or [],
@@ -67,9 +72,10 @@ def validate(report, answer):
     minimum = answer.get('minimum_percent')
     if isinstance(minimum,bool) or not isinstance(minimum,(int,float)) or not math.isfinite(minimum) or not 1 <= minimum <= 100:
         raise engine.NeedsReview('Minimum supported markers must be between 1 and 100 percent.')
-    if not info['supported'] or info['supported_percent'] + 1e-9 < minimum:
-        raise engine.NeedsReview('Supported marker coverage is below the selected minimum.')
     assignments = manual_assignments(report, answer)
+    quality = review_quality.assess(info, answer.get('marker_decisions'))
+    if not info['supported'] or quality['validated_percent'] + 1e-9 < minimum:
+        raise engine.NeedsReview('Evidence-backed marker coverage is below the selected minimum. A selected title must pass timing, uniqueness and order checks to add credit.')
     remaining = [s for s in info['sections'] if s['id'] not in assignments]
     if answer.get('marker_decisions') is not None:
         by_index = {d['index']: d for d in answer['marker_decisions']}
@@ -108,7 +114,7 @@ def validate(report, answer):
                 raise engine.NeedsReview('Supported chapter identities are out of published order.')
             previous_reference = m['reference_start']
             seen.add(m['reference_start'])
-    return {**info, 'sections': remaining, 'manual_assignments': assignments}
+    return {**info, 'sections': remaining, 'manual_assignments': assignments, 'match_quality': quality}
 
 
 def manual_assignments(report, answer):
@@ -198,6 +204,8 @@ def finalize(args, prior, answer, folder):
                                     'accepted_at':datetime.now(timezone.utc).isoformat(),
                                     'sections':info['sections'], 'unresolved_markers':info['unresolved_markers']}
     report['recovery_acceptance']['manual_assignments'] = info['manual_assignments']
+    report['recovery_acceptance']['match_quality'] = info['match_quality']
+    report['recovery_acceptance']['minimum_metric'] = 'evidence_backed_markers'
     target = args.target
     root = target if target.is_dir() else target.parent
     fd = engine.open_book_lock(root)

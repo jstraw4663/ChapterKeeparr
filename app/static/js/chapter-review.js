@@ -4,6 +4,7 @@
 // missing chapters saved without their own marker go in the optional sections.
 
 import { publishedSeconds, clearRecommendations } from './review-drafts.js';
+import { assessMatches } from './review-quality.js';
 
 export const OUT_OF_ORDER = 'Outside the surrounding chapter order';
 const sectionsOf = p => p.published_sections || p.sections;
@@ -332,7 +333,8 @@ export function reviewModel(p, f) {
   const minText = f.min ?? p.default_minimum_percent;
   const min = Number(minText);
   const validMin = minText !== '' && Number.isFinite(min) && min >= 1 && min <= 100;
-  const pct = Number(p.supported_percent) || 0;
+  const quality = assessMatches(p, f);
+  const pct = Number(quality.validated_percent) || 0;
   const blocked = validMin && pct + 1e-9 < min;
   const gap = Boolean(f.gap);
   const canSave = need === 0 && validMin && !blocked && confirmed > 0 && gap;
@@ -342,7 +344,7 @@ export function reviewModel(p, f) {
         : !gap ? 'Tick the box to save' : 'Ready to save';
   const unit = 100 / Math.max(1, total + missing.length);
   return {
-    items, decided, need, confirmed, untouchedConfirmed, total, pct, min, validMin, blocked, gap, canSave, status,
+    items, decided, need, confirmed, untouchedConfirmed, total, pct, quality, min, validMin, blocked, gap, canSave, status,
     recs: recs.length >= 2 ? recs : [],
     lowerTo: Math.max(1, Math.floor(pct + 1e-9)),
     bar: { ok: untouchedConfirmed * unit, done: decided * unit, need: need * unit },
@@ -354,10 +356,12 @@ export function reviewModel(p, f) {
 
 /** Whole-file preview, in timestamp order, from the exact publication decisions. */
 export function chapterTimeline(p, f = {}) {
+  const quality = assessMatches(p, f);
   const sections = new Map(sectionsOf(p).map(s => [s.id, s]));
   const decisions = new Map(markerDecisions(p, f).map(d => [d.index, d]));
   const proposals = new Map(recommendations(p, f).map(r => [r.index, sections.get(r.section_id)?.title]));
   return p.markers.map(m => {
+    const issues = quality.warnings.filter(w => w.indexes.includes(m.index));
     const d = decisions.get(m.index), manual = Boolean(f.decisions?.[m.index]);
     const reviewing = Boolean(f.editingMatches?.[m.index] && !manual);
     const proposal = !manual && !m.supported ? proposals.get(m.index) || null : null;
@@ -367,7 +371,7 @@ export function chapterTimeline(p, f = {}) {
           : d.action === 'suggested' ? m.suggested_title || m.title : m.title;
     return { n: m.index, name: planned || m.title || 'Untitled marker', original: m.title || 'Untitled marker',
       planned: planned || 'No proposal', seconds: m.seconds, passed: Boolean(m.supported && !manual),
-      proposal, reviewing, manual, changed: d.action === 'remove' || planned !== m.title, needsAttention: Boolean((!m.supported || m.conflict || reviewing) && !manual),
+      proposal, reviewing, manual, issues, validated: quality.qualified_indexes.includes(m.index), changed: d.action === 'remove' || planned !== m.title, needsAttention: issues.length > 0 || Boolean((!m.supported || m.conflict || reviewing) && !manual),
       conflict: Boolean(m.conflict && !manual), pending: false, draft: true,
       transcript: m.transcript || '', excerpt: m.excerpt || null, reason: m.reason || '' };
   }).sort((a, b) => a.seconds-b.seconds || a.n-b.n);
