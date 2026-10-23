@@ -340,8 +340,8 @@ export function reviewModel(p, f) {
   const pct = Number(p.supported_percent) || 0;
   const blocked = validMin && pct + 1e-9 < min;
   const gap = Boolean(f.gap);
-  const canSave = need === 0 && validMin && !blocked && confirmed > 0 && gap;
-  const status = blocked ? 'Below your minimum'
+  const canSave = p.ready !== false && need === 0 && validMin && !blocked && confirmed > 0 && gap;
+  const status = p.ready === false ? 'Draft is not ready; run the checks again' : !confirmed ? 'No markers identified by audio' : blocked ? 'Below your minimum'
     : !validMin ? 'Set a minimum from 1 to 100%'
       : need ? `${need} left to decide`
         : !gap ? 'Tick the box to save' : 'Ready to save';
@@ -372,4 +372,73 @@ export function nextOpen(items, fromId) {
   if (!open.length) return null;
   const at = items.findIndex(i => i.id === fromId);
   return open.find(i => items.indexOf(i) > at && i.id !== fromId) || open.find(i => i.id !== fromId) || null;
+}
+
+
+/** A focused editor reuses the existing candidate/assignment rules without discarding a saved choice. */
+export function editorItem(p, f, id) {
+  const clean = clearChoice(p, f, id);
+  const ctx = plan(p, clean);
+  ctx.recs = new Map(recommendations(p, clean, ctx).map(r => [r.index, r.section_id]));
+  ctx.claimed = new Set();
+  if (id?.startsWith('s')) {
+    const section = sectionsOf(p).find(s => s.id === id.slice(1));
+    return section ? missingItem(p, clean, section, ctx) : null;
+  }
+  const marker = p.markers.find(m => `m${m.index}` === id);
+  if (!marker) return null;
+  const item = markerItem(p, clean, marker, ctx);
+  if (marker.supported) {
+    item.kind = 'confirmed'; item.showKeep = true; item.canRemove = Boolean(marker.removable);
+    item.options.unshift({ key: 'restore', label: marker.suggested_title || marker.title,
+      sub: 'Confirmed by audio · restore this match', choice: { type: 'restore', index: marker.index } });
+  }
+  return item;
+}
+KIND.confirmed = ['Confirmed by audio', 'ok'];
+
+export function workspaceModel(p, f) {
+  const model = reviewModel(p, f), ctx = plan(p, f);
+  const open = new Map(model.items.map(i => [i.id, i]));
+  const rows = ctx.markers.map(m => {
+    const id = `m${m.index}`, item = open.get(id), d = f.decisions?.[m.index];
+    const pending = !m.supported && !isDecided(d);
+    const suggested = item?.options.find(o => o.rec);
+    const after = d?.action === 'remove' ? 'Removed' : pending ? (suggested ? `${suggested.label}?` : 'Not decided') : savedName(ctx, m);
+    return { id, seconds: m.seconds, original: m.title, after, pending, review: !m.supported,
+      status: isDecided(d) ? 'By you' : m.supported ? 'Audio' : 'Needs you',
+      tone: isDecided(d) ? 'done' : m.supported ? 'ok' : 'warn', marker: m, removed: d?.action === 'remove' };
+  });
+  rows.push(...model.items.filter(i => i.type === 'missing').map(i => ({ ...i, original: '', after: i.decided ? i.note : i.title + ' · not decided',
+    pending: !i.decided, review: true, status: i.decided ? 'By you' : 'Missing', tone: i.decided ? 'done' : 'bad' })));
+  rows.sort((a,b) => a.seconds-b.seconds || a.id.localeCompare(b.id));
+  const focused = rows.find(r => r.id === f.focus) || rows.find(r => r.pending) || rows[0];
+  return { ...model, rows, focused, attention: model.need + Number(model.blocked || !model.validMin || p.ready === false || !model.confirmed) };
+}
+export const REVIEW_FILTERS = [ ['need','Needs you'], ['changing','Changing'], ['unchanged','Unchanged'], ['all','All'] ];
+export function matchesFilter(row, filter) {
+  return filter === 'need' ? row.review : filter === 'changing' ? !row.pending && row.after !== row.original : filter === 'unchanged' ? !row.pending && row.after === row.original : true;
+}
+export function foldRows(rows, filter, expanded = {}) {
+  const result = []; let run = [];
+  const flush = () => { if (!run.length) return; const id = run[0].id;
+    result.push({ fold: true, id, rows: run, expanded: Boolean(expanded[id]) });
+    if (expanded[id]) result.push(...run); run = []; };
+  for (const row of rows) { if (matchesFilter(row,filter)) { flush(); result.push(row); } else run.push(row); }
+  flush(); return result;
+}
+export function clusterPins(rows, duration, threshold) {
+  if (!(duration > 0)) return [];
+  const clusters = [];
+  for (const row of rows.filter(r => r.pending)) {
+    const position = row.seconds / duration * 100, last = clusters.at(-1);
+    if (last && position-last.position < threshold) last.rows.push(row);
+    else clusters.push({ position, rows: [row] });
+  }
+  return clusters.map(c => ({ ...c, position: Math.min(97, Math.max(3, c.position)) }));
+}
+export function cycleItem(rows, id, delta = 1) {
+  if (!rows.length) return null;
+  const at = rows.findIndex(r => r.id === id);
+  return rows[(at + delta + rows.length) % rows.length];
 }

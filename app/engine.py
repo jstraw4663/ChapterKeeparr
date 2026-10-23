@@ -428,13 +428,15 @@ class LocalSpeech:
     def transcribe(self, wav):
         if self.backend == 'mlx':
             value = self.engine.transcribe(str(wav), path_or_hf_repo=self.model, language='en',
-                                           temperature=0, condition_on_previous_text=False, verbose=None)
+                                           temperature=0, condition_on_previous_text=False, verbose=None, word_timestamps=True)
             return {'text': value['text'], 'segments': [dict(start=s['start'], end=s['end'], text=s['text'],
-                        avg_logprob=finite_score(s.get('avg_logprob', -99), -99), no_speech_prob=finite_score(s.get('no_speech_prob', 1), 1)) for s in value['segments']]}
+                        words=s.get('words', []), avg_logprob=finite_score(s.get('avg_logprob', -99), -99), no_speech_prob=finite_score(s.get('no_speech_prob', 1), 1)) for s in value['segments']]}
         segments, info = self.engine.transcribe(str(wav), language='en', beam_size=5, temperature=0,
-                                                condition_on_previous_text=False, vad_filter=False)
+                                                condition_on_previous_text=False, vad_filter=False, word_timestamps=True)
         values = [dict(start=s.start, end=s.end, text=s.text, avg_logprob=finite_score(s.avg_logprob, -99),
-                       no_speech_prob=finite_score(s.no_speech_prob, 1)) for s in segments]
+                       no_speech_prob=finite_score(s.no_speech_prob, 1),
+                       words=[dict(word=w.word, start=w.start, end=w.end, probability=w.probability)
+                              for w in (s.words or [])]) for s in segments]
         return {'text': ' '.join(s['text'] for s in values), 'segments': values}
 
 
@@ -1026,6 +1028,11 @@ def inspect_identity(source, root, args, questions, report):
     data = probe(args.ffprobe, source)
     report['source_duration_seconds'] = duration(data)
     t = tags(data)
+    embedded_ids = sorted(set(asin_from_tags(t)))
+    report['embedded_tags'] = {'title': t.get('album') or t.get('title'),
+                               'author': t.get('artist') or t.get('author'),
+                               'narrator': t.get('narratedby') or t.get('narrator') or t.get('composer'),
+                               'asin': embedded_ids[0] if len(embedded_ids) == 1 else None}
     title = args.title or t.get('album') or t.get('title')
     author = args.author or t.get('artist') or t.get('author')
     narrator = args.narrator or t.get('narratedby') or t.get('narrator') or t.get('composer')

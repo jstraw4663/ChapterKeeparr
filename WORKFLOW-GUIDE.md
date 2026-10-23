@@ -1,5 +1,11 @@
 # ChapterKeeparr workflow guide
 
+## Review marker decisions (2026-10-01)
+
+The draft editor defaults to identified names for supported markers and original names for unidentified markers. At each existing marker, listen to up to 15 seconds of saved evidence, then keep the original name, use the identified name, enter a name, or remove the navigation marker. Removing requires confirmation and leaves all audio under the preceding retained marker. The first marker cannot be removed; retained timestamps never move. The summary shows names changed, markers unchanged and markers removed before saving.
+
+Unlocated published sections are a separate list. Accepting one means saving without a confirmed match, not deleting audio or adding a marker. No preview is offered where a location is unknown. The minimum percentage still measures recognition across the original markers; edits cannot improve that score. Content-gap acknowledgment and source/output validation remain required. Decisions are recorded with the accepted plan and existing M4Bs are backed up.
+
 ChapterKeeparr checks each audiobook through five steps: **Inspect → Match → Align → Verify → Save**. The report shows what evidence each step found. If a required check needs review, the normal workflow pauses without committing output. An eligible recovery draft can be finalized only after explicit, per-book acceptance and a fresh validation pass.
 
 ## The five steps

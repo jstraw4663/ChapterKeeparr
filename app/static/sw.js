@@ -1,6 +1,8 @@
-const CACHE = 'chapterkeeparr-shell-v28';
+const CACHE = 'chapterkeeparr-shell-v31-review';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
+  '/static/fonts/figtree-latin.woff2',
+  '/static/fonts/figtree-latin-ext.woff2',
   '/',
   '/manifest.webmanifest',
   '/static/icon-180.png',

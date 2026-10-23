@@ -175,3 +175,65 @@ class WiderRetryTests(unittest.TestCase):
         draft,_,_=self.run_scan([self.text('Chapter 1.'),bad,self.text('Chapter 2.',8)])
         self.assertEqual(draft['markers'][1]['status'],'unresolved')
         self.assertEqual(draft['markers'][1]['confidence'],'ambiguous')
+
+class EmbeddedHeadingTests(unittest.TestCase):
+    def sample(self, number='61'):
+        text = 'oh shit chapter ' + number + ' note added'
+        words = [dict(word=w, start=t, end=t+.2, probability=.95)
+                 for w,t in [('oh',0),('shit',.3),('chapter',8), (number,8.3),('note',8.6),('added',8.9)]]
+        return {'text':text, 'segments':[dict(text=text, start=0, end=10,
+                avg_logprob=-.2, no_speech_prob=.01, words=words)]}
+
+    def identify(self, result, remote=None):
+        return recovery.identify_marker(result,100,92,remote or [dict(title='Chapter 61',start=10)])
+
+    def test_embedded_heading_uses_word_time_not_segment_start(self):
+        result=self.identify(self.sample())
+        self.assertEqual(result['title'],'Chapter 61')
+        self.assertEqual(result['status'],'supported')
+
+    def test_missing_timing_pause_confidence_or_nearby_heading_stays_unresolved(self):
+        for mutation in ('no_words','no_pause','low_word','low_segment','late','nan','reference'):
+            with self.subTest(mutation=mutation):
+                value=self.sample();s=value['segments'][0];w=s['words']
+                if mutation=='no_words':s.pop('words')
+                if mutation=='no_pause':w[1]['end']=7.9
+                if mutation=='low_word':w[3]['probability']=.2
+                if mutation=='low_segment':s['avg_logprob']=-2
+                if mutation=='late':
+                    for item in w[2:]:item['start']+=20;item['end']+=20
+                if mutation=='nan':w[2]['start']=float('nan')
+                if mutation=='reference':w[1]['word']='in'
+                self.assertEqual(self.identify(value)['status'],'unresolved')
+
+    def test_words_conflicts_and_repeated_published_number(self):
+        value=self.sample('sixty')
+        value['segments'][0]['words'].insert(4,dict(word='one',start=8.51,end=8.59,probability=.95))
+        self.assertEqual(self.identify(value)['title'],'Chapter 61')
+        value['segments']+=self.sample('62')['segments']
+        self.assertEqual(self.identify(value)['status'],'unresolved')
+        self.assertEqual(self.identify(self.sample(),[dict(title='Chapter 61',start=10),dict(title='Chapter 61',start=20)])['status'],'unresolved')
+
+    def test_decimal_and_untimed_text_not_promoted(self):
+        self.assertEqual(self.identify(self.sample('61.5'))['status'],'unresolved')
+        value=self.sample();value['segments'][0]['words'][3].pop('end')
+        self.assertEqual(self.identify(value)['status'],'unresolved')
+
+class WordEvidenceAdapterTests(unittest.TestCase):
+    def test_both_backends_request_and_preserve_word_alignment(self):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        word=dict(word='chapter',start=1.,end=1.3,probability=.95)
+        for backend in ('mlx','faster-whisper'):
+            with self.subTest(backend=backend):
+                speech=engine.LocalSpeech.__new__(engine.LocalSpeech)
+                speech.backend=backend;speech.model='test';speech.engine=Mock()
+                segment=dict(start=0.,end=2.,text='chapter',avg_logprob=-.2,no_speech_prob=.01,words=[word])
+                if backend=='mlx':
+                    speech.engine.transcribe.return_value=dict(text='chapter',segments=[segment])
+                else:
+                    segment['words']=[SimpleNamespace(**word)]
+                    speech.engine.transcribe.return_value=([SimpleNamespace(**segment)],None)
+                result=speech.transcribe('generated.wav')
+                self.assertTrue(speech.engine.transcribe.call_args.kwargs['word_timestamps'])
+                self.assertEqual(result['segments'][0]['words'],[word])

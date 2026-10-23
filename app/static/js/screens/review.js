@@ -13,9 +13,9 @@ import { notify } from '../notify.js';
 import { historyFor } from '../history.js';
 import { readLog } from '../prefs.js';
 import { loadDraft, saveDraft, clearDraft, acceptedDraft, publishedSeconds } from '../review-drafts.js';
-import { markerDecisions, remainingSections, assignmentIssue, recommendations, reviewModel, applyChoice, clearChoice, nextOpen, timelineEnd, hms, percentText, KIND } from '../chapter-review.js';
+import { workspaceModel, editorItem, REVIEW_FILTERS, matchesFilter, foldRows, clusterPins, cycleItem, markerDecisions, remainingSections, assignmentIssue, recommendations, reviewModel, applyChoice, clearChoice, nextOpen, timelineEnd, hms, percentText, KIND } from '../chapter-review.js';
 import { glideTo, glideToTop } from '../scroll.js';
-import { confirmSheet } from '../overlay.js';
+import { confirmSheet, open as openOverlay } from '../overlay.js';
 import { checksOf, checkTimeline, checkRows, playCheck, durationOf, gatesDetail, technical, alignmentPlot, bestDiagnostics } from './evidence.js';
 import { serverButton, offline, OFFLINE_REASON, reportError, cancelActions, cancelJob } from './common.js';
 
@@ -27,7 +27,7 @@ let selectedBook = loadDraft('selection')?.id;
 function persist(book, ctx) {
   const form = forms.get(book.id) || {};
   const fields = Object.fromEntries(['title', 'author', 'narrator', 'asin', 'region', 'query'].map(k => [k, form[k]]));
-  const saved = saveDraft(book.id, { accept: ctx.ui.accept?.[book.id] || loadDraft(book.id)?.accept, fields });
+  const saved = saveDraft(book.id, { accept: ctx.ui.accept?.[book.id] || loadDraft(book.id)?.accept, fields, path: ctx.ui.path?.[book.id] || loadDraft(book.id)?.path });
   ctx.ui.localDraftWarning = saved ? '' : 'Browser storage is unavailable. Edits are retained in this tab only; keep it open until you save.';
 }
 
@@ -56,7 +56,7 @@ const RESUME = {
 const nextRegion = code => { const codes = REGIONS.map(([c]) => c); return codes[(codes.indexOf(code) + 1) % codes.length]; };
 
 
-const waiting = () => state.books.filter(b => b.status.key === 'review').sort((a, b) => b.updatedAt - a.updatedAt);
+const waiting = () => state.books.filter(b => b.status.key === 'review' && (!sentBack.has(b.id) || b.updatedAt !== sentBack.get(b.id))).sort((a, b) => b.updatedAt - a.updatedAt);
 const categoryOf = job => job.workflow?.review_category || reportOf(job).review_reason?.category || 'identity';
 
 function formFor(book) {
@@ -66,6 +66,7 @@ function formFor(book) {
     forms.set(book.id, {
       title: answer.title || book.title, author: answer.author || book.author, narrator: answer.narrator || book.narrators,
       asin: answer.asin || book.asin, region: (answer.region || report.selected_recording?.region || 'us').toLowerCase(),
+      original: {title:answer.title || book.title,author:answer.author || book.author,narrator:answer.narrator || book.narrators,asin:answer.asin || book.asin,region:(answer.region || report.selected_recording?.region || 'us').toLowerCase()},
       query: '', results: null, searching: false, message: '', note: '', selected: null, busy: false,
       ...(loadDraft(book.id)?.fields || {}),
     });
@@ -74,6 +75,8 @@ function formFor(book) {
 }
 
 function ensureLoaded(book, ctx) {
+  const old=details.get(book.id);
+  if(old && old.updated_at !== book.job.updated_at)details.delete(book.id);
   if (!details.has(book.id)) {
     details.set(book.id, null);
     jobDetail(book.id).then(job => { details.set(book.id, job); ctx.rerender(); }).catch(() => details.delete(book.id));
@@ -92,11 +95,11 @@ function header(book, list, idx, ctx) {
     ${iconButton({ icon: 'chevronUp', label: 'Previous book', act: 'prev', disabled: idx <= 0, cls: ctx.phone ? 'picon' : 'icb' })}
     ${iconButton({ icon: 'chevronDown', label: 'Next book', act: 'next', disabled: idx >= list.length - 1, cls: ctx.phone ? 'picon' : 'icb' })}`;
   if (ctx.phone) {
-    return html`<div class="back-head"><a class="textlink" href="#/review" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Review</a><div class="row" style="gap:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'phone-cancel', cls: 'picon', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
-      <div class="row gap14 page-pad">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
+    return html`<div class="back-head"><a class="textlink" href="#/review" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Review</a><div class="row" style="gap:0">${nav}${iconButton({icon:'more',label:'More for this book',act:'nr-more',cls:'picon'})}</div></div>
+      <div class="row gap14 page-pad">${cover(book, { size: 56, radius: 8, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
   }
   const confirming = ctx.ui.confirm === `cancel:${book.id}`;
-  return html`<div class="revhead">${cover(book, { size: 132, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div><div class="row gap8" style="flex-shrink:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
+  return html`<div class="revhead">${cover(book, { size: 92, radius: 8, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div><div class="row gap8" style="flex-shrink:0">${nav}${menuButton({id:'nr-book-menu',label:'More for this book',icon:'more',open:ctx.ui.menu==='nr-book-menu',items:[{label:'Details from the server',act:'nr-server'},{label:'Cancel job…',act:'desk-cancel'}]})}</div></div>
     ${confirming ? confirmRow({ question: 'Cancel this job? Source files stay put.', keepAct: 'confirm-keep', confirmAct: 'confirm-cancel', confirmLabel: 'Cancel job', arg: book.id }) : ''}`;
 }
 
@@ -129,7 +132,7 @@ function whatHappened(book, form, sit, ctx) {
       <span id="problem-${book.id}" style="font-size:17px;font-weight:750;letter-spacing:-.01em">${title}</span>
       <span style="font-size:15px;line-height:1.55">${said} Nothing was saved and your file hasn’t changed.</span>
       ${facts.length ? html`<dl class="facts">${facts.map(([k, v]) => html`<div><dt>${k}</dt><dd>${v}</dd></div>`)}</dl>` : ''}
-      <details class="tech more"><summary>Details from the server</summary><div class="col gap8">${more}</div></details>
+      <details class="tech more" id="nr-server-details"><summary>Details from the server</summary><div class="col gap8">${more}</div></details>
     </div></section>`;
 }
 
@@ -141,14 +144,14 @@ function nextSteps(book, form, sit, ctx) {
     options.push({ id: 'finalize', title: 'Review and save the draft', desc: `Review the ${p.supported} identified names, keep or edit existing names, and optionally remove navigation markers. Audio stays unchanged.`, body: finalizeBody(book, p, ctx) });
   }
   if (sit.category === 'chapters') {
-    options.push({ id: 'draft', title: sit.key === 'draft' ? 'Draft the chapters again' : 'Draft chapters from the audio', desc: 'For when this is the right edition but the chapter markers are off. ChapterKeeparr listens at each marker already in your file and drafts names. Your file isn’t changed.', body: draftBody(book, form) });
+    options.push({ id: 'draft', title: sit.key === 'draft' ? 'Draft the chapters again' : 'Draft chapters from the audio', desc: 'For when this is the right edition but the chapter markers are off. ChapterKeeparr listens at each marker already in your file and drafts names. Your file isn’t changed.', body: draftBody(book, form, ctx) });
   }
   if (sit.category === 'chapters' || sit.category === 'identity') {
     options.push({ id: 'edition', title: sit.category === 'identity' ? 'Choose the right edition' : 'Choose a different edition', desc: sit.category === 'identity' ? 'Search by title or ASIN, pick the edition you have, and the checks run again.' : 'If this isn’t the edition you have, pick the right one and the checks run again.', body: editionBody(book, form, ctx) });
   }
   options.push({ id: 'resume', title: 'Run the checks again', desc: RESUME[sit.category] || RESUME.other, body: html`<div>${serverButton({ label: 'Run checks again', kind: 'primary', act: 'resume', size: 'md' })}</div>` });
 
-  const chosen = ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : undefined);
+  const chosen = ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : loadDraft(book.id)?.path) ?? (ctx.route.query.has('match') ? 'edition' : undefined);
   const open = options.some(o => o.id === chosen) ? chosen : options[0].id;
   if (open !== 'finalize') phoneBars.delete(book.id);
   const heading = html`<h2 class="eyebrow" style="padding:0 4px">What to do next</h2>`;
@@ -156,45 +159,46 @@ function nextSteps(book, form, sit, ctx) {
     const [only] = options;
     return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="panel col gap12" style="padding:18px"><span class="meta" style="font-size:14px">${only.desc}</span>${only.body}</div></section>`;
   }
-  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}${choices({ label: 'What to do next', act: 'choose', open, items: options })}</section>`;
+  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="nr-tabs" role="tablist" aria-label="What to do next">${options.map(o => html`<button type="button" role="tab" id="nr-tab-${o.id}" aria-selected="${bool(open === o.id)}" aria-controls="nr-path" tabindex="${open === o.id ? 0 : -1}" data-act="choose" data-arg="${o.id}">${o.title}</button>`)}</div><div id="nr-path" role="tabpanel" aria-labelledby="nr-tab-${open}">${options.find(o => o.id === open).body}</div></section>`;
 }
 
-function draftBody(book, form) {
+function draftBody(book, form, ctx) {
   if (!form.asin) {
     return html`<p class="meta" style="font-size:14px">This needs the edition’s ASIN, and none is set yet. Choose the edition first.</p><div>${button({ label: 'Choose an edition', act: 'choose', arg: 'edition', size: 'md' })}</div>`;
   }
   return html`<p class="meta" style="font-size:14px">Uses ${form.asin} (${regionName(form.region)}). The book goes back to the queue for a few minutes and returns here with the draft for you to review.</p>
     ${form.message ? html`<p class="alert-bad" role="alert">${form.message}</p>` : ''}
-    <div>${serverButton({ label: form.busy ? 'Starting…' : 'Draft chapters', kind: 'primary', act: 'markers', size: 'md', disabled: form.busy, disabledReason: 'Working…' })}</div>`;
+    ${ctx.ui.redraftConfirm === book.id ? confirmRow({question:'Replace the current draft and your decisions?',keepAct:'nr-redraft-keep',confirmAct:'nr-redraft-confirm',confirmLabel:'Draft again'}) : ''}<div>${serverButton({ label: form.busy ? 'Starting…' : 'Draft chapters', kind: 'primary', act: 'markers', size: 'md', disabled: form.busy, disabledReason: 'Working…' })}</div>`;
 }
 
-function editionResults(form) {
+function editionResults(form, seconds) {
   if (form.searching) return html`<p class="meta" role="status">Searching editions…</p>`;
   if (!form.results) return '';
   if (!form.results.length) return html`<p class="meta" role="status">No editions found. Try another title, ASIN or region.</p>`;
   return html`<div class="edresults" role="list" aria-label="Edition results">${form.results.map((e, i) => html`<button type="button" class="edrow" role="listitem" data-act="pick-edition" data-arg="${i}" aria-pressed="${bool(form.selected === i)}">
     ${e.cover_url ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${e.cover_url}">` : html`<span class="cover" style="width:52px;height:52px;border-radius:8px"></span>`}
     <span class="col gap4"><span style="font-weight:700" class="clamp2">${e.title || 'Untitled edition'}</span><span class="meta ell">${(e.authors || []).map(a => a.name).join(', ') || 'Author unknown'}${e.narrators?.length ? ` · ${e.narrators.map(n => n.name).join(', ')}` : ''}</span><span class="meta">${[e.runtime_length_min ? `${Math.round(e.runtime_length_min).toLocaleString()} min` : '', e.publisher_name, e.language].filter(Boolean).join(' · ')}</span></span>
-    <span class="mono meta">${e.asin}</span></button>`)}</div>`;
+    <span class="mono meta">${e.asin}${e.runtime_length_min && seconds ? html`<br><span>${Math.round(Math.abs(e.runtime_length_min*60-seconds)/60)} min ${e.runtime_length_min*60 < seconds ? 'shorter' : 'longer'} · runtime comparison only</span>` : ''}</span></button>`)}</div>`;
 }
 
 function editionBody(book, form, ctx) {
+  const changed=Object.keys(form.original).some(k=>String(form[k]||'').trim()!==String(form.original[k]||'').trim());
   const seconds = sources.get(book.id);
-  const identity = reportOf(book.job).identity || {};
+  const identity = reportOf(book.job).embedded_tags || {};
   const embedded = identity.asin && identity.asin !== form.asin ? identity.asin : '';
   return html`<form class="col gap14" data-form="fix">
-    ${seconds ? html`<p class="meta" style="font-size:14px">Your file runs ${minutes(seconds)}. Pick the edition whose runtime matches.</p>` : ''}
+    ${seconds ? html`<p class="meta" style="font-size:14px">Your file runs ${minutes(seconds)}. Compare edition runtimes; similar length does not confirm the recording.</p>` : ''}
     <div class="row gap8">
       <div class="inputwrap grow"><label for="rv-find" class="sr">Search editions by title or ASIN</label><span class="icon">${icon('search', 18)}</span><input id="rv-find" class="input" type="search" style="height:48px;border-radius:14px" placeholder="${ctx.phone ? 'Search editions' : 'Search editions by title or ASIN'}" value="${form.query}" enterkeyhint="search" autocomplete="off"></div>
       ${menuButton({ id: 'rv-fill', label: 'Fill the search from this book', text: ctx.phone ? '' : 'Fill from', open: ctx.ui.menu === 'rv-fill', items: [
         { label: 'Use filename', icon: 'file', act: 'use-filename' },
-        { label: 'Use tags', icon: 'tag', act: 'use-tags' },
+        { label: reportOf(book.job).embedded_tags ? 'Use embedded tags' : 'Use file details', icon: 'tag', act: 'use-tags' },
       ] })}
       ${ctx.phone
         ? iconButton({ icon: 'search', label: 'Search editions', act: 'find', cls: 'icb solid', disabled: form.searching })
         : button({ label: form.searching ? 'Searching…' : 'Search', icon: 'search', act: 'find', disabled: form.searching, extra: { style: 'height:44px' } })}
     </div>
-    ${editionResults(form)}
+    ${editionResults(form, seconds)}
     <div class="row gap16 wrap"><button type="button" class="textlink" data-act="next-region">Try the ${regionName(nextRegion(form.region))} store</button>${embedded ? html`<button type="button" class="textlink" data-act="use-embedded">Use the ID in the file (${embedded})</button>` : ''}</div>
     ${form.note ? html`<p class="note opened" role="status">${form.note}</p>` : ''}
     <details class="tech plain" ${form.selected == null && !form.asin ? 'open' : ''}><summary>Edition details${form.asin ? `: ${form.asin} · ${regionName(form.region)}` : ''}</summary>
@@ -205,31 +209,21 @@ function editionBody(book, form, ctx) {
         ${selectField({ id: 'rv-region', label: 'Region', options: REGIONS, value: form.region })}
       </div>${field({ id: 'rv-narrator', label: 'Narrators', value: form.narrator })}</div></details>
     ${form.message ? html`<p class="alert-bad" role="alert">${form.message}</p>` : ''}
-    <div class="col gap8"><div>${serverButton({ label: form.busy ? 'Saving…' : 'Save and re-verify', kind: 'primary', size: 'md', act: 'save', disabled: form.busy, disabledReason: 'Working…' })}</div><span class="meta">The checks run again against this edition. Nothing is saved unless they pass.</span></div>
+    <div class="col gap8"><div>${serverButton({ label: form.busy ? 'Saving…' : 'Save and re-verify', kind: 'primary', size: 'md', act: 'save', disabled: form.busy || !changed, disabledReason: form.busy ? 'Working…' : 'Choose another edition or edit the details' })}</div><span class="meta">The checks run again against this edition. Nothing is saved unless they pass.</span></div>
   </form>`;
 }
 
 // ---------- chapter draft review (CHAPTER_REVIEW.md) ----------
 // Ordered cards for what needs a decision; a decided card collapses in place
 // into a one-line row. The decision logic is pure (chapter-review.js).
-const CLOSE_MS = 300;        // chosen option fills, the card collapses, then the decision commits
-const GROW_MS = 300;         // Change reopens a card
-const closing = new Map();   // item id → { book, choice, key } while collapsing
 const cardUi = new Map();    // `${book}:${item}` → { rename, name, search, q, out }
-const shown = new Map();     // book id → open cards rendered so far (very large books)
 const phoneBars = new Map(); // book id → phone save bar, while the draft choice is open
-const revealed = new Set();   // books whose phone Accept and save button has been shown
-let heldArrow = false;        // a long press on the arrow already moved up; swallow its click
-let holdTimer = 0;
 let focusedItem = null;      // highlighted by auto-advance, a timeline tick or Next open
-let growing = null;          // reopening via Change
-let moreObserver = null;
 const reduceMotion = () => document.documentElement.dataset.motion === 'reduce';
 const itemEl = id => document.getElementById(`cr-item-${id}`);
 const uiFor = (book, id) => cardUi.get(`${book.id}:${id}`) || {};
 const setCardUi = (book, id, patch) => cardUi.set(`${book.id}:${id}`, { ...uiFor(book, id), ...patch });
 /** Where focus lands in a card: its first option, else its first usable button (Change on a row). */
-const focusTarget = el => el && (el.querySelector('.opt') || el.querySelector('.cr-change, button:not([disabled])') || el);
 const glideOpts = ctx => (ctx.phone ? { top: 76, bar: '.cr-pbar' } : { top: 96, bar: '.savebar' });
 
 /** The book's draft state, reset when the server's draft token changes. */
@@ -252,7 +246,7 @@ const models = new WeakMap(); // draft state → { p, model }
 function modelFor(p, f) {
   const hit = models.get(f);
   if (hit?.p === p) return hit.model;
-  const model = reviewModel(p, f);
+  const model = workspaceModel(p, f);
   models.set(f, { p, model });
   return model;
 }
@@ -261,17 +255,12 @@ const segbar = (model, thin = false) => html`<div class="segbar ${thin ? 'thin' 
 
 function timeline(p, model, end) {
   const at = s => `${Math.min(100, Math.max(0, (s / end) * 100)).toFixed(3)}%`;
-  const missing = new Set((p.sections || []).map(s => s.id));
-  const edition = (p.published_sections || p.sections).filter(s => !missing.has(s.id));
-  const tick = item => {
-    const name = item.type === 'missing' ? item.title : item.original;
-    const tone = item.decided ? 'done' : item.type === 'missing' ? 'bad' : 'warn';
-    return html`<button type="button" class="stripbtn ${tone}" style="left:${at(item.seconds)}" data-act="cr-jump" data-arg="${item.id}" aria-label="${item.decided ? 'Decided' : 'Needs you'}: ${name} at ${hms(item.seconds)}"><i></i></button>`;
-  };
-  return html`<div class="cr-tl" role="group" aria-label="Where each marker sits in the book">
-    <div class="cr-lane"><span>Edition</span><div class="lane">${edition.map(s => html`<i class="pub" style="left:${at(publishedSeconds(s))}"></i>`)}${model.items.filter(i => i.type === 'missing').map(tick)}</div></div>
-    <div class="cr-lane"><span>Your file</span><div class="lane">${model.confirmedRows.map(r => html`<i class="ok" style="left:${at(r.seconds)}"></i>`)}${model.items.filter(i => i.type === 'marker').map(tick)}</div></div>
-    <div class="cr-lane foot"><span></span><div><span>Start</span><span>Tap a mark to jump to it</span><span>End</span></div></div>
+  const edition = p.published_sections || p.sections || [];
+  const rows = model.rows || [];
+  return html`<div class="cr-tl" role="img" aria-label="Published edition and file marker positions. Choose a chapter in the list or an attention pin to inspect it.">
+    <div class="cr-lane"><span>Edition</span><div class="lane">${edition.map(s => html`<i class="pub" style="left:${at(publishedSeconds(s))}"></i>`)}${rows.filter(r => r.type === 'missing').map(r => html`<i class="${r.pending ? 'bad' : 'done'}" style="left:${at(r.seconds)}"></i>`)}</div></div>
+    <div class="cr-lane"><span>Your file</span><div class="lane">${rows.filter(r => r.marker).map(r => html`<i class="${r.tone}" style="left:${at(r.seconds)}"></i>`)}</div></div>
+    <div class="cr-lane foot"><span></span><div><span>Start</span><span>Choose a chapter below to inspect it</span><span>End</span></div></div>
   </div>`;
 }
 
@@ -280,27 +269,21 @@ function blockedNotice(p, model) {
   const text = p.supported
     ? html`<strong>${percentText(model.pct)} identified by audio · your minimum is ${percentText(model.min)}.</strong> Saving is blocked until you lower the minimum for this book.`
     : html`<strong>No markers were identified by audio.</strong> This draft can’t be saved; try one of the other choices below.`;
-  return html`<div class="cr-blocked opened" role="alert"><div class="cr-blocked-text"><span class="icon">${icon('alert', 20)}</span><span>${text}</span></div>${p.supported ? button({ label: 'Lower for this book', act: 'cr-lower', size: 'md' }) : ''}</div>`;
+  return html`<div class="cr-blocked opened" role="alert"><div class="cr-blocked-text"><span class="icon">${icon('alert', 20)}</span><span>${text}</span></div>${p.supported ? button({ label: 'Change in Advanced', act: 'nr-advanced', size: 'md' }) : ''}</div>`;
 }
 
-const check = () => html`<span class="cr-check" aria-hidden="true">${icon('check', 13, { stroke: 3 })}</span>`;
-
-/** The decided row's contents; `inert` is the copy inside a collapsing card. */
-function rowInner(item, inert = false) {
-  return html`${check()}<span class="cr-time">${hms(item.seconds)}</span><span class="cr-final"><span class="ell cr-name">${item.final}</span><span class="ell cr-note">${item.note}</span></span>${inert ? html`<span class="textlink ink cr-change">Change</span>` : html`<button type="button" class="textlink ink cr-change" data-act="cr-change" data-arg="${item.id}" aria-label="Change ${item.final} at ${hms(item.seconds)}">Change</button>`}`;
-}
 
 const betweenLine = b => html`<div class="btw" role="img" aria-label="${b.label}"><b>${b.prev}</b><span class="ln"><i class="${b.missing ? 'bad' : 'warn'}"></i></span><b>${b.next}</b></div>`;
 
 function optionRows(item, chosen) {
   const label = item.type === 'missing' ? `What happens to ${item.title}` : `Choose what the marker at ${hms(item.seconds)} becomes`;
-  return html`<div class="opts ${chosen ? 'picking' : ''}" role="group" aria-label="${label}">${item.options.map(o => html`<button type="button" class="opt ${o.key === chosen ? 'chosen' : o.rec ? 'rec' : ''}" data-act="cr-pick" data-arg="${item.id}" data-choice="${o.key}" aria-pressed="${bool(o.key === chosen)}"><span class="rd" aria-hidden="true"></span><span class="col" style="gap:1px;min-width:0"><span class="nm">${o.label}</span><span class="sub ${o.warn ? 'warn' : ''}">${o.sub}</span></span>${o.rec ? html`<span class="tag">Suggested</span>` : ''}</button>`)}</div>`;
+  return html`<div class="opts" data-key="options-${item.id}" role="group" aria-label="${label}">${item.options.map(o => html`<button type="button" data-key="option-${item.id}-${o.key}" class="opt ${o.key === chosen ? 'chosen' : o.rec ? 'rec' : ''}" data-act="cr-pick" data-arg="${item.id}" data-choice="${o.key}" aria-pressed="${bool(o.key === chosen)}"><span class="rd" aria-hidden="true"></span><span class="col" style="gap:1px;min-width:0"><span class="nm">${o.label}</span><span class="sub ${o.warn ? 'warn' : ''}">${o.sub}</span></span>${o.rec ? html`<span class="tag">Suggested</span>` : ''}</button>`)}</div>`;
 }
 
 function listenBar(book, m) {
   const playing = audio.current()?.key === `review:${book.id}:${m.index}`;
   const quote = transcriptPreview(m.transcript);
-  return html`<button type="button" class="listen ${playing ? 'on' : ''}" data-act="cr-play" data-arg="${m.index}" aria-pressed="${bool(playing)}" ${m.excerpt ? '' : raw('disabled')}><span class="pb" aria-hidden="true">${playing ? html`<span class="eq"><span></span><span></span><span></span></span>` : icon('play', 16)}</span><span class="sr">${!m.excerpt ? 'No audio saved for this marker. ' : playing ? 'Stop listening. ' : `Listen to 15 seconds at ${hms(m.seconds)}. `}</span><q>${quote || 'No spoken text saved for this marker.'}</q></button>`;
+  return html`<button type="button" class="listen ${playing ? 'on' : ''}" data-act="cr-play" data-arg="${m.index}" aria-pressed="${bool(playing)}" ${m.excerpt ? '' : raw('disabled')}><span class="pb" aria-hidden="true">${playing ? html`<span class="eq"><span></span><span></span><span></span></span>` : icon('play', 16)}</span><span class="sr">${!m.excerpt ? 'No audio saved for this marker. ' : playing ? 'Stop listening. ' : `Listen to 15 seconds around ${hms(m.seconds)}. `}</span><q>${quote || 'No spoken text saved for this marker.'}</q></button>`;
 }
 
 /** "All chapters" on a marker card (published sections), "All markers" on a missing chapter (markers in your file). */
@@ -330,7 +313,7 @@ function markerBody(book, item, chosen, ui) {
     ${betweenLine(item.between)}
     ${listenBar(book, item.marker)}
     ${item.options.length ? optionRows(item, chosen) : ''}
-    <div class="alts">
+    <div class="alts" data-key="alts-${item.id}">
       ${item.showKeep ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="keep">Keep “${item.original}”</button>` : ''}
       <button type="button" class="textlink ink" data-act="cr-rename" data-arg="${item.id}" aria-expanded="${bool(ui.rename)}">Rename</button>
       ${item.canRemove ? html`<button type="button" class="textlink ink" data-act="cr-pick" data-arg="${item.id}" data-choice="remove">Remove marker</button>` : ''}
@@ -356,78 +339,62 @@ function missingBody(item, chosen, ui) {
     ${ui.search ? searchPanel(item, ui) : ''}`;
 }
 
-function card(book, item, after) {
-  const c = closing.get(item.id);
-  const sum = c && after?.items.find(i => i.id === item.id);
-  const cls = ['cc', item.type === 'missing' && 'missing', c && 'closing', !c && focusedItem === item.id && 'focus', !c && growing === item.id && 'grow'].filter(Boolean).join(' ');
-  const body = item.type === 'missing' ? missingBody(item, c?.key, uiFor(book, item.id)) : markerBody(book, item, c?.key, uiFor(book, item.id));
-  return html`<div class="${cls}" id="cr-item-${item.id}" data-item="${item.id}">
-    <div class="cc-sum" aria-hidden="true"><div><div class="cc-row">${sum ? rowInner(sum, true) : ''}</div></div></div>
-    <div class="cc-body"${c ? raw(' inert') : ''}><div><div class="cc-in">${body}</div></div></div>
-  </div>`;
-}
-
-function itemList(book, model, after) {
-  const open = model.items.filter(i => !i.decided).length;
-  const limit = open > 60 ? shown.get(book.id) || 30 : Infinity;
-  const rows = [];
-  let count = 0, i = 0;
-  for (; i < model.items.length; i++) {
-    const item = model.items[i];
-    if (!item.decided && ++count > limit) break;
-    rows.push(item.decided ? html`<div class="cc-done" id="cr-item-${item.id}" data-item="${item.id}">${rowInner(item)}</div>` : card(book, item, after));
-  }
-  const rest = model.items.length - i;
-  return html`<div class="cr-list">${rows}${rest ? html`<button type="button" class="cr-more" id="cr-more" data-act="cr-more">${rest} more</button>` : ''}</div>`;
-}
-
-/** Make sure the item's card is rendered (very large books render open cards in batches). */
-function reveal(book, model, id) {
-  const idx = model.items.findIndex(i => i.id === id);
-  const open = model.items.slice(0, idx + 1).filter(i => !i.decided).length;
-  if (open > (shown.get(book.id) || 30)) shown.set(book.id, open + 10);
-}
-
 function finalizeBody(book, p, ctx) {
   const f = draftFor(book, p, ctx);
   const model = modelFor(p, f);
-  const mine = [...closing.values()].filter(c => c.book === book.id);
-  const after = mine.length ? modelFor(p, mine.reduce((acc, c) => applyChoice(acc, c.choice), f)) : null;
   const stale = loadDraft(book.id)?.accept && loadDraft(book.id).accept.token !== p.token;
-  const gapBox = html`<label class="checkbox cr-gap"><input type="checkbox" name="gap" ${f.gap ? 'checked' : ''}><span>I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</span></label>`;
+  const gapBox = model.attention ? '' : html`<label class="checkbox cr-gap"><input type="checkbox" name="gap" ${f.gap ? 'checked' : ''}><span>I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</span></label>`;
   const save = serverButton({ label: f.busy ? 'Saving…' : 'Accept and save', kind: 'primary', act: 'accept', size: ctx.phone ? 'lg' : '', block: ctx.phone, disabled: f.busy || !model.canSave, disabledReason: f.busy ? 'Working…' : model.status });
   const pctLine = `${percentText(model.pct)} identified by audio · your minimum is ${model.validMin ? percentText(model.min) : '—'}`;
   const advanced = html`<div class="col gap12" style="padding-bottom:12px">
+    <div class="row gap8">${button({label:'−',act:'nr-min-down',extra:{'aria-label':'Decrease minimum'}})}${button({label:'+',act:'nr-min-up',extra:{'aria-label':'Increase minimum'}})}${model.blocked && p.supported ? button({label:`Set to ${model.lowerTo}%`,act:'cr-lower'}) : ''}</div>
     ${field({ id: 'accept-min', label: 'Minimum for this book (%)', type: 'number', value: f.min ?? p.default_minimum_percent, hint: `The share of markers that must be confirmed by audio before this book can be saved. Your decisions don’t count toward it. Default from Settings: ${p.default_minimum_percent}%.`, extra: { min: 1, max: 100, step: 0.1, inputmode: 'decimal' } })}
-    ${p.coverage_warnings.length ? html`<div class="col gap4"><span style="font-size:14px;font-weight:650">Content coverage</span>${p.coverage_warnings.map(w => html`<span class="meta">${w}</span>`)}</div>` : ''}
+    ${p.coverage_warnings?.length ? html`<div class="col gap4"><span style="font-size:14px;font-weight:650">Content coverage</span>${p.coverage_warnings.map(w => html`<span class="meta">${w}</span>`)}</div>` : ''}
     <p class="meta">Edits are saved in this browser as you go. The audiobook changes only after Accept and save.${ctx.ui.localDraftWarning ? ` ${ctx.ui.localDraftWarning}` : ''}${stale ? ' The server draft has changed; edits from the previous draft were not applied.' : ''}</p>
     <p class="meta">The audio must be unchanged and the output must validate. An existing M4B is backed up first. Source MP3s are kept.</p>
   </div>`;
   // Phone: the bar is fixed above the tab bar, so it renders outside the animated page column (see render()).
-  // The big button stays tucked away until it matters: the box is ticked, every item is decided,
-  // or the reader has scrolled to the bottom. Once shown it stays.
-  if (ctx.phone && (f.gap || !model.need)) revealed.add(book.id);
-  const showSave = revealed.has(book.id);
-  if (ctx.phone) phoneBars.set(book.id, html`<div class="pbar cr-pbar" role="region" aria-label="Save chapters"><div class="row gap10"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${segbar(model, true)}</div>${model.items.length ? iconButton({ icon: 'chevronDown', label: 'Next open marker. Press and hold for the previous item.', act: 'cr-next', cls: 'icb cr-next' }) : ''}</div>${gapBox}<div class="cr-savewrap ${showSave ? 'on' : ''}"${showSave ? '' : raw(' inert aria-hidden="true"')}><div>${save}</div></div></div>`);
+  const showSave = !model.attention;
+  if (ctx.phone) phoneBars.set(book.id, html`<div class="pbar cr-pbar" role="region" aria-label="Save chapters"><div class="row gap10"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${segbar(model, true)}</div>${model.attention ? iconButton({ icon: 'chevronDown', label: 'Next item needing attention', act: 'cr-next', cls: 'icb cr-next' }) : ''}</div>${gapBox}<div class="cr-savewrap ${showSave ? 'on' : ''}"${showSave ? '' : raw(' inert aria-hidden="true"')}><div>${save}</div></div></div>`);
   return html`<form class="accept cr ${ctx.phone ? 'with-pbar' : ''}" data-form="accept" novalidate>
     <div class="cr-summary"><div class="col gap4"><span class="cr-headline">${model.headline}</span><span class="meta" style="font-size:14px">${model.subline}</span></div>
       ${model.recs.length && !f.bulkNote ? button({ label: `Accept ${model.recs.length} suggestions`, icon: 'check', act: 'cr-accept-recs' }) : ''}</div>
     ${f.bulkNote && f.bulk?.length ? html`<div class="bulknote opened" role="status"><span class="grow">Applied ${f.bulk.length} suggestions. Each one is marked in the list.</span>${button({ label: 'Undo', act: 'cr-undo-bulk', size: 'sm' })}</div>` : ''}
-    ${segbar(model)}
+
     <div class="legend"><span><i class="ok"></i>Confirmed by audio</span><span><i class="done"></i>Decided by you</span><span><i class="need"></i>Needs you</span><span><i class="bad"></i>Missing from your file</span></div>
-    ${timeline(p, model, timelineEnd(p, sources.get(book.id)))}
+
     ${blockedNotice(p, model)}
-    ${itemList(book, model, after)}
+    ${workspace(book,p,f,ctx)}
     <div class="cr-discs">
-      ${collapsible({ id: 'cr-confirmed', title: `${model.confirmed} ${model.confirmed === 1 ? 'marker' : 'markers'} confirmed by audio`, summary: 'No action needed', open: ctx.ui.open?.['cr-confirmed'] ?? false, cls: 'cr-disc', headCls: 'top-line', level: 'h3', body: html`<div class="cr-confirmed">${model.confirmedRows.map(r => html`<div><span class="ok">${icon('check', 14, { stroke: 3 })}</span><span class="cr-time">${hms(r.seconds)}</span><span class="ell">${r.name}</span></div>`)}</div>` })}
       ${collapsible({ id: 'cr-advanced', title: 'Advanced', summary: ctx.phone ? '' : pctLine, open: ctx.ui.open?.['cr-advanced'] ?? false, cls: 'cr-disc', headCls: 'top-line', level: 'h3', body: advanced })}
     </div>
     ${f.message ? html`<p class="alert-bad" role="alert">${f.message}</p>` : ''}
-    ${ctx.phone ? '' : html`<div class="savebar" role="region" aria-label="Save chapters"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${gapBox}</div>${model.need ? button({ label: 'Next open', iconEnd: 'chevronDown', act: 'cr-next' }) : ''}${save}</div>`}
+    ${ctx.phone ? '' : html`<div class="savebar" role="region" aria-label="Save chapters"><div class="col grow" style="gap:6px;min-width:0"><span class="cr-status" role="status">${model.status}</span>${gapBox}</div>${model.attention ? button({ label: 'Next open', iconEnd: 'chevronDown', act: 'cr-next' }) : ''}${save}</div>`}
   </form>`;
 }
 
 /** Turn a rendered option key into the choice it stands for. */
+function workspace(book, p, f, ctx) {
+  const model = workspaceModel(p, f), focus = model.focused;
+  const filter = f.filter || 'need';
+  const duration = Number(p.duration_seconds || sources.get(book.id));
+  const end = duration > 0 ? duration : timelineEnd(p, null);
+  const position = seconds => Math.min(100, Math.max(0, seconds / end * 100));
+  const strip = rows => html`<span class="nr-strip" aria-hidden="true">${rows.map(r => html`<i class="${r.tone}" style="left:${position(r.seconds)}%"></i>`)}</span>`;
+  const chips = html`<div class="nr-filters">${REVIEW_FILTERS.map(([id,label]) => html`<button type="button" class="nr-filter" data-act="nr-filter" data-arg="${id}" aria-pressed="${bool(filter === id)}"><span>${label}</span><b>${id === 'need' ? `${model.need} of ${model.items.length}` : model.rows.filter(r => matchesFilter(r,id)).length}</b>${strip(model.rows.filter(r => matchesFilter(r,id)))}</button>`)}</div>`;
+  const list = foldRows(model.rows,filter,f.folds).map(row => row.fold ? html`<button type="button" class="nr-fold" data-act="nr-fold" data-arg="${row.id}" aria-expanded="${bool(row.expanded)}"><b>${row.rows.length} markers · ${hms(row.rows[0].seconds)} – ${hms(row.rows.at(-1).seconds)}</b><span>${row.rows.filter(r => matchesFilter(r,'changing')).length} changing · ${row.rows.filter(r => matchesFilter(r,'unchanged')).length} unchanged</span>${strip(row.rows)}</button>` : html`<div class="nr-row ${!row.pending && row.original && row.after !== row.original ? 'changing' : ''} ${row.tone} ${focus?.id === row.id ? 'selected' : ''}"><button type="button" class="nr-row-main" data-act="cr-jump" data-arg="${row.id}" aria-label="${hms(row.seconds)}, ${row.original || 'No marker'} becomes ${row.after}, ${row.status}. Open in the decision panel."><span class="cr-time">${hms(row.seconds)}</span><span class="nr-before">${row.original || 'Not in your file'}</span><span aria-hidden="true">${row.after === row.original ? '=' : '→'}</span><span class="nr-after ${row.pending ? 'pending' : ''}">${!row.pending && row.after === row.original ? 'No change' : row.after}</span><span class="nr-evidence">${row.status}</span></button>${row.marker ? iconButton({icon:audio.current()?.key === `review:${book.id}:${row.marker.index}` ? 'pause' : 'play',label:`${audio.current()?.key === `review:${book.id}:${row.marker.index}` ? 'Stop clip' : 'Play 15 seconds'} around ${hms(row.seconds)}`,act:'cr-play',arg:row.marker.index,disabled:!row.marker.excerpt}) : html`<span class="nr-listen-space"></span>`}</div>`);
+  const editor = focus && editorItem(p,f,focus.id);
+  const ui = focus ? uiFor(book,focus.id) : {};
+  const next = model.rows.find(r => r.pending && r.seconds > (focus?.seconds ?? -1)) || model.rows.find(r => r.pending);
+  const d = f.decisions?.[editor?.index];
+  const chosen = editor?.type === 'missing' ? (f.sections?.includes(editor.sectionId) ? 'skip' : null) : d?.action === 'published' ? `${d.override_order ? 'out' : 'sec'}:${d.section_id}` : d?.action === 'keep' ? 'keep' : d?.action === 'remove' ? 'remove' : editor?.marker?.supported && !d ? 'restore' : null;
+  const body = !editor ? html`<p>No markers available.</p>` : ui.rename ? html`${renamePanel(editor,ui.name ?? focus.after)}${button({label:'Cancel',act:'nr-close-editor',arg:focus.id})}` : ui.search ? html`${searchPanel(editor,ui)}${button({label:'Back to the options',act:'nr-close-editor',arg:focus.id})}` : editor.type === 'missing' ? missingBody(editor,chosen,{}) : markerBody(book,editor,chosen,{});
+  const panel = html`<aside class="nr-decision" aria-label="Decision panel" id="nr-decision" tabindex="-1"><div class="row gap8"><span class="meta grow">${focus?.review ? `${focus.pending ? 'Needs you' : 'Decided'} · ${model.need} left` : 'Not in the review count · you can still change it'}</span>${iconButton({icon:'chevronLeft',label:'Previous review item',act:'nr-prev',disabled:!model.items.length})}${iconButton({icon:'chevronRight',label:'Next review item',act:'nr-next',disabled:!model.items.length})}</div>${focus ? html`<div class="nr-before-after"><span><small>IN YOUR FILE</small>${focus.original || 'No marker here'}</span><span><small>AFTER YOU SAVE</small>${focus.after}</span></div>` : ''}<div data-key="editor-${focus?.id}-${ui.rename ? 'rename' : ui.search ? 'search' : 'options'}" class="cc nr-card ${editor?.marker?.supported ? 'confirmed' : ''} ${editor?.type === 'missing' ? 'missing' : ''}"><div class="cc-in">${body}</div></div>${f.justDecided === focus?.id ? next ? button({label:`Next: ${hms(next.seconds)} · ${next.original || next.title}`,kind:'primary',act:'cr-jump',arg:next.id,block:true}) : html`<p class="ok">That was the last one. Check the list, then save.</p>` : ''}</aside>`;
+  const pins = clusterPins(model.rows,end,ctx.phone ? 8 : 2.5);
+  const pinrow = html`<div class="nr-pins">${pins.map(c => html`<button type="button" class="nr-pin" style="left:${c.position}%" data-act="nr-pin" data-arg="${c.rows.map(r=>r.id).join('|')}" aria-label="${c.rows.length} to decide near ${hms(c.rows[0].seconds)}">${c.rows.length > 1 ? c.rows.length : '!'}</button>`)}</div>`;
+  return html`${pinrow}${timeline(p,model,end)}<p class="meta">${duration > 0 ? `0:00:00 · ${hms(end/4)} · ${hms(end/2)} · ${hms(end*3/4)} · ${hms(end)}` : 'Book duration unavailable · positions relative to the last known marker'}</p>${chips}<div class="nr-workspace"><section class="nr-markers" aria-label="Chapter markers"><div class="nr-columns" aria-hidden="true"><span>Time</span><span>In your file now</span><span></span><span>After you save</span><span>Evidence</span></div>${list}</section>${panel}</div>`;
+}
+
 function choiceFor(item, key) {
   // A missing chapter's bar: keep or remove the nearest marker, and save the chapter without its own marker.
   if (key === 'near-keep' || key === 'near-remove') {
@@ -443,74 +410,49 @@ function choiceFor(item, key) {
   return all ? [...all.inOrder, ...all.outOrder].find(o => o.key === key)?.choice || null : null;
 }
 
-/** After a decision commits: phone moves on to the next open card; desktop stays put. */
 function afterCommit(book, ctx, ids) {
-  const p = previewOf(book);
-  const model = modelFor(p, ctx.ui.accept[book.id]);
-  const last = ids[ids.length - 1];
-  if (!ctx.phone) {
-    if (focusedItem && ids.includes(focusedItem)) focusedItem = null;
-    ctx.rerender();
-    const active = document.activeElement;
-    if (!active || active === document.body || active.closest?.('[inert]')) itemEl(last)?.querySelector('.cr-change')?.focus({ preventScroll: true });
-    return;
-  }
-  const next = nextOpen(model.items, last);
-  focusedItem = next?.id || null;
-  if (next) reveal(book, model, next.id);
+  const f = draftFor(book,previewOf(book),ctx);
+  setDraft(book,ctx,{...f,focus: ids.at(-1),justDecided:ids.at(-1)});
   ctx.rerender();
-  if (!next) return;
-  const el = itemEl(next.id);
-  focusTarget(el)?.focus({ preventScroll: true });
-  glideTo(el, { force: false, ...glideOpts(ctx) });
+  if(document.activeElement===document.body)document.getElementById('nr-decision')?.focus({preventScroll:true});
 }
-
-/** Decide one or more items: fill the chosen option, collapse in place, then commit (spec §4). */
 function decide(book, ctx, picks, { bulk = false } = {}) {
-  if (picks.some(([id]) => closing.has(id))) return;
-  const commit = () => {
-    picks.forEach(([id]) => { closing.delete(id); cardUi.delete(`${book.id}:${id}`); });
-    let f = ctx.ui.accept[book.id];
-    for (const [, choice] of picks) f = applyChoice(f, choice);
-    f = bulk ? { ...f, bulk: picks.map(([, c]) => c.index), bulkNote: true } : { ...f, bulkNote: false };
-    setDraft(book, ctx, f);
-    afterCommit(book, ctx, picks.map(([id]) => id));
-  };
-  if (reduceMotion()) { commit(); return; }
-  picks.forEach(([id, choice, key]) => closing.set(id, { book: book.id, choice, key }));
-  ctx.rerender();
-  setTimeout(commit, CLOSE_MS);
+  const before = draftFor(book,previewOf(book),ctx);
+  let f = before;
+  for (const [id,choice] of picks) {
+    f = choice.type === 'restore' ? clearChoice(previewOf(book),f,id) : applyChoice(f,choice);
+    cardUi.delete(`${book.id}:${id}`);
+  }
+  const log = [...(f.log || []), { at: Date.now(), text: bulk ? `Accepted ${picks.length} suggestions` : `Changed ${picks[0][0]}: ${picks[0][1].title || picks[0][1].sectionId || picks[0][1].type}` }];
+  f = {...f,log,bulkNote:bulk,bulk:bulk ? picks.map(([,c])=>c.index) : f.bulk,
+    undo:bulk ? {decisions:before.decisions || {},sections:before.sections || [],placed:before.placed || [],bulk:before.bulk || []} : null};
+  setDraft(book,ctx,f);
+  afterCommit(book,ctx,bulk ? [before.focus || picks[0][0]] : picks.map(([id])=>id));
 }
-
-/** Glide to an item and highlight it (timeline ticks, Next open). */
 function jumpTo(book, ctx, id) {
-  const p = previewOf(book);
-  const model = modelFor(p, ctx.ui.accept[book.id]);
-  reveal(book, model, id);
-  focusedItem = id;
+  audio.stop();
+  const f=draftFor(book,previewOf(book),ctx);
+  setDraft(book,ctx,{...f,focus:id,justDecided:null});
+  focusedItem=id;
   ctx.rerender();
-  const el = itemEl(id);
-  if (!el) return;
-  focusTarget(el).focus({ preventScroll: true });
-  glideTo(el, { force: true, ...glideOpts(ctx) });
+  if(ctx.phone) glideTo(document.getElementById('nr-decision'),{force:true,...glideOpts(ctx)});
 }
-
 const draftActions = {
+  'nr-filter': (el,ev,ctx) => { const {book}=current(ctx); if(!book)return; const f=draftFor(book,previewOf(book),ctx); setDraft(book,ctx,{...f,filter:el.dataset.arg,folds:{}});ctx.rerender(); },
+  'nr-fold': (el,ev,ctx) => { const {book}=current(ctx);if(!book)return;const f=draftFor(book,previewOf(book),ctx);setDraft(book,ctx,{...f,folds:{...f.folds,[el.dataset.arg]:!f.folds?.[el.dataset.arg]}});ctx.rerender(); },
+  'nr-close-editor': (el,ev,ctx) => {const {book}=current(ctx);if(book)cardUi.delete(`${book.id}:${el.dataset.arg}`);ctx.rerender();},
+  'nr-prev': (el,ev,ctx) => browseDecision(ctx,-1),
+  'nr-next': (el,ev,ctx) => browseDecision(ctx,1),
+  'nr-pin': (el,ev,ctx) => {const {book}=current(ctx);if(!book)return;const f=draftFor(book,previewOf(book),ctx);const ids=el.dataset.arg.split('|');jumpTo(book,ctx,ids[(ids.indexOf(f.focus)+1)%ids.length]);},
+  'nr-advanced': (el,ev,ctx) => {ctx.ui.open={...ctx.ui.open,'cr-advanced':true};ctx.rerender();requestAnimationFrame(()=>document.getElementById('accept-min')?.focus());},
+  'nr-min-down': (el,ev,ctx) => stepMinimum(ctx,-1),
+  'nr-min-up': (el,ev,ctx) => stepMinimum(ctx,1),
+
   'cr-pick': (el, ev, ctx) => {
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
-    const item = modelFor(p, draftFor(book, p, ctx)).items.find(i => i.id === el.dataset.arg);
-    const choice = item && !item.decided && choiceFor(item, el.dataset.choice);
+    const item = editorItem(p, draftFor(book,p,ctx), el.dataset.arg);
+    const choice = item && choiceFor(item,el.dataset.choice);
     if (choice) decide(book, ctx, [[item.id, choice, el.dataset.choice]]);
-  },
-  'cr-change': (el, ev, ctx) => {
-    const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
-    const id = el.dataset.arg;
-    setDraft(book, ctx, { ...clearChoice(p, draftFor(book, p, ctx), id), bulkNote: false });
-    growing = reduceMotion() ? null : id;
-    focusedItem = null;
-    ctx.rerender();
-    setTimeout(() => { if (growing === id) growing = null; }, GROW_MS);
-    focusTarget(itemEl(id))?.focus({ preventScroll: true });
   },
   'cr-rename': (el, ev, ctx) => {
     const { book } = current(ctx); if (!book) return;
@@ -539,19 +481,17 @@ const draftActions = {
   },
   'cr-jump': (el, ev, ctx) => { const { book } = current(ctx); if (book) jumpTo(book, ctx, el.dataset.arg); },
   'cr-next': (el, ev, ctx) => {
-    if (heldArrow) { heldArrow = false; return; }
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
-    const from = focusedItem || document.activeElement?.closest?.('[data-item]')?.dataset.item || null;
+    const from = draftFor(book,p,ctx).focus || focusedItem || document.activeElement?.closest?.('[data-item]')?.dataset.item || null;
     const next = nextOpen(modelFor(p, draftFor(book, p, ctx)).items, from);
-    if (next) jumpTo(book, ctx, next.id);
+    if (next) jumpTo(book, ctx, next.id); else { ctx.ui.open = {...ctx.ui.open, 'cr-advanced':true}; ctx.rerender(); document.getElementById('accept-min')?.focus(); }
   },
   'cr-lower': (el, ev, ctx) => {
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
     const f = draftFor(book, p, ctx);
-    setDraft(book, ctx, { ...f, min: String(modelFor(p, f).lowerTo), message: '' });
+    setDraft(book, ctx, { ...f, min: String(modelFor(p, f).lowerTo), message: '', log:[...(f.log||[]),{at:Date.now(),text:`Set the minimum to ${modelFor(p,f).lowerTo}% for this book`}] });
     ctx.rerender();
   },
-  'cr-more': (el, ev, ctx) => { const { book } = current(ctx); if (book) { shown.set(book.id, (shown.get(book.id) || 30) + 30); ctx.rerender(); } },
   'cr-accept-recs': (el, ev, ctx) => {
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
     const f = draftFor(book, p, ctx);
@@ -564,32 +504,17 @@ const draftActions = {
   'cr-undo-bulk': (el, ev, ctx) => {
     const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
     const f = draftFor(book, p, ctx);
-    const decisions = { ...f.decisions };
-    for (const index of f.bulk || []) if (decisions[index]?.action === 'published') delete decisions[index];
-    setDraft(book, ctx, { ...f, decisions, bulk: [], bulkNote: false });
+    if (!f.undo) return;
+    setDraft(book, ctx, { ...f, ...f.undo, undo:null, bulkNote:false, log:[...(f.log || []),{at:Date.now(),text:'Undid suggestions'}] });
     ctx.rerender();
   },
 };
-
-/** Long press on the phone arrow: up one item (open or decided) from the highlighted one, or from the top of the screen. */
-function previousItem(ctx) {
-  const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
-  const items = modelFor(p, draftFor(book, p, ctx)).items;
-  let at = items.findIndex(i => i.id === focusedItem);
-  if (at < 0) {
-    const top = glideOpts(ctx).top;
-    at = items.findIndex(i => (itemEl(i.id)?.getBoundingClientRect().top ?? -Infinity) >= top - 4);
-    if (at < 0) at = items.length;
-  }
-  const target = items[at - 1];
-  if (target) jumpTo(book, ctx, target.id);
-}
 
 function useName(ctx, id) {
   const { book } = current(ctx); const p = book && previewOf(book); if (!p) return;
   const title = (document.getElementById(`cr-rn-${id}`)?.value ?? uiFor(book, id).name ?? '').trim();
   if (!title) { document.getElementById(`cr-rn-${id}`)?.focus(); return; }
-  const item = modelFor(p, draftFor(book, p, ctx)).items.find(i => i.id === id);
+  const item = editorItem(p,draftFor(book,p,ctx),id);
   if (!item || item.decided) return;
   if (item.type === 'missing') {
     if (item.near) decide(book, ctx, [[id, { type: 'skip', sectionId: item.sectionId, marker: { type: 'rename', index: item.near.index, title } }, 'rename']]);
@@ -610,7 +535,7 @@ function checksSection(book, ctx) {
 
 function historySection(book, ctx) {
   const entries = historyFor(details.get(book.id) || book.job, readLog());
-  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Everything recorded for this book', open: ctx.ui.open?.history ?? false, body: html`${historyList(entries)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history needs server support. <span class="mono">(G-011)</span></p>` });
+  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Available server events and your unsaved changes', open: ctx.ui.open?.history ?? false, body: html`${(ctx.ui.accept?.[book.id]?.log || []).length ? html`<h3 class="eyebrow">Not saved yet</h3>${historyList(ctx.ui.accept[book.id].log.slice().reverse().map(e=>({...e,kind:'you',detail:''})))}` : ''}<h3 class="eyebrow">Earlier</h3>${historyList(entries)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history needs server support. <span class="mono">(G-011)</span></p>` });
 }
 
 function detail(book, list, idx, ctx) {
@@ -628,11 +553,11 @@ function detail(book, list, idx, ctx) {
 
 function listItem(book, current, ctx) {
   const reason = reviewTitle(book.job);
-  if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
+  if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span><span class="warn">${queueSummary(book,ctx)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
   return html`<a class="irow" role="listitem" href="#/review/${encodeURIComponent(book.id)}" aria-current="${bool(current)}">${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow"><span class="ell" style="font-size:15px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular" style="font-size:12px;flex-shrink:0">${relative(book.updatedAt)}</span></a>`;
 }
 
-const sentBack = new Set();  // books sent back to the queue from here (spec §6)
+const sentBack = new Map();  // books sent back to the queue from here (spec §6)
 
 function allClear(ctx, finished = sentBack.size > 0) {
   return html`<div class="panel bigempty ${ctx.phone ? 'page-inset' : ''} ${finished ? 'bk-in' : ctx.enter ? 'rise' : ''}"><span class="circ tone-ok">${icon('check', 26, { stroke: 2.2 })}</span><span class="t">${finished ? 'Nothing left to review' : 'You’re all caught up'}</span><span class="lede" style="font-size:15px">${finished ? 'Everything you saved is in the queue.' : 'Nothing needs your review right now.'}</span>${button({ label: 'Open queue', kind: finished ? 'primary' : 'ghost', href: '#/queue' })}</div>`;
@@ -643,7 +568,7 @@ function current(ctx) {
   const list = waiting();
   const id = ctx.route.id;
   const book = id ? bookById(id) : list.find(b => b.id === selectedBook) || list[0];
-  if (book && selectedBook !== book.id) { selectedBook = book.id; saveDraft('selection', { id: book.id }); }
+  if (book && selectedBook !== book.id) { audio.stop(); selectedBook = book.id; saveDraft('selection', { id: book.id }); }
   return { list, book, idx: book ? list.findIndex(b => b.id === book.id) : -1 };
 }
 
@@ -662,7 +587,8 @@ function readForm(book) {
  * in place, or "Nothing left to review" when none are left.
  */
 async function sentToQueue(book, body, ctx, idx) {
-  sentBack.add(book.id);
+  audio.stop();
+  sentBack.set(book.id, book.updatedAt);
   notify({ kind: 'info', title: `${book.title} went back to the queue`, body, action: 'Open queue', href: `#/queue?job=${encodeURIComponent(book.id)}`, dest: 'queue', jobId: book.id, at: Date.now() });
   const list = waiting().filter(b => b.id !== book.id);
   const next = list[Math.min(Math.max(idx, 0), list.length - 1)];
@@ -681,6 +607,7 @@ async function sentToQueue(book, body, ctx, idx) {
 async function submit(book, ctx, recovery) {
   const form = readForm(book);
   const { idx } = current(ctx);
+  if (form.busy) return;
   form.message = '';
   const asin = form.asin.trim().toUpperCase();
   if (asin && !/^[A-Z0-9]{10}$/.test(asin)) { form.message = 'ASIN must be 10 letters or digits.'; ctx.rerender(); return; }
@@ -689,7 +616,7 @@ async function submit(book, ctx, recovery) {
   try {
     await api.answerReview(book.id, { title: form.title, author: form.author, narrator: form.narrator, asin, region: form.region, recovery });
     expect(book.id, 'queued');
-    forms.delete(book.id); details.delete(book.id);
+    clearDraft(book.id); delete ctx.ui.accept?.[book.id]; forms.delete(book.id); details.delete(book.id);
     await refresh();
     sentToQueue(book, recovery === 'local_markers' ? 'Listening near each marker for a draft' : 'Re-checking chapter audio with your changes', ctx, idx);
   } catch (error) {
@@ -699,6 +626,7 @@ async function submit(book, ctx, recovery) {
 
 async function searchEditions(book, ctx) {
   const form = readForm(book);
+  if(form.searching)return;
   const q = form.query.trim();
   if (q.length < 2) { form.message = 'Enter a title or ASIN to search.'; ctx.rerender(); return; }
   form.searching = true; form.results = null; form.selected = null; form.message = ''; ctx.rerender();
@@ -710,13 +638,55 @@ async function searchEditions(book, ctx) {
 }
 
 /** Open one "What to do next" choice for this book (they're exclusive). */
-const choose = (ctx, book, id) => { ctx.ui.path = { ...(ctx.ui.path || {}), [book.id]: id }; };
+const choose = (ctx, book, id) => { ctx.ui.path = { ...(ctx.ui.path || {}), [book.id]: id }; persist(book,ctx); };
 
 const move = (ctx, delta) => {
   const { list, idx } = current(ctx);
   const target = list[idx + delta];
   if (target) location.hash = `#/review/${encodeURIComponent(target.id)}`;
 };
+
+let queueLoads = 0;
+const queueAttempted = new Set();
+function loadQueue(list,ctx) {
+  for(const b of list) {
+    if(queueLoads >= 2) break;
+    if(details.has(b.id) || queueAttempted.has(b.id)) continue;
+    queueLoads++; queueAttempted.add(b.id);
+    jobDetail(b.id).then(job=>details.set(b.id,job)).catch(()=>{}).finally(()=>{queueLoads--;ctx.rerender();loadQueue(waiting(),ctx);});
+  }
+}
+function queueSummary(book,ctx) {
+  const p=previewOf(book); if(!p)return reviewTitle(book.job);
+  const f=ctx.ui.accept?.[book.id]?.token === p.token ? ctx.ui.accept[book.id] : acceptedDraft(book.id,p.token);
+  const m=workspaceModel(p,f);
+  return m.canSave ? 'Ready to save' : m.attention ? `${m.attention} need attention` : 'Tick the box to save';
+}
+function queueRail(list,book,ctx) {
+  const pinned=!!loadDraft('rail')?.pinned;
+  const opened=!!ctx.ui.reviewRail;
+  return html`<div class="nr-rail-wrap ${pinned?'pinned':''} ${opened?'opened':''}"><aside class="nr-rail" aria-label="Waiting for you"><div class="nr-rail-controls">${iconButton({icon:'menu',label:opened?'Close review queue':'Open review queue',act:'nr-queue',extra:{'aria-expanded':bool(opened)}})}<span class="nr-rail-text grow">Waiting for you · ${list.length}</span>${iconButton({icon:'pin',label:pinned?'Unpin sidebar':'Pin sidebar open',act:'nr-dock',extra:{'aria-pressed':bool(pinned)},cls:'icb nr-dock'})}</div>${list.map(b=>html`<a class="nr-queue-item" href="#/review/${encodeURIComponent(b.id)}" aria-current="${b.id===book.id?'true':'false'}" aria-label="${b.title}, ${queueSummary(b,ctx)}">${cover(b,{size:48,radius:8})}<span class="nr-rail-text col"><strong class="ell">${b.title}</strong><span class="warn">${queueSummary(b,ctx)}</span><span class="meta">${relative(b.updatedAt)}</span></span></a>`)}</aside></div>`;
+}
+async function cancelReview(book,ctx) {
+  const form=formFor(book);if(form.busy)return;form.busy=true;ctx.rerender();
+  try {const job=await api.cancel(book.id);ctx.ui.confirm=null;
+    clearDraft(book.id);delete ctx.ui.accept?.[book.id];
+    if(job?.status==='cancelled'){expect(book.id,'cancelled');await refresh();location.hash='#/review';}
+    notify({kind:'info',title:job?.status==='cancelled'?`Job cancelled for ${book.title}`:'Cancellation requested',body:'Files stay where they are. Cancellation takes effect at a safe checkpoint.',at:Date.now()});
+  } catch(error){reportError(error,'Couldn’t cancel the job');}finally{form.busy=false;ctx.rerender();}
+}
+function browseDecision(ctx,delta) {
+  const {book}=current(ctx);if(!book)return;
+  const p=previewOf(book),f=draftFor(book,p,ctx),m=workspaceModel(p,f);
+  const next=cycleItem(m.items,f.focus || m.focused?.id,delta);
+  if(next)jumpTo(book,ctx,next.id);
+}
+function stepMinimum(ctx,delta) {
+  const {book}=current(ctx);if(!book)return;
+  const p=previewOf(book),f=draftFor(book,p,ctx);
+  const min=Math.min(100,Math.max(1,Number(f.min ?? p.default_minimum_percent)+delta));
+  setDraft(book,ctx,{...f,min,log:[...(f.log||[]),{at:Date.now(),text:`Set the minimum to ${min}% for this book`}]});ctx.rerender();
+}
 
 export default {
   title: 'Needs review',
@@ -750,12 +720,14 @@ export default {
     const heading = phone
       ? html`<div class="page-pad ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">Needs review</h1><p class="meta" style="margin-top:4px;font-size:14px">${list.length ? `${list.length} ${list.length === 1 ? 'book' : 'books'} paused for a decision` : 'Nothing waiting'}</p></div>`
       : html`<div class="page-head ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">Needs review</h1><p class="lede">Books paused because something couldn’t be confirmed. Work through them one at a time.</p></div>`;
+    loadQueue(list,ctx);
     if (phone) {
       if (ctx.route.id) { phoneBars.delete(book.id); return html`${detail(book, list, idx, ctx)}${phoneBars.get(book.id) || ''}`; }
       return html`<div style="height:0"></div>${heading}${list.length ? html`<div class="col page-inset ${enter ? 'rise' : ''}">${list.map(b => listItem(b, false, ctx))}</div>` : allClear(ctx)}`;
     }
     if (!list.length) return html`${heading}${allClear(ctx)}`;
-    return html`${heading}<div class="revgrid"><div class="revlist ${enter ? 'rise' : ''}" role="list" aria-label="Books waiting for review" style="animation-delay:.05s">${list.map(b => listItem(b, b.id === book.id, ctx))}</div>${detail(book, list, idx, ctx)}</div>`;
+    loadQueue(list,ctx);
+    return html`${heading}<div class="nr-layout">${queueRail(list,book,ctx)}<div class="nr-content">${detail(book,list,idx,ctx)}</div></div>`;
   },
 
   onInput(el, ev, ctx) {
@@ -772,6 +744,7 @@ export default {
     }
     readForm(book);
     persist(book, ctx);
+    queueMicrotask(()=>ctx.rerender());
   },
 
   onSubmit(form, ev, ctx) {
@@ -783,6 +756,7 @@ export default {
   },
 
   mount(root, ctx) {
+    root.querySelectorAll('[role=tab]').forEach(tab => {tab.onkeydown=ev=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(ev.key))return;ev.preventDefault();const tabs=[...tab.parentElement.querySelectorAll('[role=tab]')];const n=ev.key==='Home'?0:ev.key==='End'?tabs.length-1:(tabs.indexOf(tab)+(ev.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[n].click();root.querySelectorAll('[role=tab]')[n]?.focus();};});
     const find = root.querySelector('#rv-find');
     // Re-renders keep this element (morph.js), so assign rather than add a listener.
     if (find) find.onkeydown = ev => {
@@ -796,41 +770,23 @@ export default {
     root.querySelectorAll('[data-cr-q]').forEach(input => {
       input.onkeydown = ev => { if (ev.key === 'Enter') ev.preventDefault(); };
     });
-    const arrow = root.querySelector('.cr-next');
-    if (arrow) {
-      const cancel = () => clearTimeout(holdTimer);
-      arrow.onpointerdown = () => { heldArrow = false; cancel(); holdTimer = setTimeout(() => { heldArrow = true; navigator.vibrate?.(10); previousItem(ctx); }, 500); };
-      arrow.onpointerup = arrow.onpointercancel = arrow.onpointerleave = cancel;
-      arrow.oncontextmenu = ev => ev.preventDefault();
-    }
-    let onScroll = null;
-    const { book } = current(ctx);
-    if (ctx.phone && book && root.querySelector('.cr-pbar') && !revealed.has(book.id)) {
-      onScroll = () => {
-        if (innerHeight + scrollY < document.documentElement.scrollHeight - 8) return;
-        revealed.add(book.id);
-        ctx.rerender();
-      };
-      window.addEventListener('scroll', onScroll, { passive: true });
-    }
-    // Very large books: the next batch of cards loads as the "N more" row scrolls into view.
-    moreObserver?.disconnect();
-    moreObserver = null;
-    const more = root.querySelector('#cr-more');
-    if (more && 'IntersectionObserver' in window) {
-      moreObserver = new IntersectionObserver(entries => {
-        if (!entries.some(e => e.isIntersecting)) return;
-        moreObserver?.disconnect();
-        draftActions['cr-more'](more, null, ctx);
-      }, { rootMargin: '600px 0px' });
-      moreObserver.observe(more);
-    }
-    return () => { if (onScroll) window.removeEventListener('scroll', onScroll); };
+    return () => {};
   },
 
   actions: {
     ...draftActions,
+    'nr-server': (el,ev,ctx)=>{ctx.ui.menu=null;ctx.rerender();requestAnimationFrame(()=>{const d=document.getElementById('nr-server-details');if(d){d.open=true;d.querySelector('summary')?.focus();}});},
+    'nr-more': (el,ev,ctx)=>{
+      const {book}=current(ctx);if(!book)return;
+      const menu=openOverlay({label:'More for this book',kind:'sheet',render:()=>html`<div class="grab"></div><h2>More for this book</h2>${button({label:'Details from the server',act:'details',block:true})}${button({label:'Cancel job…',act:'cancel',block:true})}`,actions:{
+        details:()=>{menu.close();openOverlay({label:'Details from the server',kind:'sheet',render:()=>html`<div class="grab"></div><h2>Details from the server</h2>${techDetails(technical(book.job))}${gatesDetail(book.job)}`,actions:{}});},
+        cancel:async()=>{menu.close();if(await confirmSheet({title:'Cancel this job?',body:'Files stay where they are.',confirmLabel:'Cancel job'}))cancelReview(book,ctx);}
+      }});
+    },
+    'nr-queue': (el,ev,ctx) => {ctx.ui.reviewRail=!ctx.ui.reviewRail;ctx.rerender();},
+    'nr-dock': (el,ev,ctx) => {saveDraft('rail',{pinned:!loadDraft('rail')?.pinned});ctx.ui.reviewRail=false;ctx.rerender();},
     ...cancelActions,
+    'confirm-cancel': (el,ev,ctx)=>{const {book}=current(ctx);if(book)return cancelReview(book,ctx);},
     choose: (el, ev, ctx) => { const { book } = current(ctx); if (book) { choose(ctx, book, el.dataset.arg); ctx.rerender(); } },
     prev: (el, ev, ctx) => move(ctx, -1),
     next: (el, ev, ctx) => move(ctx, 1),
@@ -848,7 +804,7 @@ export default {
     'use-embedded': (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
-      const asin = reportOf(book.job).identity?.asin;
+      const asin = reportOf(book.job).embedded_tags?.asin;
       if (!asin) return;
       form.note = `ASIN changed from ${form.asin || 'empty'} to ${asin}, the ID embedded in the file.`;
       form.asin = asin;
@@ -864,13 +820,12 @@ export default {
       setTimeout(() => document.getElementById('rv-find')?.focus());
     },
     'use-tags': (el, ev, ctx) => {
-      // DESIGN-GAP: G-014 — raw embedded tags aren't exposed; report.identity mixes tags, EPUB and answers.
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
-      const id = reportOf(book.job).identity || {};
+      const id = reportOf(book.job).embedded_tags || reportOf(book.job).identity || {};
       form.title = id.title || form.title; form.author = id.author || form.author; form.narrator = id.narrator || form.narrator; form.asin = id.asin || form.asin;
       form.query = id.asin || id.title || form.query;
-      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Edit the search if needed, then search. Raw tags need server support (G-014).';
+      form.note = reportOf(book.job).embedded_tags ? 'Filled from embedded tags. Edit if needed, then search.' : 'Filled from available file details, which may include EPUB metadata or earlier answers.';
       ctx.rerender();
       setTimeout(() => document.getElementById('rv-find')?.focus());
     },
@@ -885,19 +840,23 @@ export default {
       form.narrator = (e.narrators || []).map(n => n.name).join(', ') || form.narrator;
       form.region = e.region || form.region;
       form.note = `${e.title || e.asin} selected. It’s checked against your audio when you save.`;
-      ctx.rerender();
+      persist(book,ctx);ctx.rerender();
     },
     find: (el, ev, ctx) => { const { book } = current(ctx); if (book) searchEditions(book, ctx); },
     save: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'verify'); },
-    markers: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'local_markers'); },
+    markers: async (el, ev, ctx) => { const {book}=current(ctx);if(!book)return; if(ctx.phone){if(await confirmSheet({title:'Replace this draft?',body:'This replaces the current draft and your decisions. The book goes back to the queue.',confirmLabel:'Draft again'}))submit(book,ctx,'local_markers');}else{ctx.ui.redraftConfirm=book.id;ctx.rerender();} },
+    'nr-redraft-confirm': (el,ev,ctx)=>{const {book}=current(ctx);ctx.ui.redraftConfirm=null;if(book)submit(book,ctx,'local_markers');},
+    'nr-redraft-keep': (el,ev,ctx)=>{ctx.ui.redraftConfirm=null;ctx.rerender();},
     resume: async (el, ev, ctx) => {
       const { book, idx } = current(ctx); if (!book) return;
+      const form=formFor(book);if(form.busy)return;form.busy=true;ctx.rerender();
       try {
         await api.resumeChecks(book.id);
+        clearDraft(book.id);delete ctx.ui.accept?.[book.id];
         expect(book.id, 'queued');
         await refresh();
         sentToQueue(book, 'Running the required checks again', ctx, idx);
-      } catch (error) { reportError(error, 'Couldn’t resume checks'); }
+      } catch (error) { reportError(error, 'Couldn’t resume checks'); } finally {form.busy=false;ctx.rerender();}
     },
     accept: async (el, ev, ctx) => {
       const { book, idx } = current(ctx); if (!book) return;
@@ -910,18 +869,18 @@ export default {
       setAccept({ busy: true, message: '' });
       try {
         await api.acceptRecovery(book.id, { draft_token: p.token, minimum_percent: Number(f.min ?? p.default_minimum_percent), optional_sections: remainingSections(p, f).filter(s => f.sections?.includes(s.id)).map(s => s.id), marker_decisions: markerDecisions(p, f), accept_possible_gap: true });
-        clearDraft(book.id);
+        clearDraft(book.id);delete ctx.ui.accept?.[book.id];
         expect(book.id, 'queued');
         details.delete(book.id);
         await refresh();
-        sentToQueue(book, 'Saving new chapter names · audio unchanged', ctx, idx);
-      } catch (error) { setAccept({ busy: false, message: error.message }); }
+        sentToQueue(book, 'Queued to save chapter names · audio unchanged', ctx, idx);
+      } catch (error) { setAccept({ busy: false, message: error.message }); if(/draft changed|evidence changed|reviewed draft/i.test(error.message)){details.delete(book.id);ensureLoaded(book,ctx);} }
     },
     'desk-cancel': (el, ev, ctx) => { const { book } = current(ctx); if (book) { ctx.ui.confirm = `cancel:${book.id}`; ctx.rerender(); } },
     'phone-cancel': async (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
       const ok = await confirmSheet({ title: 'Cancel this job?', body: `${book.title} leaves the queue. Your source files stay where they are.`, confirmLabel: 'Cancel job' });
-      if (ok) { await cancelJob(book.id); location.hash = '#/review'; }
+      if (ok) await cancelReview(book,ctx);
     },
   },
 };

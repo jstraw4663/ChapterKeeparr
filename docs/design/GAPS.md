@@ -46,7 +46,7 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 | G-016 | Optimized rule | partial | both + Jeremy | placeholder in UI | — |
 | G-017 | EPUB pairing | partial | backend | placeholder in UI | — |
 | G-018 | Edit details | missing | backend | placeholder in UI | — |
-| G-019 | Re-verify | partial | backend | placeholder in UI | — |
+| G-019 | Re-verify | exists | frontend | backend done; remove old warning | — |
 | G-020 | Suggestions scan | missing | backend | placeholder in UI | Suggestions is partial |
 | G-021 | BookOrbit | missing | backend + Jeremy | placeholder in UI | — |
 | G-022 | Folder browser counts + guess | partial | backend | placeholder in UI | — |
@@ -202,10 +202,10 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Owner: backend · Status: placeholder in UI
 
 ### G-019 · Re-verify
-- Build today: **partial.** `POST /api/jobs/{id}/retry` requeues any finished job, but options keep `force=false`, and the engine **skips** a book whose successful receipt matches. So "Re-verify" on a complete book usually ends as `skipped` / "Unchanged".
-- UI now: the Re-verify button calls retry and warns "The server may keep the previous verification if nothing changed (G-019)."
-- Proposed contract: `POST /api/jobs/{id}/retry` with optional body `{"force": true}`.
-- Owner: backend · Status: placeholder in UI
+- Build today (2026-09-30): **exists.** `POST /api/jobs/{id}/retry` without a body forces fresh verification for complete/skipped jobs. Optional body `{"force": true}` explicitly bypasses the completion receipt; `{"force": false}` permits receipt reuse. Active jobs still return 409.
+- Retry always clears prior finalization approval. Finished jobs use the normal verification path, never replay an accepted draft. Converted folder jobs resolve their single M4B.
+- Frontend follow-up: remove the obsolete warning that Re-verify may keep the previous verification. Existing no-body request already works; no payload change is needed.
+- Owner: frontend · Status: in progress (backend done)
 
 ### G-020 · Suggestions scan
 - Build today: **missing.** The closest building block is `POST /api/discover {path}` → `{"books": [{path,name,kind: m4b|mp3_folder}], "issues"}`, which lists convertible folders and M4Bs under a path but does not classify, remember ignores, or look at EPUBs.
@@ -267,6 +267,7 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 
 ### G-030 · Review markers from audio / Resume checks
 - Build: `POST /review {recovery:"local_markers"}` produces a draft. `{action:"resume"}` reruns checks for non-identity pauses (service outage, coverage, source inventory).
+- Backend audit (2026-09-30): redrafting also supports a retained MP3-folder conversion after validating its audio hash and source inventory. It holds the book lock, retains runtime/drift coverage warnings, and persists source invalidation and identity failures. Missing or changed retained audio requires normal checks again. No new API fields.
 - Proposed home: the Problem panel quick fixes. "Resume checks" is the primary action when `review_category ≠ identity` (the problem isn't the edition). "Review markers from audio" goes in Fix the edition as a ghost button next to "Save and re-verify".
 - Owner: frontend · Status: done
 
@@ -333,9 +334,8 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Owner: Jeremy · Status: done
 
 ### G-045 · Figtree hosting
-- Google Fonts CDN (the design's reference) sends a request to Google from a self-hosted LAN app, and fails offline or in the PWA. Self-hosting needs G-027.
-- Proposal: self-host `Figtree[wght].woff2` once G-027 lands. Until then, use the Google Fonts link with a system-font fallback.
-- Owner: frontend · Status: open
+- Implemented: licensed Figtree WOFF2 assets and OFL are bundled locally and cached by the service worker. No Google Fonts request is required.
+- Owner: frontend · Status: done (2026-10-23)
 
 ### G-046 · Worker activity line
 - Build: `result.activity` (latest worker message) and `result.speech_check {current,total}`.
@@ -348,10 +348,9 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Proposed contract: covered by G-008's `BookSummary.id`, or a `book_id` = hash of canonical path.
 - Owner: backend · Status: open
 
-### G-048 · Chapter playback reduced to 15 s
-- Build: tapping a chapter plays until the chapter ends. The design (RULES: "no media-player features") limits playback to a 15-second spot check.
-- Proposal: follow the design (a 15 s stop). This reduces an existing feature, so it's logged here for sign-off.
-- Owner: Jeremy · Status: open
+### G-048 · Review evidence playback
+- Approved scope: saved evidence clips retain pre-roll and stop within 15 seconds. Review uses the shared audio controller and labels clips as being around the marker.
+- Owner: frontend · Status: implemented; real-device audio playback remains a release smoke check.
 
 ### G-049 · Manual published-section assignment (implemented 2026-10-02)
 - Recovery preview includes `published_sections` with stable draft-local IDs, and each speech-supported marker's `reference_id`.
@@ -362,7 +361,13 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Owner: backend/frontend · Status: done under user's explicit UI authorization.
 
 ### G-050 · Book length in the draft preview
-- Build today: **partial.** The chapter draft review's colour timeline (CHAPTER_REVIEW.md §2.3) places every marker and published section across the whole book, but `recovery_acceptance_preview` has no length. The draft itself stores `duration_seconds`.
-- UI now: uses the file duration from `GET /api/jobs/{id}/source` (G-042) when it has loaded, otherwise the latest known marker or section time, so ticks near the end can sit slightly too far right until the duration arrives. Marked `// DESIGN-GAP: G-050` in `chapter-review.js`.
-- Proposed contract: add `duration_seconds` (number, or null when unknown) to `recovery_acceptance_preview`, copied from `recovery_draft.duration_seconds`. No other change.
-- Owner: backend · Status: placeholder in UI
+- Implemented: nullable `duration_seconds` copied from the stored draft, plus numeric section seconds. Older responses retain source-info fallback. Unknown total duration is not presented as the true ending.
+- Owner: backend/frontend · Status: done (2026-10-23)
+
+### G-051 · Embedded metadata provenance
+- Inspection reports capture title, author, narrator and ASIN from embedded tags before identity enrichment. Older reports use file-details wording rather than claiming raw-tag provenance.
+- Owner: backend/frontend · Status: done (2026-10-23)
+
+### G-052 · Review history completeness
+- Available server fields produce partial history; unsaved decisions are browser-local and draft-token-bound. A durable event-log migration is intentionally outside this release.
+- Owner: product · Status: accepted limitation

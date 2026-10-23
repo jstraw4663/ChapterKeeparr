@@ -1,0 +1,81 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Review redesign checks</title><style>body{font:14px system-ui}iframe{border:1px solid #777;height:900px}pre{white-space:pre-wrap}</style><h1>Review redesign checks</h1><button id="run">Run generated-fixture checks</button><pre id="results">Ready. Requires the generated ui_seed + complex_review fixture and disabled workers.</pre><iframe title="Review test application" id="app"></iframe><script type="module">
+const frame=document.getElementById('app'),results=document.getElementById('results');
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const wait=async fn=>{for(let n=0;n<100;n++){if(fn())return;await pause(50)}throw Error('Timed out waiting for UI')};
+const assert=(yes,msg)=>{if(!yes)throw Error(msg)};
+const log=text=>results.textContent+='\n'+text;
+const click=selector=>{const e=frame.contentDocument.querySelector(selector);assert(e,'Missing '+selector);e.focus();e.click()};
+const input=(selector,value)=>{const e=frame.contentDocument.querySelector(selector);e.value=value;e.dispatchEvent(new Event('input',{bubbles:true}));};
+document.getElementById('run').onclick=async()=>{
+ results.textContent='RUNNING';
+ try {
+ const jobs=(await(await fetch('/api/jobs')).json()).jobs;
+ const job=jobs.find(j=>j.result?.report?.recovery_draft?.markers?.length===23);assert(job,'Seed complex_review fixture first');
+ localStorage.removeItem('chapterkeeparr.review.v1.'+job.id);localStorage.removeItem('chapterkeeparr.review.v1.rail');const path='/#/review/'+job.id;
+ for(const theme of ['dark','light']) for(const width of [360,390,768,1024,1200,1440]){
+  frame.style.width=width+'px';frame.src='/?test='+Date.now()+path.slice(1);
+  await new Promise(r=>frame.onload=r);const w=frame.contentWindow,d=frame.contentDocument;
+  d.documentElement.dataset.theme=theme;
+  await wait(()=>d.querySelector('.nr-decision'));
+  await pause(650);
+  assert(d.documentElement.scrollWidth<=width+1,`${theme} ${width}: horizontal overflow ${d.documentElement.scrollWidth}`);
+  const script=d.createElement('script');script.src='/__axe.js';d.head.append(script);await new Promise(r=>script.onload=r);
+  const audit=await w.axe.run(d,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});
+  const bad=audit.violations.filter(v=>['serious','critical'].includes(v.impact));
+  assert(!bad.length,`${theme} ${width}: ${JSON.stringify(bad.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})))}`);
+  log(`PASS ${theme} ${width}: no overflow; no serious/critical axe violations`);
+ }
+ frame.style.width='1440px';frame.src='/?test='+Date.now()+path.slice(1);await new Promise(r=>frame.onload=r);await wait(()=>frame.contentDocument.querySelector('.nr-decision'));
+ let d=frame.contentDocument;
+ click('.nr-decision [data-act="cr-pick"]');await wait(()=>d.querySelector('.nr-decision').textContent.includes('Next:'));
+ assert(d.querySelector('.nr-row.selected').textContent.includes('0:00:00'),'Decision auto-advanced');log('PASS decision keeps focus and shows Continue');
+ click('[data-act="nr-filter"][data-arg="all"]');await pause(100);
+ click('[data-act="cr-jump"][data-arg="m3"]');await pause(100);
+ assert(d.querySelector('.nr-decision').textContent.includes('Confirmed by audio'),'Confirmed marker is not editable');
+ click('.nr-decision [data-act="cr-rename"]');await wait(()=>d.querySelector('[data-cr-name="m3"]'));input('[data-cr-name="m3"]','A custom test name');click('[data-act="cr-use-name"]');await pause(100);
+ assert(d.querySelector('.nr-before-after').textContent.includes('A custom test name'),'Rename failed');
+ click('.nr-decision [data-choice="restore"]');await pause(100);
+ assert(!d.querySelector('.nr-before-after').textContent.includes('A custom test name'),'Restore failed');log('PASS confirmed override and restore');
+ click('[data-act="nr-dock"]');frame.src='/?test='+Date.now()+path.slice(1);await new Promise(r=>frame.onload=r);await wait(()=>frame.contentDocument.querySelector('.nr-rail-wrap.pinned'));log('PASS pin survives reload');
+ d=frame.contentDocument;click('[data-act="nr-dock"]');
+ click('[data-act="cr-accept-recs"]');await pause(100);assert(d.querySelector('[data-act="cr-undo-bulk"]'),'Undo missing');click('[data-act="cr-undo-bulk"]');await pause(100);log('PASS bulk suggestions and undo');
+ click('[data-act="nr-advanced"]');await wait(()=>d.querySelector('#accept-min'));input('#accept-min','43.25');await pause(100);assert(d.querySelector('#accept-min').value==='43.25','Minimum change failed');
+ log('PASS decimal-capable per-book minimum');
+ // Publication is intentionally mocked here; real acceptance is covered by Python generated-media tests.
+ click('[data-act="nr-filter"][data-arg="all"]');await pause(100);
+ for(let n=0;n<80;n++){
+  const pending=d.querySelector('.nr-row.warn .nr-row-main,.nr-row.bad .nr-row-main');
+  if(!pending)break;
+  const id=pending.dataset.arg;pending.click();await pause(60);
+  const pick=d.querySelector('.nr-decision [data-choice="skip"],.nr-decision [data-choice="keep"]');assert(pick,'No explicit keep/skip choice for '+id);pick.click();await pause(80);
+ }
+ await wait(()=>d.querySelector('input[name="gap"]'));
+ d.querySelector('input[name="gap"]').click();await pause(80);
+ assert(!d.querySelector('[data-act="accept"]').disabled,'Save stayed disabled after explicit decisions');
+ const originalFetch=frame.contentWindow.fetch.bind(frame.contentWindow);let accepted=false,payload,fail=true;
+ frame.contentWindow.fetch=async(url,options)=>{
+  if(String(url).endsWith('/accept-recovery')){
+   payload=JSON.parse(options.body);
+   if(fail)return new Response(JSON.stringify({detail:'Synthetic save failure'}),{status:409,headers:{'Content-Type':'application/json'}});
+   accepted=true;return new Response(JSON.stringify({...job,status:'queued'}),{headers:{'Content-Type':'application/json'}});
+  }
+  if(accepted && String(url).startsWith('/api/jobs?'))return new Response(JSON.stringify({jobs:jobs.map(j=>j.id===job.id?{...j,status:'queued'}:j)}),{headers:{'Content-Type':'application/json'}});
+  return originalFetch(url,options);
+ };
+ click('[data-act="accept"]');await wait(()=>d.body.textContent.includes('Synthetic save failure'));
+ assert(d.querySelector('.nr-decision'),'Failed save removed the book');assert(d.querySelector('input[name="gap"]').checked,'Failed save lost consent');
+ fail=false;click('[data-act="accept"]');await wait(()=>!d.querySelector('.nr-decision'));
+ assert(payload.marker_decisions.length===23,'Submission omitted original markers');assert(payload.draft_token,'Submission omitted draft token');assert(payload.accept_possible_gap===true,'Submission omitted gap consent');
+ log('PASS failed save retains work; successful mocked save sends full contract and advances queue');
+ // Phone sheets: real controls, disposable draft only; do not execute cancellation.
+ frame.style.width='390px';frame.src='/?test='+Date.now()+path.slice(1);await new Promise(r=>frame.onload=r);await wait(()=>frame.contentDocument.querySelector('[data-act="nr-more"]'));d=frame.contentDocument;
+ click('[data-act="nr-more"]');await wait(()=>d.querySelector('[role="dialog"]'));
+ d.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await pause(80);
+ assert(!d.querySelector('[role="dialog"]'),'Escape failed to close phone sheet');assert(d.activeElement.dataset.act==='nr-more','Sheet did not restore focus');log('PASS phone sheet Escape and focus restoration');
+ click('[data-act="choose"][data-arg="draft"]');await pause(80);click('[data-act="markers"]');await wait(()=>d.querySelector('[role="dialog"]'));
+ assert(d.querySelector('[role="dialog"]').textContent.includes('replaces'),'Redraft confirmation missing');d.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));log('PASS redraft replacement confirmation');
+
+ results.textContent+='\nCOMPLETE';
+ }catch(e){log('FAIL '+e.stack)}
+};
+</script></html>

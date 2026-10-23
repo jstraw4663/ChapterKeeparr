@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"test":"node review.mjs"},"devDependencies":{"playwright":"1.56.1","axe-core":"4.11.0"}}

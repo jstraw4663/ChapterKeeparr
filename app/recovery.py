@@ -9,7 +9,49 @@ import shutil
 import resource
 import sys
 
-ALGORITHM_VERSION = 'alignment-recovery-4'
+ALGORITHM_VERSION = 'alignment-recovery-5'
+
+
+def embedded_headings(segment, boundary, clip_start):
+    """Additional draft evidence only: timed, separated, confident explicit headings.
+
+    Missing word alignment never licenses a search-anywhere text match. Existing
+    bounded wider retries still apply; uncertain cases stay for manual review.
+    """
+    from . import engine
+    words = segment.get('words') or []
+    found = set()
+    for index, word in enumerate(words):
+        if index == 0 or engine.tokens(word.get('word', '')) != ['chapter']:
+            continue
+        prefix = engine.tokens(' '.join(w.get('word', '') for w in words[max(0, index-6):index]))
+        # Even a pause does not turn an explicit narrative reference into a heading.
+        if any(t in prefix for t in ('in', 'chapter', 'read', 'reading', 'remember', 'recall', 'see', 'since', 'from', 'during', 'previous', 'next')):
+            continue
+        phrase = ''
+        for end in range(index, min(len(words), index+7)):
+            phrase += ' ' + words[end].get('word', '')
+            # Require the complete number, not a prefix of sixty one or 61.5.
+            number = engine.spoken_heading(phrase)
+            if number is None:
+                continue
+            following = engine.tokens(words[end+1].get('word', '')) if end+1 < len(words) else []
+            if following and (following[0] in engine.NUMBER_WORDS or following[0] in ('hundred', 'and') or following[0].isdigit()):
+                continue
+            try:
+                start = float(word['start'])
+                previous_end = float(words[index-1]['end'])
+                timing = [(float(w['start']), float(w['end']), float(w.get('probability', 0))) for w in words[index:end+1]]
+                if not all(math.isfinite(v) for row in timing for v in row) or not math.isfinite(previous_end):
+                    break
+                if any(b <= a or p < .7 for a,b,p in timing) or any(b > c for (_,b,_),(c,_,_) in zip(timing,timing[1:])):
+                    break
+                if boundary-2.1 <= clip_start+start <= boundary+8 and start-previous_end >= .35 and timing[-1][1]-start <= 4:
+                    found.add(number)
+            except (KeyError, TypeError, ValueError):
+                pass
+            break
+    return found
 
 
 def digest(value):
@@ -61,6 +103,7 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
         lp, ns = float(segment.get('avg_logprob', -99)), float(segment.get('no_speech_prob', 1))
         if not all(math.isfinite(x) for x in (at, lp, ns)) or lp < -1 or ns > .6:
             continue
+        observed.update(embedded_headings(segment, boundary, clip_start))
         if boundary - 2.1 <= at <= boundary + 8:
             good.append(segment.get('text',''))
             number = engine.spoken_heading(segment.get('text', ''))
@@ -192,9 +235,46 @@ def scan_markers(source, data, remote, speech, args, report, folder, evidence=No
 
 
 def run_local_review(args, report, folder):
+    """Redraft existing audio or the exact retained conversion, under the book lock."""
+    import fcntl
+    from . import engine, inspection
+    target = args.target
+    root = target if target.is_dir() else target.parent
+    fd = engine.open_book_lock(root)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise engine.NeedsReview('Another workflow is using this book folder.')
+        source = target
+        if target.is_dir():
+            prior = getattr(args, 'prior_report', {})
+            inventory = prior.get('source_manifest')
+            source = Path(args.prepared_cache) / 'prepared.m4b'
+            expected = prior.get('audio_source_sha256')
+            if not inventory or not expected or not source.is_file() or source.is_symlink():
+                raise engine.NeedsReview('The retained conversion is unavailable. Run the checks again to prepare current audio before drafting.')
+            if not inspection.unchanged(inventory, root, args.check_cancel) or engine.file_hash(source) != expected:
+                raise engine.NeedsReview('Source files or retained audio changed. Run the checks again before drafting.')
+            report['source_manifest'] = inventory
+        result = _run_local_review(args, report, folder, source, root)
+        if target.is_dir() and not inspection.unchanged(report['source_manifest'], root, args.check_cancel):
+            report['recovery_draft'].update(complete=False, invalidated=True)
+            engine.write_report(folder, report)
+            raise engine.NeedsReview('Source inventory changed during recovery; draft invalidated.')
+        return result
+    except engine.NeedsReview as ex:
+        # Keep the current gate and invalidation evidence visible to the worker.
+        report.update(status='needs_review', reason=str(ex))
+        engine.write_report(folder, report)
+        raise
+    finally:
+        os.close(fd)
+
+
+def _run_local_review(args, report, folder, source, root):
     from . import engine, flow
     flow.gate(report,'inspect','working','Inspecting existing audio for a draft-only scan')
-    source = args.target
     if not source.is_file() or source.suffix.lower() != '.m4b':
         raise engine.NeedsReview('Choose an existing M4B for local-marker review.')
     if not args.asin:
@@ -213,13 +293,17 @@ def run_local_review(args, report, folder):
     if published.get('asin') != args.asin or published.get('isAccurate') is not True:
         raise engine.NeedsReview('Selected recording has no verified published timeline.')
     remote = engine.remote_timeline(published)
+    # Redrafting must retain the same content-gap warnings as automatic recovery.
+    diagnostics = evaluate(data.get('chapters', []), remote, seconds, source_hash,
+                           [args.title, args.author, args.narrator])['diagnostics']
+    flow.check_coverage(report, diagnostics)
     report['edition'] = engine.summaries(book)
     report['selected_recording'] = {'asin':args.asin,'region':args.region}
     flow.gate(report,'match','passed','Selected recording metadata is compatible')
     flow.assess(report,'recording','compatible','Available recording metadata passed compatibility checks')
     flow.gate(report,'align','working','Scanning existing markers; draft cannot publish')
     evidence = []
-    for path in sorted(source.parent.glob('*.epub'))[:10]:
+    for path in sorted(root.glob('*.epub'))[:10]:
         if path.is_symlink(): continue
         try:
             item = engine.epub_evidence(path)
@@ -233,10 +317,12 @@ def run_local_review(args, report, folder):
     draft = scan_markers(source,data,remote,speech,args,report,folder,evidence)
     if engine.file_hash(source) != source_hash:
         draft.update(complete=False, invalidated=True)
+        engine.write_report(folder, report)
         raise engine.NeedsReview('Source changed during recovery. Draft is invalid; scan the current file again.')
     report.update(status='needs_review',reason='Local-marker draft saved: {} supported, {} unresolved markers and {} unresolved published sections. No audio was changed. Review is required.'.format(draft['supported_count'],draft['unresolved_count'],len(draft['missing_sections'])))
     flow.assess(report,'alignment','partial',f"{draft['supported_count']} supported existing markers; draft cannot publish")
-    flow.assess(report,'coverage','unresolved','Existing marker review cannot establish complete content')
+    if report['assessment']['coverage']['level'] != 'suspected_gap':
+        flow.assess(report,'coverage','unresolved','Existing marker review cannot establish complete content')
     flow.assess(report,'speech','local_markers','Existing markers scanned; missing/new boundaries are not verified')
     flow.require_review(report,'chapters',report['reason'],'align')
     engine.write_report(folder,report)

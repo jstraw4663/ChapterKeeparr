@@ -20,9 +20,10 @@ RUN apt-get update \
 
 WORKDIR /app
 COPY requirements.txt ./requirements.txt
+COPY scripts/check_speech_runtime.py ./scripts/check_speech_runtime.py
 RUN python -m pip install -r requirements.txt \
     && python -m pip check \
-    && python -c "import requests; from faster_whisper import WhisperModel"
+    && python scripts/check_speech_runtime.py
 
 # Resolve the model revision at build time. Override MODEL_REVISION with a
 # Hugging Face commit ID for a reproducible model snapshot. The default is

@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Needs review, full page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F0E}
+a{color:#F4F4F1}a:hover{color:#FFFFFF}
+button,input{font-family:Figtree,sans-serif}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid #3A3A37;background:transparent;color:#F4F4F1;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#222220}
+.btn.pri{background:#F4F4F1;color:#0F0F0E;border-color:#F4F4F1}
+.btn.pri:disabled{opacity:.45;cursor:default}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.warn{border-color:#4A3A18;color:#E9B34E}
+.btn.bad{border-color:#5A2A1A;color:#F08A6C}
+.icb{width:44px;height:44px;flex:none;border-radius:999px;border:1px solid #292927;background:transparent;color:#F4F4F1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background 160ms cubic-bezier(.2,.8,.2,1),color 160ms}
+.icb:hover{background:#222220}
+.icb:disabled{opacity:.35;cursor:default}
+.icb.sm{width:36px;height:36px}
+.icb.hi{background:#F4F4F1;color:#0F0F0E;border-color:#F4F4F1;animation:nudge 1.6s cubic-bezier(.2,.8,.2,1) 2}
+@keyframes nudge{0%,100%{box-shadow:0 0 0 0 rgba(244,244,241,.35)}50%{box-shadow:0 0 0 6px rgba(244,244,241,0)}}
+.link{background:none;border:none;color:#F4F4F1;font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#5A5A55;cursor:pointer;min-height:40px;padding:0 4px}
+.t{font-weight:600;font-size:13px;font-variant-numeric:tabular-nums;color:#9D9D97}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9D9D97}
+.panel{background:#171716;border:1px solid #292927;border-radius:20px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px;box-sizing:border-box;border-radius:14px;border:1px solid #292927;background:#1A1A19;color:#F4F4F1;text-align:left;cursor:pointer;transition:background 150ms cubic-bezier(.2,.8,.2,1),border-color 150ms}
+.opt:hover{border-color:#5A5A55}
+.radio{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid #5A5A55;box-sizing:border-box}
+.tagsug{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid currentColor}
+.listen{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:4px 12px 4px 4px;box-sizing:border-box;border-radius:14px;border:none;background:#222220;color:#F4F4F1;text-align:left;cursor:pointer}
+.play{width:40px;height:40px;flex:none;border-radius:50%;background:#F4F4F1;color:#0F0F0E;display:flex;align-items:center;justify-content:center}
+.fchip{display:flex;flex-direction:column;gap:7px;min-height:56px;min-width:0;padding:9px 12px 10px;box-sizing:border-box;border-radius:14px;border:1px solid #292927;background:#171716;color:#9D9D97;cursor:pointer;text-align:left}
+.fchip b{color:#F4F4F1;font-variant-numeric:tabular-nums}
+.strip{position:relative;display:block;height:6px;border-radius:3px;background:#262624;overflow:hidden}
+.row{display:flex;align-items:center;gap:4px;min-height:50px;padding:2px 4px 2px 2px;box-sizing:border-box;border-radius:12px;border:1px solid transparent;background:transparent}
+.row:hover{background:#151514}
+.cols{display:grid;grid-template-columns:72px minmax(0,1fr) 18px minmax(0,1fr) 96px;align-items:center;gap:10px}
+.rowmain{flex:1;min-width:0;min-height:44px;padding:4px 8px;border:none;background:transparent;color:#F4F4F1;text-align:left;cursor:pointer;border-radius:10px}
+.cell{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.check{width:22px;height:22px;flex:none;border-radius:50%;background:#F4F4F1;color:#0F0F0E;display:inline-flex;align-items:center;justify-content:center}
+.fold{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:6px 14px;box-sizing:border-box;border-radius:12px;border:1px dashed #333331;background:transparent;color:#9D9D97;text-align:left;cursor:pointer}
+.fold:hover{background:#171716}
+.lane{position:relative;height:16px;border-radius:4px;background:#1F1F1D}
+.pin{position:absolute;top:0;transform:translateX(-50%);min-width:26px;height:26px;padding:0 7px;box-sizing:border-box;border-radius:999px;border:2px solid #171716;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.tab{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid transparent;background:transparent;color:#9D9D97;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;flex:none}
+.tab:hover{color:#F4F4F1}
+.rail{position:absolute;top:0;bottom:0;left:0;width:84px;z-index:6;background:#0F0F0E;border-right:1px solid #292927;padding:20px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;overflow:hidden;transition:width 260ms cubic-bezier(.32,.72,0,1),box-shadow 260ms}
+.rail:hover,.rail:focus-within{width:320px;box-shadow:20px 0 50px rgba(0,0,0,.55)}
+.qtext{opacity:0;transition:opacity 160ms cubic-bezier(.2,.8,.2,1);white-space:nowrap}
+.rail:hover .qtext,.rail:focus-within .qtext,.rail.pinned .qtext{opacity:1;transition-delay:80ms}
+.rail.pinned{width:320px;box-shadow:none}
+.rail:not(:hover):not(:focus-within):not(.pinned) .qitem{background:transparent !important}
+.railwrap{flex:none;position:relative;transition:width 260ms cubic-bezier(.32,.72,0,1)}
+.pinb{margin-left:auto;width:36px;height:36px;flex:none;border-radius:999px;border:1px solid transparent;background:transparent;color:#9D9D97;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.pinb:hover{background:#222220;color:#F4F4F1}
+.pinb[aria-pressed="true"]{color:#F4F4F1;background:#222220;border-color:#3A3A37}
+.qitem{display:flex;align-items:center;gap:12px;width:300px;min-height:72px;padding:6px 8px;box-sizing:border-box;border-radius:14px;border:1px solid transparent;background:transparent;color:#F4F4F1;text-align:left;cursor:pointer}
+.qitem:hover{background:#1A1A19}
+.cov{position:relative;flex:none;border-radius:8px;display:flex;align-items:flex-end;padding:5px;box-sizing:border-box;font-weight:800;line-height:1.05}
+.cbadge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:999px;border:2px solid #0F0F0E;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.field{width:100%;min-height:44px;padding:0 14px;box-sizing:border-box;border-radius:12px;border:1px solid #292927;background:#141413;color:#F4F4F1;font-size:15px}
+.coll{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:0 18px;box-sizing:border-box;border:none;background:transparent;color:#F4F4F1;text-align:left;cursor:pointer;font-size:16px;font-weight:700}
+.hrow{display:flex;gap:14px;padding:10px 0;border-top:1px solid #292927;font-size:14px}
+.sheetrow{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 6px;border:none;background:transparent;color:#F4F4F1;font-size:16px;text-align:left;cursor:pointer;border-top:1px solid #292927}
+.fade{animation:fadeup 300ms cubic-bezier(.2,.7,.2,1)}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.fade,.icb.hi{animation:none}.rail,.railwrap{transition:none}}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #F4F4F1;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 2020px; box-sizing: border-box; padding: 48px 56px 64px; background: #0F0F0E; color: #F4F4F1; font-family: Figtree, sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 1040px">
+      <div class="eyebrow" style="color: #E9B34E">Full page · interactive · v2 · desktop and phone share one state</div>
+      <h1 style="margin: 0; font-size: 34px; font-weight: 800">Needs review, built around the docking brief</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #9D9D97">Every row opens in the decision panel, green ones included, so you can overrule a match. Choosing an option marks it and lights up Next instead of moving on. Hover the cover strip on desktop to see the queue; the third book is waiting on an edition, not chapters.</p>
+    </div>
+    <button class="btn" onClick="{{reset}}">Reset the demo</button>
+  </div>
+
+  <div style="display: flex; gap: 64px; align-items: flex-start">
+    <!-- ================= DESKTOP ================= -->
+    <div style="width: 1440px; display: flex; flex-direction: column; gap: 10px">
+      <div style="font-size: 12px; font-weight: 600; color: #9D9D97">Desktop · 1440 · sidebar collapsed · hover the covers · pin to keep it open</div>
+      <div style="position: relative; width: 1440px; height: 1080px; border: 1px solid #292927; border-radius: 16px; overflow: hidden; display: flex; background: #0F0F0E">
+        <nav aria-label="Main" style="width: 76px; flex: none; border-right: 1px solid #292927; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 0">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: #F4F4F1; color: #0F0F0E; display: flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 14px">C</div>
+          <a href="#" aria-label="Library" class="icb" style="border: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1.5"></rect><rect x="11" y="3" width="6" height="6" rx="1.5"></rect><rect x="3" y="11" width="6" height="6" rx="1.5"></rect><rect x="11" y="11" width="6" height="6" rx="1.5"></rect></svg></a>
+          <a href="#" aria-label="Queue" class="icb" style="border: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8"></path></svg></a>
+          <a href="#" aria-label="Needs review" class="icb" style="border: none; background: #222220; position: relative"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 11l2-6h10l2 6v4H3z"></path><path d="M3 11h4l1 2h4l1-2h4"></path></svg><sc-if value="{{qCount}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; border-radius: 999px; background: #E9B34E; color: #0F0F0E; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center">{{qCount}}</span></sc-if></a>
+          <a href="#" aria-label="Settings" class="icb" style="border: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h8M15 6h1M4 14h1M8 14h8"></path><circle cx="13.5" cy="6" r="1.8"></circle><circle cx="6.5" cy="14" r="1.8"></circle></svg></a>
+        </nav>
+
+        <div class="railwrap" style="width: {{railW}}px">
+          <aside class="{{railClass}}" aria-label="Waiting for you">
+            <div class="qtext" style="display: flex; align-items: center; gap: 10px; width: 300px; min-height: 40px; padding: 0 0 8px 8px; box-sizing: border-box"><span style="font-size: 15px; font-weight: 800">Waiting for you</span><span style="font-size: 12px; font-weight: 800; color: #E9B34E">{{qCount}}</span><button class="pinb" onClick="{{togglePin}}" aria-pressed="{{pinPressed}}" aria-label="{{pinLabel}}" title="{{pinLabel}}"><svg width="18" height="18" viewBox="0 0 20 20" fill="{{pinFill}}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M7.5 3h5l-.6 5 2.6 2.6V12h-9v-1.4L8.1 8z"></path><path d="M10 12v5"></path></svg></button></div>
+            <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+              <button class="qitem" style="{{q.style}}" onClick="{{q.pick}}" aria-current="{{q.current}}" aria-label="{{q.aria}}">
+                <span class="cov" style="{{q.cov}}; width: 48px; height: 62px; font-size: 8px; {{q.covRing}}">{{q.short}}<sc-if value="{{q.badge}}" hint-placeholder-val="{{ true }}"><span class="cbadge" style="{{q.badgeStyle}}">{{q.badge}}</span></sc-if></span>
+                <span class="qtext" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis">{{q.title}}</span><span style="font-size: 12px; font-weight: 700; color: {{q.leftColor}}">{{q.need}}</span><span style="font-size: 12px; color: #9D9D97">{{q.left}} · {{q.when}}</span></span>
+              </button>
+            </sc-for>
+          </aside>
+        </div>
+
+        <div data-scroller="d" style="flex: 1; min-width: 0; overflow-y: auto; position: relative">
+          <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+            <div class="fade" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; height: 100%; text-align: center"><div style="font-size: 26px; font-weight: 800">Nothing left to review</div><div style="font-size: 15px; color: #9D9D97">Everything you saved is in the queue.</div><a href="#" class="btn pri" style="text-decoration: none">Open queue</a></div>
+          </sc-if>
+          <sc-if value="{{hasBook}}" hint-placeholder-val="{{ true }}">
+            <div class="fade" style="padding: 28px 32px 0; display: flex; flex-direction: column; gap: 20px">
+              <div style="display: flex; gap: 20px; align-items: flex-start">
+                <div class="cov" style="{{b.cov}}; width: 92px; height: 120px; font-size: 13px">{{b.short}}</div>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><div class="eyebrow">{{b.series}}</div><h2 style="margin: 0; font-size: 30px; font-weight: 800; line-height: 1.1">{{b.title}}</h2><div style="font-size: 14px; color: #9D9D97">{{b.author}} · Narrated by {{b.narr}}</div></div>
+                <div style="display: flex; align-items: center; gap: 8px; position: relative">
+                  <span class="t" style="margin-right: 4px">{{pos}} of {{qCount}}</span>
+                  <button class="icb" onClick="{{prevBook}}" disabled="{{onlyOne}}" aria-label="Previous book"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 10l5-5 5 5"></path></svg></button>
+                  <button class="icb" onClick="{{nextBook}}" disabled="{{onlyOne}}" aria-label="Next book"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6l5 5 5-5"></path></svg></button>
+                  <button class="icb" onClick="{{toggleMenu}}" aria-label="More for this book" aria-expanded="{{menuOpen}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="13" cy="8" r="1.5"></circle></svg></button>
+                  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+                    <div class="panel" style="position: absolute; top: 52px; right: 0; width: 300px; padding: 8px; z-index: 5; box-shadow: 0 20px 50px rgba(0,0,0,.6); display: flex; flex-direction: column">
+                      <button class="sheetrow" style="border-top: none; font-size: 15px" onClick="{{openServer}}">Details from the server</button>
+                      <sc-if value="{{cancelAsk}}" hint-placeholder-val="{{ false }}"><div style="border-top: 1px solid #292927; padding: 12px 6px; display: flex; flex-direction: column; gap: 10px"><div style="font-size: 14px">Cancel this job? The files stay where they are.</div><div style="display: flex; gap: 8px"><button class="btn bad" onClick="{{cancelJob}}">Cancel job</button><button class="btn" onClick="{{toggleMenu}}">Keep it</button></div></div></sc-if>
+                      <sc-if value="{{notCancelAsk}}" hint-placeholder-val="{{ true }}"><button class="sheetrow" style="font-size: 15px; color: #F08A6C" onClick="{{askCancel}}">Cancel job…</button></sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 14px; align-items: flex-start; padding: 14px 18px; border-radius: 16px; background: #2E2513; border: 1px solid #4A3A18">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#E9B34E" stroke-width="1.7" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="10" cy="10" r="8"></circle><path d="M10 6v5M10 14v.01"></path></svg>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px"><div style="font-size: 15px; font-weight: 700">{{b.happened}}</div><div style="font-size: 14px; color: #CFCFC9">{{b.happenedSub}}</div><div style="font-size: 13px; color: #9D9D97">Edition: <span style="color: #F4F4F1; font-weight: 600">{{b.edition}}</span></div></div>
+                <button class="link" style="font-size: 13px; color: #E9B34E; flex: none" onClick="{{openServer}}">Details from the server</button>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <div class="eyebrow">What to do next</div>
+                <div role="tablist" aria-label="What to do next" style="display: flex; gap: 6px; padding: 4px; border-radius: 999px; background: #171716; border: 1px solid #292927; align-self: flex-start">
+                  <sc-for list="{{paths}}" as="p" hint-placeholder-count="4"><button role="tab" class="tab" style="{{p.style}}" aria-selected="{{p.on}}" onClick="{{p.pick}}">{{p.label}}</button></sc-for>
+                </div>
+              </div>
+
+              <sc-if value="{{isReview}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 16px">
+                  <section aria-label="Draft brief" class="panel" style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+                      <div style="display: flex; flex-direction: column; gap: 4px"><h3 style="margin: 0; font-size: 26px; font-weight: 800">{{headline}}</h3><div style="font-size: 14px; color: #9D9D97">{{subline}}</div></div>
+                      <sc-if value="{{canAcceptAll}}" hint-placeholder-val="{{ true }}"><button class="btn" onClick="{{acceptAll}}">Accept {{sugCount}} suggestions</button></sc-if>
+                    </div>
+                    <sc-if value="{{appliedNote}}" hint-placeholder-val="{{ false }}"><div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #CFCFC9">{{appliedNote}}<button class="link" onClick="{{undoAll}}">Undo</button></div></sc-if>
+                    <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 6px 12px; align-items: center">
+                      <span></span>
+                      <div style="position: relative; height: 28px"><sc-for list="{{pinsD}}" as="p" hint-placeholder-count="3"><button class="pin" style="{{p.style}}" onClick="{{p.go}}" aria-label="{{p.aria}}">{{p.label}}</button></sc-for></div>
+                      <span style="font-size: 12px; color: #9D9D97">Edition</span>
+                      <div class="lane" role="img" aria-label="{{edAria}}"><sc-for list="{{edTicks}}" as="k" hint-placeholder-count="40"><span style="{{k}}"></span></sc-for></div>
+                      <span style="font-size: 12px; color: #9D9D97">Your file</span>
+                      <div class="lane" role="img" aria-label="{{fileAria}}"><sc-for list="{{fileTicks}}" as="k" hint-placeholder-count="40"><span style="{{k}}"></span></sc-for></div>
+                      <span></span>
+                      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #9D9D97; font-variant-numeric: tabular-nums"><span>0:00</span><span>{{q1}}</span><span>{{q2}}</span><span>{{q3}}</span><span>{{b.length}}</span></div>
+                    </div>
+                    <sc-if value="{{blocked}}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #F08A6C"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex: none"><circle cx="10" cy="10" r="8"></circle><path d="M10 6v5M10 14v.01"></path></svg><span style="flex: 1"><b>{{pctText}} identified by audio, below your {{minText}} minimum.</b> <span style="color: #CFCFC9">Saving stays blocked unless you change the minimum for this book.</span></span><button class="link" style="font-size: 13px; color: #F08A6C" onClick="{{openAdv}}">Change in Advanced</button></div>
+                    </sc-if>
+                  </section>
+
+                  <div style="display: flex; gap: 20px; align-items: flex-start">
+                    <section aria-label="Every marker, before and after" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+                      <div role="group" aria-label="Show" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+                        <sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><button class="fchip" style="{{c.style}}" aria-pressed="{{c.on}}" onClick="{{c.pick}}"><span style="font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 6px">{{c.label}} <b>{{c.count}}</b></span><span class="strip" aria-hidden="true"><sc-for list="{{c.marks}}" as="m" hint-placeholder-count="6"><span style="{{m}}"></span></sc-for></span></button></sc-for>
+                      </div>
+                      <div class="cols" style="padding: 0 46px 0 12px; font-size: 12px; font-weight: 700; color: #9D9D97; min-height: 28px"><span>Time</span><span>In your file now</span><span></span><span>After you save</span><span>Evidence</span></div>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                          <sc-if value="{{r.isFold}}" hint-placeholder-val="{{ false }}">
+                            <button class="fold" onClick="{{r.toggle}}" aria-expanded="{{r.expanded}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9D9D97" stroke-width="1.6" aria-hidden="true"><path d="{{r.chev}}"></path></svg><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px"><span style="font-size: 14px; font-weight: 600; color: #F4F4F1">{{r.title}}</span><span class="strip" style="height: 4px; max-width: 240px" aria-hidden="true"><sc-for list="{{r.marks}}" as="m" hint-placeholder-count="6"><span style="{{m}}"></span></sc-for></span></span><span style="font-size: 13px">{{r.sub}}</span></button>
+                          </sc-if>
+                          <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}">
+                            <div class="row" style="{{r.style}}">
+                              <button class="rowmain cols" onClick="{{r.go}}" aria-label="{{r.aria}}">
+                                <span class="t">{{r.time}}</span>
+                                <span class="cell" style="color: {{r.beforeColor}}; {{r.beforeDeco}}">{{r.before}}</span>
+                                <span aria-hidden="true" style="color: {{r.arrowColor}}; font-size: 14px">{{r.arrow}}</span>
+                                <span class="cell" style="font-weight: {{r.afterWeight}}; color: {{r.afterColor}}; font-style: {{r.afterStyle}}">{{r.after}}</span>
+                                <span style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: {{r.stColor}}"><sc-if value="{{r.check}}" hint-placeholder-val="{{ false }}"><span class="check" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M2.5 6.2l2.4 2.3 4.6-5"></path></svg></span></sc-if><sc-if value="{{r.noCheck}}" hint-placeholder-val="{{ true }}"><span style="{{r.dot}}" aria-hidden="true"></span></sc-if>{{r.st}}</span>
+                              </button>
+                              <button class="icb sm" onClick="{{r.listen}}" aria-label="{{r.listenAria}}" style="{{r.listenStyle}}"><sc-if value="{{r.playing}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2" height="7" rx="1"></rect><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="10" y="5" width="2" height="6" rx="1"></rect></svg></sc-if><sc-if value="{{r.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"></path></svg></sc-if></button>
+                            </div>
+                          </sc-if>
+                        </sc-for>
+                      </div>
+                    </section>
+
+                    <aside aria-label="Decision" style="width: 440px; flex: none; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 10px">
+                      <div style="display: flex; align-items: center; gap: 8px"><div class="eyebrow" style="flex: 1; color: {{fc.stepColor}}">{{fc.step}}</div><button class="icb" onClick="{{fc.prev}}" aria-label="Previous item that needs you"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3L5 8l5 5"></path></svg></button><button class="{{fc.nextClass}}" onClick="{{fc.next}}" aria-label="Next item that needs you"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg></button></div>
+                      <div style="{{fc.cardStyle}}; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+                        <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><span class="t" style="font-size: 15px; color: #F4F4F1">{{fc.time}}</span><span style="font-size: 13px; font-weight: 700; color: {{fc.kindColor}}">{{fc.kind}}</span></div>
+                        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: #141413">
+                          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #9D9D97">IN YOUR FILE</span><span style="font-size: 15px; font-weight: 600; color: #CFCFC9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{fc.before}}</span></span>
+                          <span aria-hidden="true" style="color: #9D9D97">→</span>
+                          <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #9D9D97">AFTER YOU SAVE</span><span style="font-size: 15px; font-weight: 750; color: {{fc.afterColor}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{fc.after}}</span></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #9D9D97" aria-label="{{fc.betweenAria}}"><span style="max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{fc.prevName}}</span><span style="flex: 1; position: relative; height: 2px; background: #3A3A37"><span style="{{fc.dot}}"></span></span><span style="max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{fc.nextName}}</span></div>
+                        <sc-if value="{{fc.hasListen}}" hint-placeholder-val="{{ true }}"><button class="listen" onClick="{{fc.listen}}"><span class="play"><sc-if value="{{fc.playing}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2" height="7" rx="1"></rect><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="10" y="5" width="2" height="6" rx="1"></rect></svg></sc-if><sc-if value="{{fc.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"></path></svg></sc-if></span><span style="flex: 1; font-size: 14px; font-style: italic; line-height: 1.35">{{fc.excerpt}}</span><span style="font-size: 12px; color: #9D9D97">15 s</span></button></sc-if>
+                        <sc-if value="{{fc.confirmedNote}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #9D9D97; line-height: 1.45">{{fc.confirmedNote}}</div></sc-if>
+                        <sc-if value="{{fc.renaming}}" hint-placeholder-val="{{ false }}">
+                          <div style="display: flex; flex-direction: column; gap: 8px"><label for="rnD" style="font-size: 13px; font-weight: 600">New name</label><input id="rnD" class="field" value="{{renameVal}}" onChange="{{onRenameInput}}"><div style="display: flex; gap: 8px"><button class="btn pri" onClick="{{useName}}">Use name</button><button class="btn" onClick="{{closeEditors}}">Cancel</button></div></div>
+                        </sc-if>
+                        <sc-if value="{{fc.allOpen}}" hint-placeholder-val="{{ false }}">
+                          <div style="display: flex; flex-direction: column; gap: 8px">
+                            <label for="acD" style="font-size: 13px; font-weight: 600">All chapters · in order here</label>
+                            <input id="acD" class="field" placeholder="Find a chapter" value="{{allQuery}}" onChange="{{onAllInput}}">
+                            <div style="display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto"><sc-for list="{{fc.allList}}" as="o" hint-placeholder-count="4"><button class="opt" style="min-height: 46px" onClick="{{o.pick}}"><span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">{{o.label}}</span><span style="font-size: 12px; color: #9D9D97">{{o.sub}}</span></span></button></sc-for></div>
+                            <sc-if value="{{fc.outsideClosed}}" hint-placeholder-val="{{ true }}"><button class="link" style="align-self: flex-start; font-size: 13px" onClick="{{showOutside}}">Show 3 chapters outside the usual order</button></sc-if>
+                            <sc-if value="{{fc.outsideOpen}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #E9B34E">These break the published order. Only use one if you’ve listened and you’re sure.</div><sc-for list="{{fc.outList}}" as="o" hint-placeholder-count="3"><button class="opt" style="min-height: 46px; border-color: #4A3A18" onClick="{{o.pick}}"><span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">{{o.label}}</span><span style="font-size: 12px; color: #9D9D97">{{o.sub}}</span></span></button></sc-for></sc-if>
+                            <button class="btn" style="align-self: flex-start" onClick="{{closeEditors}}">Back to the options</button>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{fc.showOptions}}" hint-placeholder-val="{{ true }}">
+                          <div style="display: flex; flex-direction: column; gap: 8px"><sc-for list="{{fc.options}}" as="o" hint-placeholder-count="2"><button class="opt" style="{{o.style}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}"><span class="radio" style="{{o.radio}}"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">{{o.label}}</span><span style="font-size: 12px; color: {{o.subColor}}">{{o.sub}}</span></span><sc-if value="{{o.tag}}" hint-placeholder-val="{{ false }}"><span class="tagsug" style="{{o.tagStyle}}">{{o.tag}}</span></sc-if></button></sc-for></div>
+                          <div style="display: flex; flex-wrap: wrap; gap: 4px 10px"><sc-for list="{{fc.others}}" as="x" hint-placeholder-count="3"><button class="link" style="font-size: 13px; {{x.style}}" onClick="{{x.act}}">{{x.label}}</button></sc-for></div>
+                        </sc-if>
+                        <sc-if value="{{fc.continue}}" hint-placeholder-val="{{ false }}"><button class="btn pri fade" style="width: 100%; justify-content: space-between" onClick="{{fc.goContinue}}"><span>{{fc.continue}}</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 2l5 5-5 5"></path></svg></button></sc-if>
+                        <sc-if value="{{fc.doneNote}}" hint-placeholder-val="{{ false }}"><div class="fade" style="font-size: 14px; font-weight: 600; color: #7FC98C">{{fc.doneNote}}</div></sc-if>
+                      </div>
+                    </aside>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{isRedraft}}" hint-placeholder-val="{{ false }}">
+                <section class="panel" style="padding: 24px; display: flex; flex-direction: column; gap: 14px; max-width: 720px">
+                  <h3 style="margin: 0; font-size: 22px; font-weight: 800">Draft the chapters again</h3>
+                  <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #CFCFC9">For when this is the right edition but the markers are off. ChapterKeeparr listens at each marker in your file again and drafts new names. Your file isn’t changed.</p>
+                  <sc-if value="{{redraftAsk}}" hint-placeholder-val="{{ false }}"><div style="padding: 14px 16px; border-radius: 14px; background: #2E2513; border: 1px solid #4A3A18; display: flex; flex-direction: column; gap: 10px"><div style="font-size: 14px">This replaces the current draft{{lostText}}. The book goes back to the queue while it drafts.</div><div style="display: flex; gap: 8px"><button class="btn warn" onClick="{{redraft}}">Draft again</button><button class="btn" onClick="{{cancelRedraft}}">Keep this draft</button></div></div></sc-if>
+                  <sc-if value="{{notRedraftAsk}}" hint-placeholder-val="{{ true }}"><button class="btn pri" style="align-self: flex-start" onClick="{{askRedraft}}">Draft the chapters again</button></sc-if>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{isEdition}}" hint-placeholder-val="{{ false }}">
+                <section class="panel" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; max-width: 820px">
+                  <div style="display: flex; flex-direction: column; gap: 4px"><h3 style="margin: 0; font-size: 22px; font-weight: 800">{{edHead}}</h3><p style="margin: 0; font-size: 15px; color: #CFCFC9">{{edSub}}</p></div>
+                  <sc-if value="{{b.quickFixes}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn warn">Try another region</button><button class="btn warn">Use the embedded audiobook ID</button></div></sc-if>
+                  <div style="display: flex; gap: 8px"><label for="edD" style="position: absolute; left: -9999px">Title or ASIN</label><input id="edD" class="field" style="flex: 1" value="{{b.title}}"><button class="btn">Fill from <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg></button><button class="btn">Search</button></div>
+                  <div role="radiogroup" aria-label="Editions" style="display: flex; flex-direction: column; gap: 8px"><sc-for list="{{editions}}" as="e" hint-placeholder-count="3"><button class="opt" role="radio" aria-checked="{{e.on}}" style="{{e.style}}" onClick="{{e.pick}}"><span class="radio" style="{{e.radio}}"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">{{e.title}}</span><span style="font-size: 13px; color: #9D9D97">{{e.sub}}</span></span><span style="font-size: 13px; font-weight: 700; color: {{e.fitColor}}">{{e.fit}}</span></button></sc-for></div>
+                  <div style="display: flex; gap: 8px; align-items: center"><button class="btn pri" disabled="{{noEdition}}" onClick="{{reverify}}">Save and re-verify</button><button class="link" style="font-size: 13px">Edit the details by hand</button></div>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{isRerun}}" hint-placeholder-val="{{ false }}">
+                <section class="panel" style="padding: 24px; display: flex; flex-direction: column; gap: 14px; max-width: 720px">
+                  <h3 style="margin: 0; font-size: 22px; font-weight: 800">Run the checks again</h3>
+                  <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #CFCFC9">Only if something changed outside ChapterKeeparr. With the same edition and markers, the result will be the same.</p>
+                  <button class="btn pri" style="align-self: flex-start" onClick="{{rerun}}">Run the checks again</button>
+                </section>
+              </sc-if>
+
+              <div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px">
+                <div class="eyebrow">History and settings</div>
+                <section class="panel">
+                  <button class="coll" onClick="{{toggleHistory}}" aria-expanded="{{historyOpen}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{historyChev}}"></path></svg><span style="flex: 1">History</span><span style="font-size: 13px; font-weight: 500; color: #9D9D97">{{historySub}}</span></button>
+                  <sc-if value="{{historyOpen}}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 0 18px 14px 46px">
+                      <sc-if value="{{hasSession}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #E9B34E; padding: 4px 0 6px">NOT SAVED YET</div><sc-for list="{{session}}" as="h" hint-placeholder-count="2"><div class="hrow"><span class="t" style="width: 76px; flex: none">This visit</span><span style="flex: 1">{{h}}</span></div></sc-for><div style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #9D9D97; padding: 14px 0 6px">EARLIER</div></sc-if>
+                      <sc-for list="{{b.history}}" as="h" hint-placeholder-count="4"><div class="hrow"><span class="t" style="width: 76px; flex: none">{{h.when}}</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{h.what}}</span><span style="color: #9D9D97; font-size: 13px">{{h.sub}}</span></span></div></sc-for>
+                    </div>
+                  </sc-if>
+                </section>
+                <section class="panel">
+                  <button class="coll" onClick="{{toggleServer}}" aria-expanded="{{serverOpen}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{serverChev}}"></path></svg><span style="flex: 1">Details from the server</span><span style="font-size: 13px; font-weight: 500; color: #9D9D97">Checks, timing and raw message</span></button>
+                  <sc-if value="{{serverOpen}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 18px 16px 46px"><sc-for list="{{b.server}}" as="s" hint-placeholder-count="4"><div class="hrow"><span style="width: 160px; flex: none; color: #9D9D97">{{s.k}}</span><span style="flex: 1">{{s.v}}</span></div></sc-for></div></sc-if>
+                </section>
+                <section class="panel" data-adv="d">
+                  <button class="coll" onClick="{{toggleAdv}}" aria-expanded="{{advOpen}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{advChev}}"></path></svg><span style="flex: 1">Advanced</span><span style="font-size: 13px; font-weight: 500; color: {{advSubColor}}">{{advSub}}</span></button>
+                  <sc-if value="{{advOpen}}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 0 18px 18px 46px; display: flex; flex-direction: column; gap: 14px">
+                      <sc-if value="{{hasPct}}" hint-placeholder-val="{{ true }}"><div style="display: flex; align-items: center; gap: 14px"><div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Minimum identified by audio</span><span style="font-size: 13px; color: #9D9D97">This book only. The default of 95% is in Settings. This draft: {{pctText}}.</span></div><button class="icb" onClick="{{minDown}}" aria-label="Lower the minimum"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h8"></path></svg></button><span style="width: 52px; text-align: center; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums">{{minText}}</span><button class="icb" onClick="{{minUp}}" aria-label="Raise the minimum"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h8M7 3v8"></path></svg></button></div>
+                      <sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}"><button class="btn bad" style="align-self: flex-start" onClick="{{lowerMin}}">Set to {{floorPct}}% so this draft can save</button></sc-if></sc-if>
+                      <div style="font-size: 14px; color: #CFCFC9">{{b.coverage}}</div>
+                      <div style="font-size: 13px; color: #9D9D97">Your choices are kept in this browser until you save.</div>
+                    </div>
+                  </sc-if>
+                </section>
+              </div>
+              <div style="height: 120px"></div>
+            </div>
+
+            <sc-if value="{{isReview}}" hint-placeholder-val="{{ true }}">
+              <div style="position: sticky; bottom: 16px; margin: 0 32px; padding: 10px 12px 10px 18px; border-radius: 20px; background: rgba(23,23,22,.94); border: 1px solid #292927; box-shadow: 0 20px 50px rgba(0,0,0,.6); display: flex; align-items: center; gap: 14px; backdrop-filter: blur(12px)">
+                <div style="flex: 1; display: flex; align-items: center; gap: 14px; min-width: 0">
+                  <span style="font-size: 15px; font-weight: 700; color: {{attnColor}}; white-space: nowrap">{{attnLine}}</span>
+                  <span style="font-size: 13px; color: #9D9D97; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{attnNext}}</span>
+                </div>
+                <sc-if value="{{showGap}}" hint-placeholder-val="{{ false }}"><label class="fade" style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #CFCFC9; cursor: pointer; min-height: 44px; max-width: 420px"><input type="checkbox" checked="{{gapOk}}" onChange="{{toggleGap}}" style="width: 20px; height: 20px; flex: none; accent-color: #F4F4F1">I accept possible gaps or edition differences. Matching chapters doesn’t prove the audio is complete.</label></sc-if>
+                <sc-if value="{{attn}}" hint-placeholder-val="{{ true }}"><button class="{{barNextClass}}" onClick="{{goAttn}}" aria-label="Go to the next item that needs you"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6l5 5 5-5"></path></svg></button></sc-if>
+                <button class="btn pri" disabled="{{saveBlocked}}" onClick="{{save}}">Accept and save</button>
+              </div>
+            </sc-if>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+          <div class="fade" role="status" style="position: absolute; right: 24px; bottom: 96px; width: 360px; padding: 14px 16px; border-radius: 16px; background: #1F1F1D; border: 1px solid #3A3A37; box-shadow: 0 10px 28px rgba(0,0,0,.5); display: flex; align-items: center; gap: 12px; z-index: 9"><div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 14px">{{toast.title}}</b><span style="font-size: 13px; color: #9D9D97">{{toast.body}}</span></div><a href="#" style="font-size: 13px; font-weight: 700">Open queue</a></div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ================= PHONE ================= -->
+    <div style="width: 390px; flex: none; display: flex; flex-direction: column; gap: 10px">
+      <div style="font-size: 12px; font-weight: 600; color: #9D9D97">Phone · 390 × 844 · scroll inside</div>
+      <div style="position: relative; width: 390px; height: 844px; border: 1px solid #292927; border-radius: 36px; overflow: hidden; background: #0F0F0E; display: flex; flex-direction: column">
+        <div style="flex: none; display: flex; align-items: center; gap: 6px; padding: 14px 12px 8px; border-bottom: 1px solid #1F1F1D">
+          <a href="#" class="icb" style="border: none" aria-label="Back to Needs review"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M11 3L5 9l6 6"></path></svg></a>
+          <div style="flex: 1; text-align: center; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 700">Needs review</span><span class="t" style="font-size: 12px">{{phonePos}}</span></div>
+          <button class="icb" style="border: none" onClick="{{openMore}}" aria-label="More for this book"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="8" r="1.5"></circle><circle cx="8" cy="8" r="1.5"></circle><circle cx="13" cy="8" r="1.5"></circle></svg></button>
+        </div>
+
+        <div data-scroller="p" style="flex: 1; overflow-y: auto; position: relative">
+          <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><div style="padding: 120px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center"><div style="font-size: 24px; font-weight: 800">Nothing left to review</div><div style="font-size: 15px; color: #9D9D97">Everything you saved is in the queue.</div><a href="#" class="btn pri" style="text-decoration: none">Open queue</a></div></sc-if>
+          <sc-if value="{{hasBook}}" hint-placeholder-val="{{ true }}">
+            <div class="fade" style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; gap: 14px; align-items: center"><div class="cov" style="{{b.cov}}; width: 56px; height: 74px; font-size: 8px">{{b.short}}</div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><div style="font-size: 19px; font-weight: 800; line-height: 1.15">{{b.title}}</div><div style="font-size: 13px; color: #E9B34E; font-weight: 600">{{b.need}}</div></div></div>
+
+              <div role="tablist" aria-label="What to do next" style="display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 0 16px"><sc-for list="{{paths}}" as="p" hint-placeholder-count="4"><button role="tab" class="tab" style="{{p.styleP}}" aria-selected="{{p.on}}" onClick="{{p.pick}}">{{p.short}}</button></sc-for></div>
+
+              <sc-if value="{{isReview}}" hint-placeholder-val="{{ true }}">
+                <section aria-label="Draft brief" class="panel" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px"><h3 style="margin: 0; font-size: 20px; font-weight: 800">{{headline}}</h3><span style="font-size: 12px; color: #9D9D97">{{b.length}}</span></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="position: relative; height: 30px; margin: 0 14px"><sc-for list="{{pinsP}}" as="p" hint-placeholder-count="3"><button class="pin" style="{{p.style}}; min-width: 32px; height: 30px" onClick="{{p.goP}}" aria-label="{{p.aria}}">{{p.label}}</button></sc-for></div>
+                    <div class="lane" style="height: 10px" role="img" aria-label="{{edAria}}"><sc-for list="{{edTicks}}" as="k" hint-placeholder-count="40"><span style="{{k}}"></span></sc-for></div>
+                    <div class="lane" role="img" aria-label="{{fileAria}}"><sc-for list="{{fileTicks}}" as="k" hint-placeholder-count="40"><span style="{{k}}"></span></sc-for></div>
+                  </div>
+                  <div style="font-size: 13px; color: #9D9D97">{{subline}}</div>
+                  <sc-if value="{{blocked}}" hint-placeholder-val="{{ true }}"><button onClick="{{openAdvP}}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: none; background: transparent; color: #F08A6C; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" style="flex: none"><circle cx="10" cy="10" r="8"></circle><path d="M10 6v5M10 14v.01"></path></svg>{{pctText}} by audio, below your {{minText}} minimum. Change it in Advanced</button></sc-if>
+                  <sc-if value="{{canAcceptAll}}" hint-placeholder-val="{{ true }}"><button class="btn" style="width: 100%" onClick="{{acceptAll}}">Accept {{sugCount}} suggestions</button></sc-if>
+                  <sc-if value="{{appliedNote}}" hint-placeholder-val="{{ false }}"><div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #CFCFC9">{{appliedNote}}<button class="link" onClick="{{undoAll}}">Undo</button></div></sc-if>
+                </section>
+
+                <section data-phone-card="1" aria-label="Decision" style="{{fc.cardStyle}}; border-radius: 18px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; scroll-margin-top: 8px">
+                  <div style="display: flex; align-items: center; gap: 6px"><div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span class="eyebrow" style="font-size: 11px; color: {{fc.stepColor}}">{{fc.stepShort}}</span><span style="display: flex; gap: 8px; align-items: baseline"><span class="t" style="color: #F4F4F1">{{fc.time}}</span><span style="font-size: 12px; font-weight: 700; color: {{fc.kindColor}}">{{fc.kind}}</span></span></div><button class="icb" onClick="{{fc.prevP}}" aria-label="Previous item that needs you"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3L5 8l5 5"></path></svg></button><button class="{{fc.nextClass}}" onClick="{{fc.nextP}}" aria-label="Next item that needs you"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg></button></div>
+                  <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; background: #141413"><span style="font-size: 13px; color: #9D9D97; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{fc.before}} →</span><span style="font-size: 16px; font-weight: 750; color: {{fc.afterColor}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{fc.after}}</span></div>
+                  <sc-if value="{{fc.hasListen}}" hint-placeholder-val="{{ true }}"><button class="listen" onClick="{{fc.listen}}"><span class="play"><sc-if value="{{fc.playing}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2" height="7" rx="1"></rect><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="10" y="5" width="2" height="6" rx="1"></rect></svg></sc-if><sc-if value="{{fc.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"></path></svg></sc-if></span><span style="flex: 1; font-size: 13px; font-style: italic; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{fc.excerpt}}</span></button></sc-if>
+                  <sc-if value="{{fc.renaming}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 8px"><label for="rnP" style="font-size: 13px; font-weight: 600">New name</label><input id="rnP" class="field" value="{{renameVal}}" onChange="{{onRenameInput}}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><button class="btn" onClick="{{closeEditors}}">Cancel</button><button class="btn pri" onClick="{{useName}}">Use name</button></div></div></sc-if>
+                  <sc-if value="{{fc.allOpen}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 8px"><label for="acP" style="font-size: 13px; font-weight: 600">All chapters · in order here</label><input id="acP" class="field" placeholder="Find a chapter" value="{{allQuery}}" onChange="{{onAllInput}}"><div style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto"><sc-for list="{{fc.allList}}" as="o" hint-placeholder-count="4"><button class="opt" onClick="{{o.pick}}"><span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600">{{o.label}}</span><span style="font-size: 12px; color: #9D9D97">{{o.sub}}</span></span></button></sc-for></div><button class="btn" onClick="{{closeEditors}}">Back to the options</button></div></sc-if>
+                  <sc-if value="{{fc.showOptions}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 8px"><sc-for list="{{fc.options}}" as="o" hint-placeholder-count="2"><button class="opt" style="{{o.style}}" onClick="{{o.pick}}" aria-pressed="{{o.on}}"><span class="radio" style="{{o.radio}}"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">{{o.label}}</span><span style="font-size: 12px; color: {{o.subColor}}">{{o.sub}}</span></span><sc-if value="{{o.tag}}" hint-placeholder-val="{{ false }}"><span class="tagsug" style="{{o.tagStyle}}">{{o.tag}}</span></sc-if></button></sc-for></div><div style="display: flex; flex-wrap: wrap; gap: 0 6px; margin: -4px 0 -6px"><sc-for list="{{fc.others}}" as="x" hint-placeholder-count="3"><button class="link" style="font-size: 13px; {{x.style}}" onClick="{{x.act}}">{{x.label}}</button></sc-for></div></sc-if>
+                  <sc-if value="{{fc.continue}}" hint-placeholder-val="{{ false }}"><button class="btn pri fade" style="width: 100%; justify-content: space-between" onClick="{{fc.goContinueP}}"><span style="overflow: hidden; text-overflow: ellipsis">{{fc.continueShort}}</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 2l5 5-5 5"></path></svg></button></sc-if>
+                  <sc-if value="{{fc.doneNote}}" hint-placeholder-val="{{ false }}"><div class="fade" style="font-size: 14px; font-weight: 600; color: #7FC98C">{{fc.doneNote}}</div></sc-if>
+                </section>
+
+                <section aria-label="Every marker, before and after" style="display: flex; flex-direction: column; gap: 10px">
+                  <div role="group" aria-label="Show" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><sc-for list="{{chips}}" as="c" hint-placeholder-count="4"><button class="fchip" style="{{c.style}}" aria-pressed="{{c.on}}" onClick="{{c.pick}}"><span style="font-size: 13px; font-weight: 600; display: flex; justify-content: space-between">{{c.label}} <b>{{c.count}}</b></span><span class="strip" aria-hidden="true"><sc-for list="{{c.marks}}" as="m" hint-placeholder-count="6"><span style="{{m}}"></span></sc-for></span></button></sc-for></div>
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                      <sc-if value="{{r.isFold}}" hint-placeholder-val="{{ false }}"><button class="fold" style="padding: 6px 12px" onClick="{{r.toggle}}" aria-expanded="{{r.expanded}}"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 600; color: #F4F4F1">{{r.title}}</span><span style="font-size: 12px">{{r.sub}}</span></span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9D9D97" stroke-width="1.6" aria-hidden="true"><path d="{{r.chev}}"></path></svg></button></sc-if>
+                      <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}"><div class="row" style="{{r.style}}"><button class="rowmain" style="display: flex; flex-direction: column; gap: 1px; padding: 6px 8px" onClick="{{r.goP}}" aria-label="{{r.aria}}"><span style="display: flex; justify-content: space-between; gap: 8px; width: 100%"><span class="t">{{r.time}}</span><span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: {{r.stColor}}"><sc-if value="{{r.noCheck}}" hint-placeholder-val="{{ true }}"><span style="{{r.dot}}" aria-hidden="true"></span></sc-if>{{r.st}}</span></span><span style="font-size: 13px; color: {{r.beforeColor}}; {{r.beforeDeco}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{r.beforeP}}</span><span style="font-size: 15px; font-weight: {{r.afterWeight}}; color: {{r.afterColor}}; font-style: {{r.afterStyle}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{r.after}}</span></button><button class="icb" onClick="{{r.listen}}" aria-label="{{r.listenAria}}" style="{{r.listenStyle}}"><sc-if value="{{r.playing}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2" height="7" rx="1"></rect><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="10" y="5" width="2" height="6" rx="1"></rect></svg></sc-if><sc-if value="{{r.notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"></path></svg></sc-if></button></div></sc-if>
+                    </sc-for>
+                  </div>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{isRedraft}}" hint-placeholder-val="{{ false }}"><section class="panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px"><h3 style="margin: 0; font-size: 20px; font-weight: 800">Draft the chapters again</h3><p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CFCFC9">For when the edition is right but the markers are off. Your file isn’t changed.</p><button class="btn pri" style="width: 100%" onClick="{{askRedraftSheet}}">Draft the chapters again</button></section></sc-if>
+              <sc-if value="{{isEdition}}" hint-placeholder-val="{{ false }}"><section class="panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px"><h3 style="margin: 0; font-size: 20px; font-weight: 800">{{edHead}}</h3><sc-if value="{{b.quickFixes}}" hint-placeholder-val="{{ false }}"><div style="font-size: 14px; color: #CFCFC9">{{edSub}}</div><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><button class="btn warn" style="padding: 0 10px; font-size: 13px">Another region</button><button class="btn warn" style="padding: 0 10px; font-size: 13px">Embedded ID</button></div></sc-if><div style="display: flex; gap: 8px"><label for="edP" style="position: absolute; left: -9999px">Title or ASIN</label><input id="edP" class="field" style="flex: 1" value="{{b.title}}"><button class="icb" aria-label="Fill from filename or tags"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h7l3 3v7H3z"></path></svg></button><button class="icb" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg></button></div><sc-for list="{{editions}}" as="e" hint-placeholder-count="3"><button class="opt" role="radio" aria-checked="{{e.on}}" style="{{e.style}}" onClick="{{e.pick}}"><span class="radio" style="{{e.radio}}"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 650">{{e.title}}</span><span style="font-size: 12px; color: #9D9D97">{{e.sub}}</span><span style="font-size: 12px; font-weight: 700; color: {{e.fitColor}}">{{e.fit}}</span></span></button></sc-for><button class="btn pri" style="width: 100%" disabled="{{noEdition}}" onClick="{{reverify}}">Save and re-verify</button></section></sc-if>
+              <sc-if value="{{isRerun}}" hint-placeholder-val="{{ false }}"><section class="panel" style="padding: 16px; display: flex; flex-direction: column; gap: 12px"><h3 style="margin: 0; font-size: 20px; font-weight: 800">Run the checks again</h3><p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CFCFC9">Only if something changed outside ChapterKeeparr. Same edition and markers give the same result.</p><button class="btn pri" style="width: 100%" onClick="{{rerun}}">Run the checks again</button></section></sc-if>
+
+              <section class="panel"><button class="coll" onClick="{{toggleHistory}}" aria-expanded="{{historyOpen}}"><span style="flex: 1">History</span><span style="font-size: 12px; font-weight: 500; color: #9D9D97">{{historySubShort}}</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{historyChev}}"></path></svg></button>
+                <sc-if value="{{historyOpen}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 18px 12px"><sc-if value="{{hasSession}}" hint-placeholder-val="{{ false }}"><div style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #E9B34E; padding: 2px 0 6px">NOT SAVED YET</div><sc-for list="{{session}}" as="h" hint-placeholder-count="2"><div class="hrow" style="font-size: 13px">{{h}}</div></sc-for><div style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #9D9D97; padding: 12px 0 6px">EARLIER</div></sc-if><sc-for list="{{b.history}}" as="h" hint-placeholder-count="4"><div class="hrow" style="flex-direction: column; gap: 2px; font-size: 13px"><span class="t" style="font-size: 12px">{{h.when}}</span><span style="font-weight: 600">{{h.what}}</span><span style="color: #9D9D97">{{h.sub}}</span></div></sc-for></div></sc-if>
+              </section>
+              <section class="panel" data-adv="p"><button class="coll" onClick="{{toggleAdv}}" aria-expanded="{{advOpen}}"><span style="flex: 1">Advanced</span><span style="font-size: 12px; font-weight: 500; color: {{advSubColor}}">{{advSub}}</span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="{{advChev}}"></path></svg></button>
+                <sc-if value="{{advOpen}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 18px 16px; display: flex; flex-direction: column; gap: 12px"><sc-if value="{{hasPct}}" hint-placeholder-val="{{ true }}"><div style="font-size: 14px; font-weight: 600">Minimum identified by audio, this book</div><div style="display: flex; align-items: center; gap: 12px"><button class="icb" onClick="{{minDown}}" aria-label="Lower the minimum"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h8"></path></svg></button><span style="flex: 1; text-align: center; font-size: 20px; font-weight: 800">{{minText}}</span><button class="icb" onClick="{{minUp}}" aria-label="Raise the minimum"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 7h8M7 3v8"></path></svg></button></div><div style="font-size: 13px; color: #9D9D97">This draft: {{pctText}}. The default is in Settings.</div><sc-if value="{{blocked}}" hint-placeholder-val="{{ false }}"><button class="btn bad" style="width: 100%" onClick="{{lowerMin}}">Set to {{floorPct}}% so this draft can save</button></sc-if></sc-if><div style="font-size: 13px; color: #CFCFC9">{{b.coverage}}</div></div></sc-if>
+              </section>
+              <div style="height: 120px"></div>
+            </div>
+
+            <sc-if value="{{isReview}}" hint-placeholder-val="{{ true }}">
+              <div style="position: sticky; bottom: 0; padding: 8px 12px 10px 16px; background: rgba(15,15,14,.92); backdrop-filter: blur(12px); border-top: 1px solid #292927; display: flex; flex-direction: column; gap: 8px">
+                <sc-if value="{{attn}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; align-items: center; gap: 10px; min-height: 48px">
+                    <span style="min-width: 32px; height: 32px; padding: 0 8px; box-sizing: border-box; border-radius: 999px; background: {{attnBg}}; color: #0F0F0E; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center">{{attn}}</span>
+                    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 700">{{attnWord}}</span><span style="font-size: 12px; color: #9D9D97; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{attnNextShort}}</span></span>
+                    <button class="{{barNextClass}}" style="width: 48px; height: 48px" onClick="{{goAttnP}}" aria-label="Go to the next item that needs you"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 6l5 5 5-5"></path></svg></button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{noAttn}}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{showGap}}" hint-placeholder-val="{{ true }}"><label class="fade" style="display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.35; color: #CFCFC9; min-height: 44px"><input type="checkbox" checked="{{gapOk}}" onChange="{{toggleGap}}" style="width: 22px; height: 22px; flex: none; accent-color: #F4F4F1">I accept possible gaps or edition differences.</label></sc-if>
+                  <button class="btn pri fade" style="width: 100%; min-height: 50px; font-size: 16px" disabled="{{saveBlocked}}" onClick="{{save}}">Accept and save</button>
+                </sc-if>
+              </div>
+            </sc-if>
+          </sc-if>
+        </div>
+
+        <nav aria-label="Main" style="flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 6px 8px 16px; border-top: 1px solid #292927; background: #0F0F0E">
+          <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 48px; font-size: 11px; color: #9D9D97; text-decoration: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3a5 5 0 00-3 9v2h6v-2a5 5 0 00-3-9zM8 17h4"></path></svg>Suggestions</a>
+          <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 48px; font-size: 11px; color: #9D9D97; text-decoration: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1.5"></rect><rect x="11" y="3" width="6" height="6" rx="1.5"></rect><rect x="3" y="11" width="6" height="6" rx="1.5"></rect><rect x="11" y="11" width="6" height="6" rx="1.5"></rect></svg>Library</a>
+          <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 48px; font-size: 11px; color: #9D9D97; text-decoration: none"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h12M4 10h12M4 14h8"></path></svg>Queue</a>
+          <a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 48px; font-size: 11px; font-weight: 700; color: #F4F4F1; text-decoration: none"><span style="padding: 2px 14px; border-radius: 999px; background: #222220; position: relative"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 11l2-6h10l2 6v4H3z"></path><path d="M3 11h4l1 2h4l1-2h4"></path></svg><sc-if value="{{qCount}}" hint-placeholder-val="{{ true }}"><span style="position: absolute; top: -4px; right: 2px; min-width: 18px; height: 18px; border-radius: 999px; background: #E9B34E; color: #0F0F0E; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center">{{qCount}}</span></sc-if></span>Needs review</a>
+        </nav>
+
+        <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}"><a href="#" class="fade" role="status" style="position: absolute; left: 12px; right: 12px; top: 66px; padding: 12px 14px; border-radius: 16px; background: #1F1F1D; border: 1px solid #3A3A37; box-shadow: 0 10px 28px rgba(0,0,0,.5); display: flex; flex-direction: column; gap: 2px; text-decoration: none; z-index: 6"><b style="font-size: 14px">{{toast.title}}</b><span style="font-size: 13px; color: #9D9D97">{{toast.body}} · Tap to open the queue</span></a></sc-if>
+
+        <sc-if value="{{sheetOpen}}" hint-placeholder-val="{{ false }}">
+          <div style="position: absolute; inset: 0; z-index: 8; display: flex; flex-direction: column; justify-content: flex-end">
+            <button aria-label="Close" onClick="{{closeSheet}}" style="position: absolute; inset: 0; border: none; background: rgba(0,0,0,.55); cursor: pointer"></button>
+            <div class="fade" style="position: relative; background: #171716; border-top-left-radius: 26px; border-top-right-radius: 26px; padding: 10px 16px 28px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 -10px 40px rgba(0,0,0,.25)">
+              <div style="width: 40px; height: 5px; border-radius: 3px; background: #3A3A37; align-self: center; margin-bottom: 8px"></div>
+              <sc-if value="{{sheetMore}}" hint-placeholder-val="{{ false }}">
+                <button class="sheetrow" style="border-top: none" onClick="{{openServerSheet}}">Details from the server</button>
+                <button class="sheetrow" style="color: #F08A6C" onClick="{{askCancelSheet}}">Cancel job…</button>
+              </sc-if>
+              <sc-if value="{{sheetCancel}}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 18px; font-weight: 800; padding: 0 6px">Cancel this job?</div>
+                <div style="font-size: 14px; color: #CFCFC9; padding: 4px 6px 10px">The files stay where they are. Your decisions on this draft are dropped.</div>
+                <button class="btn bad" style="width: 100%; min-height: 52px" onClick="{{cancelJob}}">Cancel job</button>
+                <button class="btn" style="width: 100%; min-height: 52px" onClick="{{closeSheet}}">Keep it</button>
+              </sc-if>
+              <sc-if value="{{sheetRedraft}}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 18px; font-weight: 800; padding: 0 6px">Draft the chapters again?</div>
+                <div style="font-size: 14px; color: #CFCFC9; padding: 4px 6px 10px">This replaces the current draft{{lostText}}. The book goes back to the queue while it drafts.</div>
+                <button class="btn warn" style="width: 100%; min-height: 52px" onClick="{{redraft}}">Draft again</button>
+                <button class="btn" style="width: 100%; min-height: 52px" onClick="{{closeSheet}}">Keep this draft</button>
+              </sc-if>
+              <sc-if value="{{sheetServer}}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 18px; font-weight: 800; padding: 0 6px 4px">Details from the server</div>
+                <sc-for list="{{b.server}}" as="s" hint-placeholder-count="4"><div class="hrow" style="flex-direction: column; gap: 2px; padding: 10px 6px"><span style="font-size: 12px; color: #9D9D97">{{s.k}}</span><span style="font-size: 14px">{{s.v}}</span></div></sc-for>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2020,"height":1320}}'>
+const C = { audio: '#7FC98C', you: '#F4F4F1', need: '#E9B34E', missing: '#F08A6C' };
+const NEXT_CLS = 'icb', NEXT_HI = 'icb hi';
+function fmt(s) { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = Math.round(s % 60); return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0'); }
+function hm(s) { return Math.floor(s / 3600) + ':' + String(Math.floor(s % 3600 / 60)).padStart(2, '0'); }
+function gap(a, b) { const d = Math.abs(b - a); if (d < 60) return d + 's'; if (d < 3600) return Math.floor(d / 60) + 'm ' + (d % 60) + 's'; return Math.floor(d / 3600) + 'h ' + Math.floor(d % 3600 / 60) + 'm'; }
+function neighbours(markers) {
+  return (k) => { const ix = markers.findIndex((m) => m.key === k); return { prev: ix > 0 ? markers[ix - 1].nu : 'Start of book', next: ix < markers.length - 1 ? markers[ix + 1].nu : 'End of book' }; };
+}
+
+function bedlam() {
+  const T = 97509, N = 78;
+  const kept = new Set([2, 20, 33, 47, 60, 68]);
+  const you = new Set([1, 12, 29, 51]);
+  const special = { 0: 'Opening Credits', 1: 'OMG. What a floor!', 75: 'Epilogue', 76: 'Ending Skit', 77: 'End Credits' };
+  const fixed = { 0: 0, 1: 31, 2: 581, 75: 94328, 76: 96068, 77: 96309 };
+  const markers = [];
+  for (let i = 0; i < N; i++) {
+    const t = i in fixed ? fixed[i] : Math.round(2460 + (i - 3) * (92400 - 2460) / 71);
+    const old = 'Chapter ' + (i + 1);
+    const nu = special[i] || (kept.has(i) ? old : i < 40 ? 'I. Havana – Chapter ' + (i - 1) : i < 55 ? 'II. The Father – Chapter ' + (i - 2) : 'III. The Bedlam – Chapter ' + (i - 3));
+    markers.push({ key: 'm' + i, t, old, nu, kept: kept.has(i), st: you.has(i) ? 'you' : 'audio', heard: i === 1 ? 'OMG. What a floor!' : nu.split('–').pop().trim() + '.' });
+  }
+  markers.splice(3, 0, { key: 'miss', t: 1918, old: '', nu: 'I. Havana – Chapter 1', kept: false, st: 'missing' });
+  const nb = neighbours(markers);
+  const at = (k) => markers.find((m) => m.key === k);
+  const m40 = at('m40'), m3 = at('m3');
+  const open = {
+    m0: { kind: 'Suggested match', kc: C.audio, excerpt: 'This is Audible.', options: [
+      { id: 'a', label: 'Opening Credits', sub: 'Published 0:00:00 · same time', sug: true },
+      { id: 'b', label: '1. Prologue', sub: 'Published 0:00:29 · 29s later' }], keep: true, remove: false },
+    miss: { missing: true, kind: 'In the edition, not in your file', kc: C.missing, options: [
+      { id: 'a', label: 'Save without it', sub: 'Its audio stays inside “Chapter 3”', sug: true, result: { name: 'Not added', note: 'Saved without its own chapter' } },
+      { id: 'b', label: 'Start it at ' + fmt(m3.t), sub: 'Uses the marker “Chapter 4” · ' + gap(1918, m3.t) + ' later', result: { name: 'I. Havana – Chapter 1', note: 'Starts at ' + fmt(m3.t) } }] },
+    m40: { kind: 'Two close matches', kc: C.need, excerpt: '…and that’s when the floor opened up beneath all of us.', options: [
+      { id: 'a', label: 'II. The Father – Chapter 38', sub: 'Published ' + fmt(m40.t - 4) + ' · 4s earlier' },
+      { id: 'b', label: 'Interlude: The Bopca', sub: 'Published ' + fmt(m40.t + 5) + ' · 5s later' }], keep: true, remove: true },
+    m63: { kind: 'No chapter starts here', kc: C.need, excerpt: 'Carl looked over at Donut, who was already asleep.', options: [
+      { id: 'a', label: 'Remove this marker', sub: 'Its audio joins “' + nb('m63').prev + '”', result: { name: 'Removed', note: 'Audio joins ' + nb('m63').prev, removed: true } },
+      { id: 'b', label: 'Keep it as its own chapter', sub: 'Named “Chapter 64”', result: { name: 'Chapter 64', note: 'Kept its original name' } }], keep: false, remove: false },
+    m75: { kind: 'Suggested match', kc: C.audio, excerpt: 'Epilogue.', options: [
+      { id: 'a', label: 'Epilogue', sub: 'Published 26:12:06 · 2s earlier', sug: true },
+      { id: 'b', label: 'Ending Skit', sub: 'Published 26:41:08 · 29m later' }], keep: true, remove: true },
+    m77: { kind: 'Nearest chapter is far', kc: C.need, excerpt: 'Thank you for listening.', options: [
+      { id: 'a', label: 'End Credits', sub: 'Published 26:46:31 · 1m 22s later · listen first', sug: true, warnSub: true }], keep: true, remove: true }
+  };
+  Object.keys(open).forEach((k) => Object.assign(open[k], nb(k)));
+  return {
+    id: 'bedlam', kind: 'draft', title: 'The Eye of the Bedlam Bride', short: 'BEDLAM BRIDE', series: 'Matt Dinniman · Dungeon Crawler Carl 6', author: 'Matt Dinniman',
+    narr: 'Jeff Hays, Patrick Warburton, Travis Baldree, Annie Ellicott', cov: 'background:#6B3A5E;color:#F6D7A7', when: 'Yesterday',
+    need: 'Review the chapter draft', happened: 'A chapter draft is ready for you',
+    happenedSub: 'ChapterKeeparr listened at each marker in your file and identified 69 of 78. You decide whether to save it. Nothing is saved yet and your file hasn’t changed.',
+    edition: 'The Eye of the Bedlam Bride · B0CDXWSS5D · United States', T, length: '27h 05m', total: N, audio: 69, min: 95,
+    coverage: '1 chapter in the edition has no marker in your file (I. Havana – Chapter 1).', markers, open, nb,
+    editions: [
+      { id: 'e1', title: 'Unabridged · Soundbooth Theater', sub: 'B0CDXWSS5D · United States · Jeff Hays and cast', fit: 'Current · 27h 05m matches', fitColor: C.audio, current: true },
+      { id: 'e2', title: 'Unabridged · Soundbooth Theater', sub: 'B0CDY12XQ4 · United Kingdom · Jeff Hays and cast', fit: '27h 05m · matches', fitColor: C.audio },
+      { id: 'e3', title: 'Unabridged', sub: 'B0CF8LMN2A · Canada · Jeff Hays', fit: '26h 41m · 24 min shorter', fitColor: C.need }],
+    history: [
+      { when: 'Today 9:14', what: 'Chapter draft ready', sub: '69 of 78 markers identified by audio' },
+      { when: 'Today 9:02', what: 'Paused for review', sub: 'Speech check heard 61 of 78 chapter starts' },
+      { when: 'Today 8:47', what: 'Edition matched', sub: 'B0CDXWSS5D · United States · 27h 05m' },
+      { when: 'Today 8:31', what: 'Converted to M4B', sub: '78 markers from the source files' },
+      { when: 'Today 8:02', what: 'Job started', sub: '/media/incoming/Eye of the Bedlam Bride' }],
+    server: [
+      { k: 'Reason', v: 'Chapter timing could not be confirmed for 9 of 78 markers.' },
+      { k: 'Timing check', v: 'Passed · 0.4s median offset' },
+      { k: 'Speech check', v: '69 of 78 chapter starts heard' },
+      { k: 'Edition', v: 'B0CDXWSS5D · US · 27h 05m 09s' },
+      { k: 'Draft', v: 'Local markers · token 7f3a…' }]
+  };
+}
+
+function feral() {
+  const T = 51720, N = 37;
+  const markers = [];
+  for (let i = 0; i < N; i++) {
+    const t = i === 0 ? 0 : i === 36 ? 51480 : Math.round(40 + (i - 1) * (50800 - 40) / 34);
+    const old = 'Track ' + String(i + 1).padStart(2, '0');
+    const nu = i === 0 ? 'Opening Credits' : i === 36 ? 'End Credits' : i === 1 ? 'Chapter 1' : 'Chapter ' + (i + 1);
+    markers.push({ key: 'm' + i, t, old, nu, kept: false, st: 'audio', heard: nu + '.' });
+  }
+  markers.splice(2, 0, { key: 'miss', t: 1520, old: '', nu: 'Chapter 2', kept: false, st: 'missing' });
+  const nb = neighbours(markers);
+  const m17 = markers.find((m) => m.key === 'm17'), m2 = markers.find((m) => m.key === 'm2');
+  const open = {
+    m0: { kind: 'Suggested match', kc: C.audio, excerpt: 'This is Audible.', options: [
+      { id: 'a', label: 'Opening Credits', sub: 'Published 0:00:00 · same time', sug: true },
+      { id: 'b', label: 'Chapter 1', sub: 'Published 0:00:40 · 40s later' }], keep: true, remove: false },
+    miss: { missing: true, kind: 'In the edition, not in your file', kc: C.missing, options: [
+      { id: 'a', label: 'Save without it', sub: 'Its audio stays inside “Chapter 1”', sug: true, result: { name: 'Not added', note: 'Saved without its own chapter' } },
+      { id: 'b', label: 'Start it at ' + fmt(m2.t), sub: 'Uses the marker “Track 03” · ' + gap(1520, m2.t) + ' later', result: { name: 'Chapter 2', note: 'Starts at ' + fmt(m2.t) } }] },
+    m17: { kind: 'Two close matches', kc: C.need, excerpt: 'The stairwell was right where the map said it would be.', options: [
+      { id: 'a', label: 'Chapter 18', sub: 'Published ' + fmt(m17.t - 6) + ' · 6s earlier' },
+      { id: 'b', label: 'Chapter 19', sub: 'Published ' + fmt(m17.t + 3) + ' · 3s later' }], keep: true, remove: true },
+    m36: { kind: 'Suggested match', kc: C.audio, excerpt: 'This has been an Audible production.', options: [
+      { id: 'a', label: 'End Credits', sub: 'Published 14:18:00 · same time', sug: true },
+      { id: 'b', label: 'Epilogue', sub: 'Published 14:02:10 · 15m earlier' }], keep: true, remove: true }
+  };
+  Object.keys(open).forEach((k) => Object.assign(open[k], nb(k)));
+  return {
+    id: 'feral', kind: 'draft', title: 'The Gate of the Feral Gods', short: 'FERAL GODS', series: 'Matt Dinniman · Dungeon Crawler Carl 4', author: 'Matt Dinniman',
+    narr: 'Jeff Hays', cov: 'background:#2F4A5C;color:#E8D3A0', when: 'Oct 2', need: 'Review the chapter draft', happened: 'A chapter draft is ready for you',
+    happenedSub: 'Your file’s markers are named “Track 01” and so on. ChapterKeeparr identified 34 of 37 by audio and drafted chapter names.',
+    edition: 'The Gate of the Feral Gods · B09QJ0J45L · Canada', T, length: '14h 22m', total: N, audio: 34, min: 90,
+    coverage: '1 chapter in the edition has no marker in your file (Chapter 2).', markers, open, nb,
+    editions: [
+      { id: 'e1', title: 'Unabridged', sub: 'B09QJ0J45L · Canada · Jeff Hays', fit: 'Current · 14h 22m matches', fitColor: C.audio, current: true },
+      { id: 'e2', title: 'Unabridged', sub: 'B09QJ1AA2C · United States · Jeff Hays', fit: '14h 22m · matches', fitColor: C.audio }],
+    history: [
+      { when: 'Oct 2', what: 'Minimum lowered to 90% for this book', sub: 'By you' },
+      { when: 'Oct 2', what: 'Chapter draft ready', sub: '34 of 37 markers identified by audio' },
+      { when: 'Oct 2', what: 'Paused for review', sub: 'Markers are named “Track NN”' },
+      { when: 'Oct 1', what: 'Edition matched', sub: 'B09QJ0J45L · Canada' },
+      { when: 'Oct 1', what: 'Job started', sub: '/media/incoming/Gate of the Feral Gods' }],
+    server: [
+      { k: 'Reason', v: 'Chapter names could not be confirmed from the file’s markers.' },
+      { k: 'Timing check', v: 'Passed' },
+      { k: 'Speech check', v: '34 of 37 chapter starts heard' },
+      { k: 'Edition', v: 'B09QJ0J45L · CA · 14h 22m' }]
+  };
+}
+
+function carl() {
+  return {
+    id: 'carl', kind: 'edition', title: 'Dungeon Crawler Carl', short: 'CARL', series: 'Matt Dinniman · Dungeon Crawler Carl 1', author: 'Matt Dinniman',
+    narr: 'Jeff Hays', cov: 'background:#4A4A2A;color:#EDE6C2', when: 'Sep 30', need: 'Choose the edition', happened: 'Couldn’t find the edition',
+    happenedSub: 'No edition with this title and length was found in the United States store. Chapter checks start once the edition is confirmed.',
+    edition: '—', length: '13h 42m', quickFixes: true,
+    coverage: 'Chapter checks haven’t run yet. They start once the edition is confirmed.',
+    editions: [
+      { id: 'e1', title: 'Unabridged · United Kingdom', sub: 'B08BX8H5HQ · Jeff Hays', fit: '13h 42m · matches your file', fitColor: C.audio },
+      { id: 'e2', title: 'Unabridged · Canada', sub: 'B08BX9K2LM · Jeff Hays', fit: '13h 10m · 32 min shorter', fitColor: C.need },
+      { id: 'e3', title: 'Abridged · United States', sub: 'B09ABRIDG3 · Jeff Hays', fit: '7h 05m · much shorter', fitColor: C.missing }],
+    history: [
+      { when: 'Sep 30', what: 'Paused for review', sub: 'No matching edition in the US store' },
+      { when: 'Sep 30', what: 'Converted to M4B', sub: '24 markers from the source files' },
+      { when: 'Sep 30', what: 'Job started', sub: '/media/incoming/Dungeon Crawler Carl' }],
+    server: [
+      { k: 'Reason', v: 'Edition lookup returned no results for region US.' },
+      { k: 'Request', v: 'HTTP 404 · catalog search' },
+      { k: 'Embedded ID', v: 'B08BX8H5HQ (from file tags)' }]
+  };
+}
+
+const BOOKS = [bedlam(), feral(), carl()];
+const DRAFT_PATHS = [
+  { id: 'review', label: 'Review and save the draft', short: 'Review draft' },
+  { id: 'redraft', label: 'Draft the chapters again', short: 'Draft again' },
+  { id: 'edition', label: 'Choose a different edition', short: 'Edition' },
+  { id: 'rerun', label: 'Run the checks again', short: 'Run again' }
+];
+const EDITION_PATHS = [
+  { id: 'edition', label: 'Choose the edition', short: 'Choose edition' },
+  { id: 'rerun', label: 'Run the checks again', short: 'Run again' }
+];
+const FRESH = () => ({ bookId: 'bedlam', done: {}, dec: {}, focus: {}, min: {}, gap: {}, log: {}, filter: 'dec', runs: {}, path: {}, renaming: null, renameVal: '', allOpen: null, allQuery: '', outside: false, applied: null, playing: null, toast: null, menu: false, cancelAsk: false, redraftAsk: false, sheet: null, historyOpen: false, serverOpen: false, advOpen: false, edSel: {}, justDecided: null });
+const chev = (open) => (open ? 'M4 10l4-4 4 4' : 'M4 6l4 4 4-4');
+
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = FRESH(); }
+  componentWillUnmount() { clearTimeout(this.playT); clearTimeout(this.toastT); }
+  pushLog(book, line, extra) {
+    const log = [line, ...(this.state.log[book.id] || [])];
+    this.setState({ ...(extra || {}), log: { ...this.state.log, [book.id]: log } });
+  }
+  decide(book, m, res, line) {
+    const dec = { ...(this.state.dec[book.id] || {}) };
+    if (res === null) delete dec[m.key]; else dec[m.key] = res;
+    this.pushLog(book, line || ('Chose “' + res.name + '” at ' + fmt(m.t) + (m.old ? ' (was “' + m.old + '”)' : '')),
+      { dec: { ...this.state.dec, [book.id]: dec }, focus: { ...this.state.focus, [book.id]: m.key }, renaming: null, allOpen: null, outside: false, applied: null, justDecided: m.key });
+  }
+  flash(title, body) {
+    clearTimeout(this.toastT);
+    this.setState({ toast: { title, body } });
+    this.toastT = setTimeout(() => this.setState({ toast: null }), 4200);
+  }
+  sendBack(book, body, title) {
+    const remaining = BOOKS.filter((b) => !this.state.done[b.id] && b.id !== book.id);
+    this.setState({ done: { ...this.state.done, [book.id]: true }, bookId: remaining[0] ? remaining[0].id : null, menu: false, cancelAsk: false, redraftAsk: false, sheet: null, renaming: null, allOpen: null, applied: null, justDecided: null });
+    this.flash(title || (book.title + ' went back to the queue'), body);
+    document.querySelectorAll('[data-scroller]').forEach((s) => s.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+  glide(e, sel) {
+    const sc = e && e.currentTarget && e.currentTarget.closest('[data-scroller]');
+    if (!sc) return;
+    requestAnimationFrame(() => {
+      const target = sc.querySelector(sel);
+      if (target) sc.scrollTo({ top: Math.max(0, target.offsetTop - 8), behavior: 'smooth' });
+    });
+  }
+
+  renderVals() {
+    const S = this.state;
+    const remaining = BOOKS.filter((b) => !S.done[b.id]);
+    const book = remaining.find((b) => b.id === S.bookId) || remaining[0];
+    const reset = () => { clearTimeout(this.playT); this.setState({ ...FRESH(), pinned: !!this.state.pinned }); };
+    const qCount = remaining.length;
+    const pin = {
+      railW: S.pinned ? 320 : 84, railClass: S.pinned ? 'rail pinned' : 'rail',
+      pinPressed: S.pinned ? 'true' : 'false', pinLabel: S.pinned ? 'Unpin sidebar' : 'Pin sidebar open',
+      pinFill: S.pinned ? 'currentColor' : 'none',
+      togglePin: () => this.setState({ pinned: !this.state.pinned })
+    };
+    const leftOf = (b) => (b.kind === 'draft' ? Object.keys(b.open).filter((k) => !(this.state.dec[b.id] || {})[k]).length : 1);
+    const pickBook = (id) => this.setState({ bookId: id, renaming: null, allOpen: null, applied: null, menu: false, justDecided: null });
+    const queue = remaining.map((b) => {
+      const left = leftOf(b);
+      const on = book && b.id === book.id;
+      const ready = b.kind === 'draft' && left === 0;
+      return {
+        title: b.title, short: b.short, cov: b.cov, when: b.when, need: b.need,
+        left: b.kind === 'edition' ? '1 step' : ready ? 'Ready to save' : left + ' to decide', leftColor: ready ? C.audio : C.need,
+        badge: ready ? '✓' : b.kind === 'edition' ? '!' : String(left), badgeStyle: 'background:' + (ready ? C.audio : C.need) + ';color:#0F0F0E',
+        covRing: on ? 'box-shadow:0 0 0 2px #0F0F0E, 0 0 0 4px #F4F4F1' : 'opacity:.75',
+        aria: b.title + ', ' + b.need + (on ? ', open' : ''), current: on ? 'true' : 'false', style: on ? 'background:#1A1A19' : '',
+        pick: () => pickBook(b.id)
+      };
+    });
+    if (!book) {
+      return { ...pin, empty: true, hasBook: false, qCount: 0, queue: [], reset, toast: S.toast, phonePos: 'All caught up', sheetOpen: false, openMore: () => {} };
+    }
+    const pIdx = remaining.findIndex((b) => b.id === book.id);
+    const goBook = (d) => () => pickBook(remaining[(pIdx + d + remaining.length) % remaining.length].id);
+    const pathList = book.kind === 'draft' ? DRAFT_PATHS : EDITION_PATHS;
+    const path = pathList.some((p) => p.id === S.path[book.id]) ? S.path[book.id] : pathList[0].id;
+    const setPath = (id) => this.setState({ path: { ...this.state.path, [book.id]: id }, redraftAsk: false });
+    const edSel = S.edSel[book.id];
+    const sheet = S.sheet;
+
+    const common = {
+      ...pin, reset, empty: false, hasBook: true, qCount, queue, b: book,
+      pos: pIdx + 1, onlyOne: qCount < 2, prevBook: goBook(-1), nextBook: goBook(1),
+      phonePos: (pIdx + 1) + ' of ' + qCount,
+      toggleMenu: () => this.setState({ menu: !this.state.menu, cancelAsk: false }), menuOpen: S.menu, cancelAsk: S.cancelAsk, notCancelAsk: !S.cancelAsk,
+      askCancel: () => this.setState({ cancelAsk: true }),
+      cancelJob: () => this.sendBack(book, 'The files stay where they are', 'Job cancelled for ' + book.title),
+      openServer: () => this.setState({ serverOpen: true, menu: false }),
+      paths: pathList.map((p) => ({ label: p.label, short: p.short, on: p.id === path ? 'true' : 'false', style: p.id === path ? 'background:#F4F4F1;color:#0F0F0E' : '', styleP: p.id === path ? 'background:#F4F4F1;color:#0F0F0E' : 'border-color:#292927', pick: () => setPath(p.id) })),
+      isReview: path === 'review', isRedraft: path === 'redraft', isEdition: path === 'edition', isRerun: path === 'rerun',
+      edHead: book.kind === 'edition' ? 'Choose the edition you have' : 'Choose a different edition',
+      edSub: book.kind === 'edition' ? 'Pick the one that matches your file’s length, or try a quick fix first.' : 'If this isn’t the edition you have, pick the right one and the checks run again.',
+      editions: book.editions.map((e) => { const on = (edSel || (book.editions.find((x) => x.current) || {}).id) === e.id; return { ...e, on: on ? 'true' : 'false', style: on ? 'border-color:#F4F4F1;background:#222220' : '', radio: on ? 'border-color:#F4F4F1;background:#F4F4F1;box-shadow:inset 0 0 0 3px #222220' : '', pick: () => this.setState({ edSel: { ...this.state.edSel, [book.id]: e.id } }) }; }),
+      noEdition: !edSel || (book.editions.find((x) => x.id === edSel) || {}).current,
+      reverify: () => this.sendBack(book, 'Checking against the edition you picked'),
+      rerun: () => this.sendBack(book, 'Running the checks again'),
+      redraftAsk: S.redraftAsk, notRedraftAsk: !S.redraftAsk, askRedraft: () => this.setState({ redraftAsk: true }), cancelRedraft: () => this.setState({ redraftAsk: false }),
+      redraft: () => this.sendBack(book, 'Drafting the chapters again · back here when ready'),
+      toggleHistory: () => this.setState({ historyOpen: !this.state.historyOpen }), historyOpen: S.historyOpen, historyChev: chev(S.historyOpen),
+      toggleServer: () => this.setState({ serverOpen: !this.state.serverOpen }), serverOpen: S.serverOpen, serverChev: chev(S.serverOpen),
+      toggleAdv: () => this.setState({ advOpen: !this.state.advOpen }), advOpen: S.advOpen, advChev: chev(S.advOpen),
+      toast: S.toast,
+      sheetOpen: !!sheet, sheetMore: sheet === 'more', sheetCancel: sheet === 'cancel', sheetRedraft: sheet === 'redraft', sheetServer: sheet === 'server',
+      openMore: () => this.setState({ sheet: 'more' }), closeSheet: () => this.setState({ sheet: null }),
+      openServerSheet: () => this.setState({ sheet: 'server' }), askCancelSheet: () => this.setState({ sheet: 'cancel' }), askRedraftSheet: () => this.setState({ sheet: 'redraft' })
+    };
+    const log = S.log[book.id] || [];
+    Object.assign(common, {
+      hasSession: log.length > 0, session: log,
+      historySub: log.length ? log.length + ' unsaved change' + (log.length > 1 ? 's' : '') + ' · ' + book.history.length + ' earlier events' : book.history.length + ' events · last: ' + book.history[0].what,
+      historySubShort: log.length ? log.length + ' unsaved' : book.history.length + ' events'
+    });
+    if (book.kind !== 'draft') {
+      return { ...common, hasPct: false, blocked: false, lostText: '', advSub: 'Nothing to set yet', advSubColor: '#9D9D97' };
+    }
+
+    // ================= draft review =================
+    const dec = S.dec[book.id] || {};
+    const pct = Math.round(book.audio / book.total * 1000) / 10;
+    const min = S.min[book.id] ?? book.min;
+    const blocked = pct < min;
+    const live = book.markers.map((m) => {
+      const o = book.open[m.key];
+      const d = dec[m.key];
+      const s = o ? (d ? 'you' : (o.missing ? 'missing' : 'need')) : (d ? 'you' : m.st);
+      return { ...m, o, d, s };
+    });
+    const openItems = live.filter((m) => m.o);
+    const undecided = openItems.filter((m) => !m.d);
+    const youCount = live.filter((m) => m.s === 'you').length;
+    const fkey = (S.focus[book.id] && live.some((m) => m.key === S.focus[book.id])) ? S.focus[book.id] : (undecided[0] || openItems[0]).key;
+    const fm = live.find((m) => m.key === fkey);
+    const T = book.T;
+    const pc = (t) => (t / T * 100).toFixed(2);
+    const setFocus = (k) => this.setState({ focus: { ...this.state.focus, [book.id]: k }, renaming: null, allOpen: null, outside: false, justDecided: null });
+    const nextOpenAfter = (t) => openItems.find((m) => m.t > t) || openItems[0];
+    const prevOpenBefore = (t) => [...openItems].reverse().find((m) => m.t < t) || openItems[openItems.length - 1];
+    const nextUndAfter = (t) => undecided.find((m) => m.t > t) || undecided[0];
+
+    // The before/after a row will save with.
+    const afterOf = (m) => {
+      if (m.d) return { text: m.d.removed ? 'Removed' : m.d.name, pending: false, removed: !!m.d.removed };
+      if (m.o) {
+        if (m.o.missing) return { text: 'Not decided', pending: true };
+        const sug = m.o.options.find((x) => x.sug);
+        return { text: sug ? sug.label + '?' : 'Not decided', pending: true };
+      }
+      return { text: m.nu, pending: false };
+    };
+
+    // ---------- focus card ----------
+    const isOpenItem = !!fm.o;
+    const spec = fm.o || {
+      kind: fm.st === 'you' ? 'Decided earlier' : 'Confirmed by audio', kc: fm.st === 'you' ? '#F4F4F1' : C.audio, confirmed: true,
+      excerpt: fm.heard ? fm.heard : 'No spoken text saved for this marker.',
+      options: [{ id: 'a', label: fm.nu, sub: (fm.kept ? 'Stays as it is' : 'Replaces “' + fm.old + '”') + ' · matched by audio', confirmed: true }]
+        .concat(fm.kept ? [] : [{ id: 'keep', label: 'Keep “' + fm.old + '”', sub: 'Ignore the match and keep your file’s name', result: { name: fm.old, note: 'Kept its original name · you overrode the match' } }]),
+      keep: false, remove: true, ...book.nb(fm.key)
+    };
+    const chosenId = fm.d ? fm.d.optId : (spec.confirmed ? 'a' : null);
+    const options = spec.options.map((op) => {
+      const on = chosenId === op.id;
+      const res = op.confirmed ? null : { optId: op.id, name: op.result ? op.result.name : op.label, note: op.result ? op.result.note : 'was “' + fm.old + '”', removed: op.result && op.result.removed };
+      return {
+        label: op.label, sub: op.sub, on: on ? 'true' : 'false',
+        tag: op.sug ? 'Suggested' : op.confirmed ? 'Matched' : '',
+        subColor: on ? '#3A3A37' : (op.warnSub ? C.need : '#9D9D97'),
+        style: on ? 'background:#F4F4F1;color:#0F0F0E;border-color:#F4F4F1' : (op.sug ? 'border-color:#F4F4F1;background:#222220' : ''),
+        radio: on ? 'border-color:#0F0F0E;background:#0F0F0E;box-shadow:inset 0 0 0 3px #F4F4F1' : (op.sug ? 'border-color:#F4F4F1' : ''),
+        tagStyle: on ? 'color:#0F0F0E' : 'color:#F4F4F1',
+        pick: () => (op.confirmed ? (fm.d ? this.decide(book, fm, null, 'Restored the audio match at ' + fmt(fm.t)) : null) : this.decide(book, fm, res))
+      };
+    });
+    const others = [];
+    if (!spec.missing && spec.keep) others.push({ label: 'Keep “' + fm.old + '”', act: () => this.decide(book, fm, { optId: 'keep', name: fm.old, note: 'Kept its original name' }) });
+    if (!spec.missing) others.push({ label: 'Rename', act: () => this.setState({ renaming: fm.key, renameVal: fm.d ? fm.d.name : (spec.options[0] ? spec.options[0].label : fm.old), allOpen: null }) });
+    if (!spec.missing && spec.remove && fm.key !== 'm0') others.push({ label: 'Remove marker', style: 'color:#F08A6C;text-decoration-color:#5A2A1A', act: () => this.decide(book, fm, { optId: 'remove', name: 'Removed', note: 'Audio joins ' + spec.prev, removed: true }) });
+    if (!spec.missing) others.push({ label: 'All chapters', act: () => this.setState({ allOpen: fm.key, allQuery: '', outside: false, renaming: null }) });
+    const near = ['Interlude: The Bopca', 'II. The Father – Chapter 39', 'Intermission', 'III. The Bedlam – Chapter 60'];
+    const pool = [...spec.options.filter((x) => !x.result && !x.confirmed).map((x) => ({ label: x.label, sub: x.sub })), ...near.map((n, i) => ({ label: n, sub: 'In order here · ' + (i + 2) + ' sections away' }))];
+    const q = (S.allQuery || '').toLowerCase();
+    const allList = pool.filter((p) => !q || p.label.toLowerCase().includes(q)).slice(0, 6).map((p) => ({ ...p, pick: () => this.decide(book, fm, { optId: 'all:' + p.label, name: p.label, note: 'was “' + fm.old + '”' }) }));
+    const outList = ['I. Havana – Chapter 12', 'II. The Father – Chapter 2', 'III. The Bedlam – Chapter 71'].map((n) => ({ label: n, sub: 'Outside the usual order', pick: () => this.decide(book, fm, { optId: 'out:' + n, name: n, note: 'Out of the usual order · was “' + fm.old + '”' }) }));
+    const isPlaying = (k) => S.playing === k;
+    const play = (k) => () => {
+      clearTimeout(this.playT);
+      if (this.state.playing === k) { this.setState({ playing: null }); return; }
+      this.setState({ playing: k });
+      this.playT = setTimeout(() => this.setState({ playing: null }), 15000);
+    };
+    const fAfter = afterOf(fm);
+    const justDecided = S.justDecided === fm.key && !!fm.d;
+    const nu = nextUndAfter(fm.t);
+    const hiNext = justDecided && !!nu;
+    const fIdx = openItems.findIndex((m) => m.key === fkey);
+    const glideCard = (e) => this.glide(e, '[data-phone-card]');
+    const fc = {
+      step: isOpenItem ? (fm.d ? 'Decided · ' : 'Needs you · ') + (fIdx + 1) + ' of ' + openItems.length + ' · ' + undecided.length + ' left' : 'Not in the review count · you can still change it',
+      stepShort: isOpenItem ? (fIdx + 1) + ' of ' + openItems.length + ' · ' + undecided.length + ' left' : 'Not in the review count',
+      stepColor: isOpenItem && !fm.d ? C.need : '#9D9D97',
+      prev: () => setFocus(prevOpenBefore(fm.t).key), next: () => setFocus((hiNext ? nu : nextOpenAfter(fm.t)).key),
+      prevP: (e) => { setFocus(prevOpenBefore(fm.t).key); glideCard(e); }, nextP: (e) => { setFocus((hiNext ? nu : nextOpenAfter(fm.t)).key); glideCard(e); },
+      nextClass: hiNext ? NEXT_HI : NEXT_CLS,
+      cardStyle: !isOpenItem ? 'border:1px solid #2B4A33;background:#131A14' : fm.d ? 'border:1px solid #3A3A37;background:#171716' : (spec.missing ? 'border:1.5px dashed #F08A6C;background:#1C1513' : 'border:1px solid #4A3A18;background:#1D1A14'),
+      time: fmt(fm.t), kind: fm.d ? (isOpenItem ? 'Decided by you' : 'Changed by you') : spec.kind, kindColor: fm.d ? '#F4F4F1' : spec.kc,
+      before: spec.missing ? 'No marker here' : fm.old, after: fAfter.text,
+      afterColor: fAfter.pending ? C.need : fAfter.removed ? C.missing : (fm.d || fAfter.text !== fm.old ? '#F4F4F1' : '#9D9D97'),
+      prevName: spec.prev, nextName: spec.next, betweenAria: 'Sits between ' + spec.prev + ' and ' + spec.next,
+      dot: 'position:absolute;left:50%;top:-4px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:' + (!isOpenItem ? C.audio : fm.d ? '#F4F4F1' : spec.missing ? C.missing : C.need),
+      hasListen: !spec.missing, excerpt: spec.excerpt,
+      confirmedNote: !isOpenItem ? (fm.kept ? 'The audio here matches the name already in your file, so nothing changes.' : 'The audio here matched “' + fm.nu + '”, so it’s renamed. If that’s wrong, keep your name or pick another.') : '',
+      playing: isPlaying(fm.key), notPlaying: !isPlaying(fm.key), listen: play(fm.key),
+      renaming: S.renaming === fm.key, allOpen: S.allOpen === fm.key,
+      showOptions: S.renaming !== fm.key && S.allOpen !== fm.key,
+      options, others, allList, outList, outsideOpen: S.outside, outsideClosed: !S.outside,
+      continue: hiNext ? 'Next: ' + fmt(nu.t) + ' · ' + (nu.o.missing ? nu.nu : nu.old) : '',
+      continueShort: hiNext ? 'Next · ' + fmt(nu.t) : '',
+      goContinue: () => nu && setFocus(nu.key), goContinueP: (e) => { if (nu) setFocus(nu.key); glideCard(e); },
+      doneNote: justDecided && !nu ? 'That was the last one. Check the list, then save.' : ''
+    };
+
+    // ---------- timeline ----------
+    const fileTicks = live.filter((m) => m.s !== 'missing' && !(m.o && m.o.missing)).map((m) => {
+      const hot = m.s === 'need';
+      return 'position:absolute;top:' + (hot ? 0 : 3) + 'px;bottom:' + (hot ? 0 : 3) + 'px;left:calc(' + pc(m.t) + '% - 1px);width:' + (hot ? 4 : 2) + 'px;border-radius:1px;background:' + (m.d && m.d.removed ? '#5A5A55' : C[m.s]) + (m.key === fkey ? ';box-shadow:0 0 0 2px #F4F4F1' : '');
+    });
+    const edTicks = live.map((m) => {
+      const miss = m.o && m.o.missing;
+      return 'position:absolute;top:' + (miss ? 0 : 4) + 'px;bottom:' + (miss ? 0 : 4) + 'px;left:calc(' + pc(m.t) + '% - 1px);width:' + (miss ? 4 : 2) + 'px;border-radius:1px;background:' + (miss ? (m.d ? '#F4F4F1' : C.missing) : '#4A4A46');
+    });
+    const pins = (thr) => {
+      const cl = [];
+      undecided.forEach((m) => { const p = m.t / T * 100; const last = cl[cl.length - 1]; if (last && p - last.p < thr) last.ms.push(m); else cl.push({ p, ms: [m] }); });
+      return cl.map((c) => {
+        const has = c.ms.some((m) => m.key === fkey);
+        const tone = c.ms.some((m) => m.s === 'need') ? C.need : C.missing;
+        const go = () => { const at = c.ms.findIndex((m) => m.key === fkey); setFocus(c.ms[at === -1 ? 0 : (at + 1) % c.ms.length].key); };
+        return {
+          label: c.ms.length > 1 ? String(c.ms.length) : '!', aria: c.ms.length + ' to decide near ' + fmt(c.ms[0].t),
+          style: 'left:' + Math.min(97, Math.max(3, c.p)).toFixed(2) + '%;background:' + (has ? '#F4F4F1' : tone) + ';color:#0F0F0E',
+          go, goP: (e) => { go(); glideCard(e); }
+        };
+      });
+    };
+
+    // ---------- list ----------
+    const FILTERS = [
+      { id: 'dec', label: 'Needs you', count: undecided.length + ' of ' + openItems.length, test: (m) => !!m.o },
+      { id: 'changed', label: 'Changing', test: (m) => { const a = afterOf(m); return !a.pending && a.text !== m.old; } },
+      { id: 'kept', label: 'Unchanged', test: (m) => { const a = afterOf(m); return !a.pending && a.text === m.old; } },
+      { id: 'all', label: 'All', test: () => true }
+    ];
+    const f = FILTERS.find((x) => x.id === S.filter) || FILTERS[0];
+    const chips = FILTERS.map((x) => {
+      const on = x.id === f.id;
+      const hits = live.filter(x.test);
+      return { label: x.label, count: x.count || hits.length, on: on ? 'true' : 'false', style: on ? 'border-color:#F4F4F1;background:#222220;color:#F4F4F1' : '', marks: hits.map((m) => 'position:absolute;top:0;bottom:0;left:' + pc(m.t) + '%;width:' + (m.o ? 4 : 2) + 'px;background:' + C[m.s]), pick: () => this.setState({ filter: x.id, runs: {} }) };
+    });
+    const ST = { audio: 'Audio', you: 'By you', need: 'Needs you', missing: 'Missing' };
+    const rows = [];
+    let run = [];
+    const rowFor = (m) => {
+      const und = m.o && !m.d;
+      const isF = m.key === fkey;
+      const a = afterOf(m);
+      const changed = !a.pending && a.text !== m.old;
+      const go = () => setFocus(m.key);
+      return {
+        isFold: false, isRow: true, time: fmt(m.t),
+        before: m.o && m.o.missing ? '—' : m.old, beforeP: m.o && m.o.missing ? 'Not in your file' : m.old,
+        beforeColor: '#9D9D97', beforeDeco: changed && !(m.o && m.o.missing) ? 'text-decoration: line-through; text-decoration-color: #5A5A55' : '',
+        arrow: changed || a.pending ? '→' : '=', arrowColor: changed || a.pending ? '#CFCFC9' : '#5A5A55',
+        after: a.pending ? (m.o.missing ? m.nu + ' · not decided' : a.text) : changed ? a.text : 'No change',
+        afterWeight: changed || a.pending ? '650' : '500', afterColor: a.pending ? m.o.kc === C.audio ? C.need : m.o.kc : a.removed ? C.missing : changed ? '#F4F4F1' : '#5A5A55',
+        afterStyle: a.pending ? 'italic' : 'normal',
+        st: ST[m.s], stColor: m.s === 'audio' ? '#9D9D97' : C[m.s],
+        check: m.s === 'you', noCheck: m.s !== 'you',
+        dot: 'width:9px;height:9px;border-radius:50%;flex:none;box-sizing:border-box;' + (m.s === 'missing' ? 'border:2px solid ' + C.missing : 'background:' + C[m.s]),
+        style: (isF ? 'border-color:#F4F4F1;background:#171716;' : '') + (und && !isF ? (m.s === 'missing' ? 'border-style:dashed;border-color:#5A2A1A;background:#1C1513' : 'background:#1D1A14;border-color:#4A3A18') : ''),
+        aria: fmt(m.t) + ', ' + (m.old || 'no marker') + ' becomes ' + a.text + ', ' + ST[m.s] + '. Open in the decision panel.',
+        playing: isPlaying(m.key), notPlaying: !isPlaying(m.key), listen: play(m.key),
+        listenAria: 'Play 15 seconds at ' + fmt(m.t), listenStyle: m.o && m.o.missing ? 'visibility:hidden' : '',
+        go, goP: (e) => { go(); glideCard(e); }
+      };
+    };
+    const flush = () => {
+      if (!run.length) return;
+      const first = run[0], last = run[run.length - 1], id = first.key;
+      const expanded = !!S.runs[id];
+      const nC = run.filter((r) => FILTERS[1].test(r)).length;
+      rows.push({ isFold: true, isRow: false, expanded: expanded ? 'true' : 'false', chev: chev(expanded),
+        title: run.length === 1 ? '1 marker · ' + fmt(first.t) : run.length + ' markers · ' + hm(first.t) + ' – ' + hm(last.t),
+        sub: (nC ? nC + ' changing' : 'none changing') + ' · ' + (run.length - nC) + ' unchanged',
+        marks: run.map((m) => 'position:absolute;top:0;bottom:0;left:' + ((m.t - first.t) / Math.max(1, last.t - first.t) * 100).toFixed(1) + '%;width:2px;background:' + C[m.s]),
+        toggle: () => this.setState({ runs: { ...this.state.runs, [id]: !expanded } }) });
+      if (expanded) run.forEach((m) => rows.push(rowFor(m)));
+      run = [];
+    };
+    live.forEach((m) => { if (f.test(m)) { flush(); rows.push(rowFor(m)); } else run.push(m); });
+    flush();
+
+    // ---------- save ----------
+    const gapOk = !!S.gap[book.id];
+    const attn = undecided.length + (blocked ? 1 : 0);
+    const saveBlocked = attn > 0 || !gapOk;
+    const sugTargets = undecided.filter((m) => !m.o.missing && m.o.options.some((op) => op.sug));
+    const floorPct = Math.floor(pct);
+    const lostN = Object.keys(dec).length;
+    const nAttn = nextUndAfter(fm.t);
+    const goAttn = (e, phone) => {
+      if (nAttn) { setFocus(nAttn.key); if (phone) glideCard(e); }
+      else if (blocked) { this.setState({ advOpen: true }); this.glide(e, phone ? '[data-adv="p"]' : '[data-adv="d"]'); }
+    };
+    const attnNext = nAttn ? 'Next: ' + fmt(nAttn.t) + ' · ' + (nAttn.o.missing ? nAttn.nu : nAttn.old) : blocked ? 'Below your ' + min + '% minimum · open Advanced' : '';
+    const openAdv = (e, phone) => { this.setState({ advOpen: true }); this.glide(e, phone ? '[data-adv="p"]' : '[data-adv="d"]'); };
+
+    return {
+      ...common,
+      headline: undecided.length === 0 ? 'Every marker has a decision' : undecided.length === 1 ? '1 needs you' : undecided.length + ' need you',
+      subline: book.audio + ' of ' + book.total + ' confirmed by audio · ' + youCount + ' decided by you',
+      canAcceptAll: sugTargets.length >= 2, sugCount: sugTargets.length,
+      acceptAll: () => {
+        const before = { ...dec };
+        const nd = { ...dec };
+        sugTargets.forEach((m) => { const op = m.o.options.find((x) => x.sug); nd[m.key] = { optId: op.id, name: op.label, note: 'Suggested · was “' + m.old + '”' }; });
+        this.pushLog(book, 'Accepted ' + sugTargets.length + ' suggestions', { dec: { ...this.state.dec, [book.id]: nd }, applied: { bookId: book.id, before, n: sugTargets.length } });
+      },
+      appliedNote: S.applied && S.applied.bookId === book.id ? 'Applied ' + S.applied.n + ' suggestions. Each one is marked in the list.' : '',
+      undoAll: () => { const a = this.state.applied; this.pushLog(book, 'Undid ' + a.n + ' suggestions', { applied: null, dec: { ...this.state.dec, [book.id]: a.before } }); },
+      pinsD: pins(2.5), pinsP: pins(8), edTicks, fileTicks,
+      edAria: 'Edition: ' + book.total + ' chapters, 1 not in your file',
+      fileAria: 'Your file: ' + undecided.length + ' markers need you',
+      q1: hm(T / 4), q2: hm(T / 2), q3: hm(T * 3 / 4),
+      blocked, hasPct: true, pctText: pct + '%', minText: min + '%', floorPct,
+      advSub: blocked ? 'Below your ' + min + '% minimum' : 'Minimum ' + min + '% for this book', advSubColor: blocked ? C.missing : '#9D9D97',
+      openAdv: (e) => openAdv(e, false), openAdvP: (e) => openAdv(e, true),
+      lowerMin: () => this.pushLog(book, 'Set the minimum to ' + floorPct + '% for this book', { min: { ...this.state.min, [book.id]: floorPct } }),
+      minDown: () => this.setState({ min: { ...this.state.min, [book.id]: Math.max(50, min - 1) } }),
+      minUp: () => this.setState({ min: { ...this.state.min, [book.id]: Math.min(100, min + 1) } }),
+      chips, rows, fc,
+      renameVal: S.renameVal, onRenameInput: (e) => this.setState({ renameVal: e.target.value }),
+      useName: () => { const v = (this.state.renameVal || '').trim(); if (v) this.decide(book, fm, { optId: 'rename', name: v, note: 'Custom name · was “' + fm.old + '”' }); },
+      closeEditors: () => this.setState({ renaming: null, allOpen: null, outside: false }),
+      allQuery: S.allQuery, onAllInput: (e) => this.setState({ allQuery: e.target.value }), showOutside: () => this.setState({ outside: true }),
+      gapOk, toggleGap: () => this.setState({ gap: { ...this.state.gap, [book.id]: !gapOk } }),
+      showGap: attn === 0, attn: attn || '', noAttn: attn === 0,
+      attnLine: attn ? (attn === 1 ? '1 needs attention' : attn + ' need attention') : gapOk ? 'Ready to save' : 'Tick the box to save',
+      attnColor: attn ? C.need : gapOk ? C.audio : '#F4F4F1',
+      attnWord: attn === 1 ? 'needs attention' : 'need attention', attnBg: undecided.length ? C.need : C.missing,
+      attnNext, attnNextShort: attnNext,
+      barNextClass: hiNext ? NEXT_HI : NEXT_CLS,
+      goAttn: (e) => goAttn(e, false), goAttnP: (e) => goAttn(e, true),
+      saveBlocked, save: () => { if (!saveBlocked) this.sendBack(book, 'Saving new chapter names · audio unchanged'); },
+      lostText: lostN ? ' and your ' + lostN + ' decision' + (lostN > 1 ? 's' : '') : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

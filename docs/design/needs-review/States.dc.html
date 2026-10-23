@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Needs review situations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F0F0E}
+a{color:#F4F4F1}
+button,input{font-family:Figtree,sans-serif}
+.col{width:390px;flex:none;display:flex;flex-direction:column;gap:12px}
+.cap{font-size:13px;font-weight:700}
+.capsub{font-size:13px;color:#9D9D97;line-height:1.45;margin-top:-6px}
+.card{border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:11px}
+.t{font-weight:600;font-size:13px;font-variant-numeric:tabular-nums;color:#F4F4F1}
+.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:8px 14px;box-sizing:border-box;border-radius:14px;border:1px solid #292927;background:#1A1A19;color:#F4F4F1;text-align:left;cursor:pointer}
+.radio{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid #5A5A55;box-sizing:border-box}
+.tagsug{flex:none;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;border:1px solid #F4F4F1}
+.listen{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 12px 6px 6px;box-sizing:border-box;border-radius:14px;border:none;background:#222220;color:#F4F4F1;text-align:left;cursor:pointer}
+.play{width:40px;height:40px;flex:none;border-radius:50%;background:#F4F4F1;color:#0F0F0E;display:flex;align-items:center;justify-content:center}
+.link{background:none;border:none;color:#F4F4F1;font-weight:600;font-size:13px;text-decoration:underline;text-underline-offset:4px;text-decoration-color:#5A5A55;cursor:pointer;min-height:40px;padding:0 4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:999px;border:1px solid #3A3A37;background:transparent;color:#F4F4F1;font-weight:600;font-size:15px;cursor:pointer}
+.pri{background:#F4F4F1;color:#0F0F0E;border-color:#F4F4F1}
+.between{display:flex;align-items:center;gap:8px;font-size:12px;color:#9D9D97}
+.between i{flex:1;position:relative;height:2px;background:#3A3A37}
+.between i b{position:absolute;left:50%;top:-4px;width:10px;height:10px;margin-left:-5px;border-radius:50%}
+.phone{width:390px;border:1px solid #292927;border-radius:28px;overflow:hidden;background:#0F0F0E}
+.qrow{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 6px;border-top:1px solid #292927}
+.cov{flex:none;border-radius:8px;display:flex;align-items:flex-end;padding:4px;box-sizing:border-box;font-weight:800;font-size:7px;width:40px;height:52px}
+</style>
+</helmet>
+<div style="width: 2260px; box-sizing: border-box; padding: 48px 56px 64px; background: #0F0F0E; color: #F4F4F1; font-family: Figtree, sans-serif; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 980px">
+    <div style="font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #9D9D97">Situations · phone width</div>
+    <h1 style="margin: 0; font-size: 34px; font-weight: 800">The decision card in every situation, and the page when it isn’t a draft</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #9D9D97">One card component covers every kind of decision. The kind tag says why it needs you, the between line says where it sits, and the options are ordered with the suggested one first. Decisions are never lost by switching books; each book keeps its own.</p>
+  </div>
+
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <div class="col">
+      <div class="cap">1 · Suggested match</div><div class="capsub">The common case. One tap on the suggested row and the card compacts into a decided row.</div>
+      <div class="card" style="border: 1px solid #4A3A18; background: #1D1A14">
+        <div style="display: flex; gap: 8px; align-items: baseline"><span class="t">0:00:00</span><span style="font-size: 12px; font-weight: 700; color: #7FC98C">Suggested match</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px"><div style="font-size: 17px; font-weight: 750">Chapter 1</div><div style="font-size: 13px; color: #9D9D97">In your file: “Chapter 1”</div></div>
+        <div class="between" aria-label="Sits between Start of book and OMG. What a floor!"><span>Start of book</span><i><b style="background: #E9B34E"></b></i><span>OMG. What a floor!</span></div>
+        <button class="listen"><span class="play"><svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z"></path></svg></span><span style="font-size: 14px; font-style: italic">This is Audible.</span></button>
+        <button class="opt" style="border-color: #F4F4F1; background: #222220"><span class="radio" style="border-color: #F4F4F1"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Opening Credits</span><span style="font-size: 12px; color: #9D9D97">Published 0:00:00 · same time</span></span><span class="tagsug">Suggested</span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">1. Prologue</span><span style="font-size: 12px; color: #9D9D97">Published 0:00:29 · 29s later</span></span></button>
+        <div style="display: flex; flex-wrap: wrap; gap: 2px 8px"><button class="link">Keep “Chapter 1”</button><button class="link">Rename</button><button class="link">All chapters</button></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 4px 12px; border-radius: 14px; border: 1px solid #292927"><span style="width: 24px; height: 24px; border-radius: 50%; background: #F4F4F1; color: #0F0F0E; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 6.2l2.4 2.3 4.6-5"></path></svg></span><span class="t" style="color: #9D9D97">0:00:00</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 15px">Opening Credits</b><span style="font-size: 12px; color: #9D9D97">was “Chapter 1”</span></span><button class="link">Change</button></div>
+      <div class="capsub" style="margin-top: 0">The same card, decided, as it sits in the list.</div>
+    </div>
+
+    <div class="col">
+      <div class="cap">2 · Two close matches</div><div class="capsub">No suggestion is tagged. Listening decides it, so the listen bar sits above the choices.</div>
+      <div class="card" style="border: 1px solid #4A3A18; background: #1D1A14">
+        <div style="display: flex; gap: 8px; align-items: baseline"><span class="t">13:42:10</span><span style="font-size: 12px; font-weight: 700; color: #E9B34E">Two close matches</span></div>
+        <div style="font-size: 17px; font-weight: 750">Chapter 41</div>
+        <div class="between"><span>I. Havana – Chapter 38</span><i><b style="background: #E9B34E"></b></i><span>II. The Father – Ch. 40</span></div>
+        <button class="listen"><span class="play"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2" height="7" rx="1"></rect><rect x="6" y="2" width="2" height="10" rx="1"></rect><rect x="10" y="5" width="2" height="6" rx="1"></rect></svg></span><span style="font-size: 14px; font-style: italic">…and that’s when the floor opened up beneath all of us.</span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">II. The Father – Chapter 38</span><span style="font-size: 12px; color: #9D9D97">Published 13:42:06 · 4s earlier</span></span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Interlude: The Bopca</span><span style="font-size: 12px; color: #9D9D97">Published 13:42:15 · 5s later</span></span></button>
+        <div style="display: flex; flex-wrap: wrap; gap: 2px 8px"><button class="link">Keep “Chapter 41”</button><button class="link">Rename</button><button class="link" style="color: #F08A6C">Remove marker</button><button class="link">All chapters</button></div>
+      </div>
+      <div class="cap" style="margin-top: 12px">3 · No chapter starts here</div><div class="capsub">Likely an extra marker. Removing it says where its audio goes.</div>
+      <div class="card" style="border: 1px solid #4A3A18; background: #1D1A14">
+        <div style="display: flex; gap: 8px; align-items: baseline"><span class="t">21:47:46</span><span style="font-size: 12px; font-weight: 700; color: #E9B34E">No chapter starts here</span></div>
+        <div style="font-size: 17px; font-weight: 750">Chapter 64</div>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Remove this marker</span><span style="font-size: 12px; color: #9D9D97">Its audio joins “III. The Bedlam – Chapter 59”</span></span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Keep it as its own chapter</span><span style="font-size: 12px; color: #9D9D97">Named “Chapter 64”</span></span></button>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap">4 · Missing from your file</div><div class="capsub">Dashed red. Saving without it is suggested; starting it at a nearby marker is the alternative.</div>
+      <div class="card" style="border: 1.5px dashed #F08A6C; background: #1C1513">
+        <div style="display: flex; gap: 8px; align-items: baseline"><span class="t">0:31:58</span><span style="font-size: 12px; font-weight: 700; color: #F08A6C">In the edition, not in your file</span></div>
+        <div style="font-size: 17px; font-weight: 750">I. Havana – Chapter 1</div>
+        <div class="between"><span>Chapter 3</span><i><b style="background: #F08A6C"></b></i><span>I. Havana – Chapter 2</span></div>
+        <button class="opt" style="border-color: #F4F4F1; background: #222220"><span class="radio" style="border-color: #F4F4F1"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Save without it</span><span style="font-size: 12px; color: #9D9D97">Its audio stays inside “Chapter 3”</span></span><span class="tagsug">Suggested</span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 650">Start it at 0:41:00</span><span style="font-size: 12px; color: #9D9D97">Uses the marker “Chapter 4” · 9m 2s later</span></span></button>
+      </div>
+      <div class="cap" style="margin-top: 12px">5 · Rename and All chapters</div><div class="capsub">Both replace the card body in place. No modal, no lost position.</div>
+      <div class="card" style="border: 1px solid #4A3A18; background: #1D1A14">
+        <div style="display: flex; gap: 8px; align-items: baseline"><span class="t">26:45:09</span><span style="font-size: 12px; font-weight: 700; color: #E9B34E">Nearest chapter is far</span></div>
+        <label for="s5" style="font-size: 13px; font-weight: 600">All chapters · in order here</label>
+        <input id="s5" style="min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid #292927; background: #141413; color: #F4F4F1; font-size: 15px" value="cred">
+        <button class="opt" style="min-height: 46px"><span style="flex: 1; display: flex; flex-direction: column"><b style="font-size: 14px">End Credits</b><span style="font-size: 12px; color: #9D9D97">Published 26:46:31 · 1m 22s later</span></span></button>
+        <button class="link" style="align-self: flex-start">Show 3 chapters outside the usual order</button>
+        <div style="font-size: 13px; color: #E9B34E">Outside the order: only use one if you’ve listened and you’re sure.</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap">6 · The Needs review list on a phone</div><div class="capsub">Switching is rare, so there’s no switcher sheet. Back from a book lands here. Each row says what you need to do, and decisions are kept while you’re away.</div>
+      <div class="phone" style="height: 560px; position: relative">
+        <div style="padding: 20px 16px 16px">
+          <div style="font-size: 26px; font-weight: 800; padding: 0 6px 2px">Needs review</div>
+          <div style="font-size: 14px; color: #9D9D97; padding: 0 6px 14px">3 books need you before they can finish.</div>
+          <div class="qrow" style="background: #1F1F1D; border-radius: 14px; border-top: none"><span class="cov" style="background: #6B3A5E; color: #F6D7A7">BEDLAM BRIDE</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 15px">The Eye of the Bedlam Bride</b><span style="font-size: 12px; color: #9D9D97">Chapter draft ready · Yesterday</span></span><span style="font-size: 12px; font-weight: 700; color: #E9B34E">2 to decide</span></div>
+          <div class="qrow"><span class="cov" style="background: #2F4A5C; color: #E8D3A0">FERAL GODS</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 15px">The Gate of the Feral Gods</b><span style="font-size: 12px; color: #9D9D97">Chapter draft ready · Oct 2</span></span><span style="font-size: 12px; font-weight: 700; color: #7FC98C">Ready to save</span></div>
+          <div class="qrow"><span class="cov" style="background: #4A4A2A; color: #EDE6C2">CARL</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 15px">Dungeon Crawler Carl</b><span style="font-size: 12px; color: #9D9D97">Couldn’t find the edition · Sep 30</span></span><span style="font-size: 12px; font-weight: 700; color: #E9B34E">Pick edition</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap">7 · A book that isn’t a draft</div><div class="capsub">Same page, different first tab. When the edition is the problem there is no brief or timeline: the edition search is the first choice, and the timeline appears once a draft exists.</div>
+      <div class="phone" style="padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 14px; align-items: center"><span class="cov" style="background: #4A4A2A; color: #EDE6C2; width: 64px; height: 84px; font-size: 9px">CARL</span><div style="display: flex; flex-direction: column; gap: 3px"><div style="font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #9D9D97">MATT DINNIMAN</div><div style="font-size: 20px; font-weight: 800">Dungeon Crawler Carl</div><div style="font-size: 13px; color: #9D9D97">Couldn’t find the edition</div></div></div>
+        <div style="padding: 12px 14px; border-radius: 14px; background: #2E2513; border: 1px solid #4A3A18; font-size: 14px; line-height: 1.45">No edition with this title and length was found in the United States store. <span style="color: #E9B34E; font-weight: 600">Try another region</span> or <span style="color: #E9B34E; font-weight: 600">use the embedded audiobook ID</span>.</div>
+        <div style="display: flex; gap: 6px"><span style="min-height: 44px; padding: 0 16px; border-radius: 999px; background: #F4F4F1; color: #0F0F0E; display: flex; align-items: center; font-weight: 600; font-size: 14px">Edition</span><span style="min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid #292927; color: #9D9D97; display: flex; align-items: center; font-weight: 600; font-size: 14px">Run again</span></div>
+        <div style="display: flex; gap: 8px"><input aria-label="Title or ASIN" style="flex: 1; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid #292927; background: #141413; color: #F4F4F1; font-size: 15px" value="Dungeon Crawler Carl"><button class="btn" style="min-height: 44px; padding: 0 14px">Search</button></div>
+        <button class="opt" style="border-color: #F4F4F1; background: #222220"><span class="radio" style="border-color: #F4F4F1; background: #F4F4F1; box-shadow: inset 0 0 0 3px #222220"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 14px">Unabridged · United Kingdom</b><span style="font-size: 12px; color: #7FC98C; font-weight: 700">13h 42m · matches your file</span></span></button>
+        <button class="opt"><span class="radio"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 14px">Unabridged · Canada</b><span style="font-size: 12px; color: #E9B34E; font-weight: 700">13h 10m · 32 min shorter</span></span></button>
+        <button class="btn pri" style="width: 100%">Save and re-verify</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="cap">8 · After the last save</div><div class="capsub">The note flies into the Queue badge and the page shows what’s next. With nothing left, it says so and offers the queue.</div>
+      <div class="phone" style="height: 560px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; box-sizing: border-box; text-align: center">
+        <div role="status" style="position: absolute; left: 12px; right: 12px; top: 14px; padding: 12px 14px; border-radius: 16px; background: #1F1F1D; border: 1px solid #3A3A37; text-align: left"><b style="font-size: 14px">The Gate of the Feral Gods went back to the queue</b><div style="font-size: 13px; color: #9D9D97">Saving new chapter names · audio unchanged</div></div>
+        <div style="font-size: 24px; font-weight: 800">Nothing left to review</div>
+        <div style="font-size: 15px; color: #9D9D97">Everything you saved is in the queue.</div>
+        <a href="#" class="btn pri" style="text-decoration: none">Open queue</a>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2260,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -36,6 +36,10 @@ class ReviewAnswer(BaseModel):
     recovery: str | None = None
 
 
+class RetryOptions(BaseModel):
+    force: bool | None = None
+
+
 class RecoverySettings(BaseModel):
     recovery_minimum_percent: float = Field(ge=1, le=100, allow_inf_nan=False)
 
@@ -44,6 +48,7 @@ class RecoveryAcceptance(BaseModel):
     minimum_percent: float | None = Field(default=None, ge=1, le=100, allow_inf_nan=False)
     optional_sections: list[str] = Field(default_factory=list, max_length=1000)
     preserve_unresolved: bool = False
+    marker_decisions: list[dict[str, Any]] | None = Field(default=None, max_length=10000)
     accept_possible_gap: bool = False
 
 
@@ -217,9 +222,9 @@ def create_app(store: Store | None = None) -> FastAPI:
         return job
 
     @app.post("/api/jobs/{job_id}/retry", dependencies=[Depends(auth)])
-    def retry_job(job_id: str) -> dict[str, Any]:
+    def retry_job(job_id: str, payload: RetryOptions | None = None) -> dict[str, Any]:
         try:
-            job = store.retry(job_id)
+            job = store.retry(job_id, force=payload.force if payload else None)
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         if job is None:
