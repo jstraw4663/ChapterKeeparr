@@ -54,7 +54,7 @@ class DesignRuleTests(unittest.TestCase):
         sw = (STATIC / "sw.js").read_text()
         listed = set(re.findall(r"'(/static/[^']+)'", sw))
         shipped = {"/static/" + str(p.relative_to(STATIC)) for p in STATIC.rglob("*")
-                   if p.is_file() and p.suffix in {".js", ".css", ".png", ".svg"} and p.name != "sw.js"}
+                   if p.is_file() and p.suffix in {".js", ".css", ".png", ".svg", ".ico", ".woff2"} and p.name != "sw.js"}
         self.assertEqual(sorted(shipped - listed), [], "add new frontend files to SHELL in app/static/sw.js")
         self.assertEqual(sorted(listed - shipped), [], "remove deleted files from SHELL in app/static/sw.js")
 

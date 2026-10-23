@@ -8,8 +8,77 @@ import math
 import shutil
 import resource
 import sys
+import re
+import statistics
 
-ALGORITHM_VERSION = 'alignment-recovery-4'
+ALGORITHM_VERSION = 'alignment-recovery-6'
+
+
+def embedded_named_headings(segment, boundary, clip_start):
+    """Named headings embedded after prose need aligned, confident words and a pause."""
+    from . import engine
+    found = set()
+    words = segment.get('words') or []
+    for i, word in enumerate(words):
+        token = engine.tokens(word.get('word', ''))
+        kind = 'prologue' if token in (['prolog'], ['prologue']) else 'epilogue' if token in (['epilog'], ['epilogue']) else None
+        if kind is None or not i:
+            continue
+        prefix = engine.tokens(' '.join(w.get('word', '') for w in words[max(0, i-3):i]))
+        if any(t in prefix for t in ('in', 'the', 'read', 'reading', 'previous', 'next', 'remember', 'recall', 'from', 'during')):
+            continue
+        try:
+            start, end, probability = float(word['start']), float(word['end']), float(word.get('probability', 0))
+            prior_end = float(words[i-1]['end'])
+            if (all(math.isfinite(v) for v in (start, end, probability, prior_end))
+                    and 0 < end-start <= 4 and start-prior_end >= .35 and probability >= .7
+                    and boundary-2.1 <= clip_start+start <= boundary+8):
+                found.add(kind)
+        except (KeyError, TypeError, ValueError):
+            pass
+    return found
+
+
+def embedded_headings(segment, boundary, clip_start):
+    """Additional draft evidence only: timed, separated, confident explicit headings.
+
+    Missing word alignment never licenses a search-anywhere text match. Existing
+    bounded wider retries still apply; uncertain cases stay for manual review.
+    """
+    from . import engine
+    words = segment.get('words') or []
+    found = set()
+    for index, word in enumerate(words):
+        if index == 0 or engine.tokens(word.get('word', '')) != ['chapter']:
+            continue
+        prefix = engine.tokens(' '.join(w.get('word', '') for w in words[max(0, index-6):index]))
+        # Even a pause does not turn an explicit narrative reference into a heading.
+        if any(t in prefix for t in ('in', 'chapter', 'read', 'reading', 'remember', 'recall', 'see', 'since', 'from', 'during', 'previous', 'next')):
+            continue
+        phrase = ''
+        for end in range(index, min(len(words), index+7)):
+            phrase += ' ' + words[end].get('word', '')
+            # Require the complete number, not a prefix of sixty one or 61.5.
+            number = engine.spoken_heading(phrase)
+            if number is None:
+                continue
+            following = engine.tokens(words[end+1].get('word', '')) if end+1 < len(words) else []
+            if following and (following[0] in engine.NUMBER_WORDS or following[0] in ('hundred', 'and') or following[0].isdigit()):
+                continue
+            try:
+                start = float(word['start'])
+                previous_end = float(words[index-1]['end'])
+                timing = [(float(w['start']), float(w['end']), float(w.get('probability', 0))) for w in words[index:end+1]]
+                if not all(math.isfinite(v) for row in timing for v in row) or not math.isfinite(previous_end):
+                    break
+                if any(b <= a or p < .7 for a,b,p in timing) or any(b > c for (_,b,_),(c,_,_) in zip(timing,timing[1:])):
+                    break
+                if boundary-2.1 <= clip_start+start <= boundary+8 and start-previous_end >= .35 and timing[-1][1]-start <= 4:
+                    found.add(number)
+            except (KeyError, TypeError, ValueError):
+                pass
+            break
+    return found
 
 
 def digest(value):
@@ -55,38 +124,54 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
     """Identify from speech, never from a track's index or existing title."""
     from . import engine
     observed = set()
+    named_kinds = set()
     good = []
     for segment in transcript.get('segments', []):
         at = clip_start + float(segment.get('start', 0))
         lp, ns = float(segment.get('avg_logprob', -99)), float(segment.get('no_speech_prob', 1))
         if not all(math.isfinite(x) for x in (at, lp, ns)) or lp < -1 or ns > .6:
             continue
+        observed.update(embedded_headings(segment, boundary, clip_start))
+        named_kinds.update(embedded_named_headings(segment, boundary, clip_start))
         if boundary - 2.1 <= at <= boundary + 8:
             good.append(segment.get('text',''))
             number = engine.spoken_heading(segment.get('text', ''))
             if number is not None: observed.add(number)
+            heading = re.match(r'^\s*(prolog(?:ue)?|epilog(?:ue)?)(?:\s*[.!?:;,]|\s*$)', segment.get('text', ''), re.I)
+            if heading:
+                named_kinds.add('prologue' if heading[1].lower().startswith('prolog') else 'epilogue')
     candidates = [c for c in remote if engine.chapter_number(c['title']) in observed]
-    if len(observed) == 1 and len(candidates) == 1:
+    named = [c for c in remote if engine.section_identity(c['title'])['kind'] in named_kinds]
+    if len(observed) == 1 and len(candidates) == 1 and not named_kinds:
         return dict(title=candidates[0]['title'], reference_start=candidates[0]['start'],
                     status='supported', confidence='spoken heading', source='local speech',
                     reason='Spoken chapter identity supports retaining this existing marker; draft only.')
     if not observed:
-        named = []
+        if len(named_kinds) > 1:
+            return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                        source='local speech', reason='Multiple named headings heard near this marker.')
         for chapter in remote:
             title = engine.norm(chapter['title'])
             if engine.chapter_number(chapter['title']) is not None: continue
+            if engine.section_identity(chapter['title'])['kind'] in ('prologue', 'epilogue'): continue
             aliases = [title]
             if title.startswith('chapter '):
                 aliases.append('interlude '+title[len('chapter '):])
             if any(engine.norm(text) == alias or engine.norm(text).startswith(alias+' ')
                    for text in good for alias in aliases if len(engine.tokens(alias)) >= 2 or alias in ('prologue','epilogue')):
-                named.append(chapter)
+                if chapter not in named: named.append(chapter)
         if len(named) == 1:
             return dict(title=named[0]['title'],reference_start=named[0]['start'],status='supported',
                         confidence='spoken named heading',source='local speech',
                         reason='A unique spoken named heading supports retaining this marker; draft only.')
         if len(named) > 1:
             return dict(title=None,reference_start=None,status='unresolved',confidence='ambiguous',source='local speech',reason='Multiple named sections heard near this marker.')
+        if named_kinds:
+            return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                        source='local speech', reason='Spoken named heading has no unique section in this edition.')
+    if observed and named_kinds:
+        return dict(title=None, reference_start=None, status='unresolved', confidence='ambiguous',
+                    source='local speech', reason='Conflicting numbered and named headings heard near this marker.')
     # Only unique, distinctive text openings; never assign EPUB titles by list order.
     if not observed and evidence:
         hits = [e for e in evidence.get('entries',[]) if len(set(engine.tokens(e.get('opening',''))[:18])) >= 8
@@ -104,10 +189,38 @@ def identify_marker(transcript, boundary, clip_start, remote, evidence=None):
 
 
 def finalize_draft(draft, remote):
-    counts = Counter(m['reference_start'] for m in draft['markers'] if m['reference_start'] is not None)
+    from . import engine
+    markers = draft['markers']
+    ranks = {c['start']: i for i, c in enumerate(remote)}
+    def conflict(marker, reason):
+        marker.setdefault('prior_match', {k: marker.get(k) for k in ('title', 'reference_start', 'confidence', 'source')})
+        marker.update(status='unresolved', confidence='ambiguous', reason=reason)
+    for marker in markers:
+        if marker.get('status') == 'supported' and marker.get('confidence') == 'spoken heading' and engine.chapter_number(marker.get('title') or '') is None:
+            conflict(marker, 'Numbered speech was assigned to a named section. Review this match with the current heading parser.')
+    counts = Counter(m['reference_start'] for m in markers if m.get('status') == 'supported' and m.get('reference_start') is not None)
     for marker in draft['markers']:
         if marker['reference_start'] is not None and counts[marker['reference_start']] > 1:
-            marker.update(status='unresolved', confidence='ambiguous', reason='The same published chapter was heard at multiple local markers.')
+            conflict(marker, 'The same published chapter was heard at multiple local markers.')
+    # Do not use an inverted recognition pair as fixed bounds for other markers.
+    highest = None
+    for marker in markers:
+        if marker.get('status') != 'supported' or marker.get('reference_start') not in ranks: continue
+        if highest and ranks[highest['reference_start']] > ranks[marker['reference_start']]:
+            conflict(highest, 'Recognized sections conflict with the surrounding chapter order.')
+            conflict(marker, 'Recognized sections conflict with the surrounding chapter order.')
+        if highest is None or ranks[marker['reference_start']] > ranks[highest['reference_start']]: highest = marker
+    # With enough consistent anchors, a large isolated residual is a conflict,
+    # never a license to move a timestamp or invent the nearest chapter identity.
+    anchors = [m for m in markers if m.get('status') == 'supported' and m.get('reference_start') in ranks and m.get('old_seconds') is not None]
+    if len(anchors) >= 6:
+        offsets = [m['old_seconds']-m['reference_start'] for m in anchors]
+        center = statistics.median(offsets)
+        spread = statistics.median(abs(t-center) for t in offsets)
+        if spread <= 2:
+            for m, offset in zip(anchors, offsets):
+                if abs(offset-center) > max(60, 6*spread+2):
+                    conflict(m, 'Speech identity conflicts with the otherwise consistent chapter timing. Review this match.')
     found = {m['reference_start'] for m in draft['markers'] if m['status'] == 'supported'}
     draft['missing_sections'] = [c for c in remote if c['start'] not in found]
     draft['supported_count'] = sum(m['status'] == 'supported' for m in draft['markers'])
@@ -192,9 +305,46 @@ def scan_markers(source, data, remote, speech, args, report, folder, evidence=No
 
 
 def run_local_review(args, report, folder):
+    """Redraft existing audio or the exact retained conversion, under the book lock."""
+    import fcntl
+    from . import engine, inspection
+    target = args.target
+    root = target if target.is_dir() else target.parent
+    fd = engine.open_book_lock(root)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise engine.NeedsReview('Another workflow is using this book folder.')
+        source = target
+        if target.is_dir():
+            prior = getattr(args, 'prior_report', {})
+            inventory = prior.get('source_manifest')
+            source = Path(args.prepared_cache) / 'prepared.m4b'
+            expected = prior.get('audio_source_sha256')
+            if not inventory or not expected or not source.is_file() or source.is_symlink():
+                raise engine.NeedsReview('The retained conversion is unavailable. Run the checks again to prepare current audio before drafting.')
+            if not inspection.unchanged(inventory, root, args.check_cancel) or engine.file_hash(source) != expected:
+                raise engine.NeedsReview('Source files or retained audio changed. Run the checks again before drafting.')
+            report['source_manifest'] = inventory
+        result = _run_local_review(args, report, folder, source, root)
+        if target.is_dir() and not inspection.unchanged(report['source_manifest'], root, args.check_cancel):
+            report['recovery_draft'].update(complete=False, invalidated=True)
+            engine.write_report(folder, report)
+            raise engine.NeedsReview('Source inventory changed during recovery; draft invalidated.')
+        return result
+    except engine.NeedsReview as ex:
+        # Keep the current gate and invalidation evidence visible to the worker.
+        report.update(status='needs_review', reason=str(ex))
+        engine.write_report(folder, report)
+        raise
+    finally:
+        os.close(fd)
+
+
+def _run_local_review(args, report, folder, source, root):
     from . import engine, flow
     flow.gate(report,'inspect','working','Inspecting existing audio for a draft-only scan')
-    source = args.target
     if not source.is_file() or source.suffix.lower() != '.m4b':
         raise engine.NeedsReview('Choose an existing M4B for local-marker review.')
     if not args.asin:
@@ -213,13 +363,17 @@ def run_local_review(args, report, folder):
     if published.get('asin') != args.asin or published.get('isAccurate') is not True:
         raise engine.NeedsReview('Selected recording has no verified published timeline.')
     remote = engine.remote_timeline(published)
+    # Redrafting must retain the same content-gap warnings as automatic recovery.
+    diagnostics = evaluate(data.get('chapters', []), remote, seconds, source_hash,
+                           [args.title, args.author, args.narrator])['diagnostics']
+    flow.check_coverage(report, diagnostics)
     report['edition'] = engine.summaries(book)
     report['selected_recording'] = {'asin':args.asin,'region':args.region}
     flow.gate(report,'match','passed','Selected recording metadata is compatible')
     flow.assess(report,'recording','compatible','Available recording metadata passed compatibility checks')
     flow.gate(report,'align','working','Scanning existing markers; draft cannot publish')
     evidence = []
-    for path in sorted(source.parent.glob('*.epub'))[:10]:
+    for path in sorted(root.glob('*.epub'))[:10]:
         if path.is_symlink(): continue
         try:
             item = engine.epub_evidence(path)
@@ -233,10 +387,12 @@ def run_local_review(args, report, folder):
     draft = scan_markers(source,data,remote,speech,args,report,folder,evidence)
     if engine.file_hash(source) != source_hash:
         draft.update(complete=False, invalidated=True)
+        engine.write_report(folder, report)
         raise engine.NeedsReview('Source changed during recovery. Draft is invalid; scan the current file again.')
     report.update(status='needs_review',reason='Local-marker draft saved: {} supported, {} unresolved markers and {} unresolved published sections. No audio was changed. Review is required.'.format(draft['supported_count'],draft['unresolved_count'],len(draft['missing_sections'])))
     flow.assess(report,'alignment','partial',f"{draft['supported_count']} supported existing markers; draft cannot publish")
-    flow.assess(report,'coverage','unresolved','Existing marker review cannot establish complete content')
+    if report['assessment']['coverage']['level'] != 'suspected_gap':
+        flow.assess(report,'coverage','unresolved','Existing marker review cannot establish complete content')
     flow.assess(report,'speech','local_markers','Existing markers scanned; missing/new boundaries are not verified')
     flow.require_review(report,'chapters',report['reason'],'align')
     engine.write_report(folder,report)

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from .db import Store
 from .media import MediaService, MediaError
+from .version import build_info, UpdateChecker
 
 
 class JobSubmission(BaseModel):
@@ -36,6 +37,10 @@ class ReviewAnswer(BaseModel):
     recovery: str | None = None
 
 
+class RetryOptions(BaseModel):
+    force: bool | None = None
+
+
 class RecoverySettings(BaseModel):
     recovery_minimum_percent: float = Field(ge=1, le=100, allow_inf_nan=False)
 
@@ -44,6 +49,7 @@ class RecoveryAcceptance(BaseModel):
     minimum_percent: float | None = Field(default=None, ge=1, le=100, allow_inf_nan=False)
     optional_sections: list[str] = Field(default_factory=list, max_length=1000)
     preserve_unresolved: bool = False
+    marker_decisions: list[dict[str, Any]] | None = Field(default=None, max_length=10000)
     accept_possible_gap: bool = False
 
 
@@ -104,6 +110,8 @@ def create_app(store: Store | None = None) -> FastAPI:
     app = FastAPI(title="ChapterKeeparr", lifespan=lifespan)
     app.state.store = store
     app.state.settings = settings
+    installed = build_info()
+    update_checker = UpdateChecker(installed)
 
     def auth(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> None:
         token = os.getenv("CHAPTERKEEPER_API_TOKEN")
@@ -117,7 +125,11 @@ def create_app(store: Store | None = None) -> FastAPI:
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:
-        return {**settings,"recovery_minimum_percent":store.recovery_minimum()}
+        return {**settings, "build": installed, "recovery_minimum_percent":store.recovery_minimum()}
+
+    @app.get("/api/updates", dependencies=[Depends(auth)])
+    def check_updates() -> dict[str, Any]:
+        return update_checker.check()
 
     @app.put("/api/settings/recovery", dependencies=[Depends(auth)])
     def recovery_settings(payload: RecoverySettings):
@@ -217,9 +229,9 @@ def create_app(store: Store | None = None) -> FastAPI:
         return job
 
     @app.post("/api/jobs/{job_id}/retry", dependencies=[Depends(auth)])
-    def retry_job(job_id: str) -> dict[str, Any]:
+    def retry_job(job_id: str, payload: RetryOptions | None = None) -> dict[str, Any]:
         try:
-            job = store.retry(job_id)
+            job = store.retry(job_id, force=payload.force if payload else None)
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         if job is None:
@@ -372,7 +384,7 @@ def create_app(store: Store | None = None) -> FastAPI:
 
         static_root = static.resolve()
         static_types = {".js": "text/javascript", ".css": "text/css", ".woff2": "font/woff2",
-                        ".png": "image/png", ".svg": "image/svg+xml"}
+                        ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon"}
 
         @app.get("/static/{name:path}")
         def static_file(name: str):

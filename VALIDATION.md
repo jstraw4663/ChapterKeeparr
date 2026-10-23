@@ -1,4 +1,125 @@
+## Accessibility release-gate timing — 2026-10-20
+
+Inspected GitHub runs 19 and 20: identical 3f57161 commit, contrast failure versus successful test/image. Runs 16, 10 and 9 show the same contrast race; run 13 is the separate already-corrected scroll baseline. No image is published when the dependent test job fails.
+
+Reproduced the failing `.s > .ell` selector in both themes by holding the actual Activity-card fade at low opacity. The corrected shared static-audit timing override beats the app's reduced-motion !important rules; both settled scans pass. Three rapid viewport sequences in each theme also pass. Permanent low-contrast negative controls still raise color-contrast failures, and both success/failure paths restore normal CSS. The test gate adds no retries, exclusions, color adjustments or new dependency; live-motion/timer cases are separate. Full JSON contrast/failure summaries and screenshots enter the existing artifact.
+
+109 unit tests pass (34.485 s), including frontend/design/JavaScript checks. The full responsive sweep passes 216 viewport/theme observations and 36 axe scans. Reconciled workflows pass both themes plus the 390px reduced-motion and 1024px live-motion large-draft/timer cases. All ten Bedlam theme/viewport contexts and their axe scans pass with the shared scanner. In total, the normal CI path runs 56 passing static axe scans plus deliberate fade/static negative controls. These are local Chromium 151.0.7922.34 runs against worker-disabled generated media; no production job, application styles, recording or container was changed.
+
+## Ordered updates, retained evidence and real PWA installation — 2026-10-20
+
+Reproduced a stale native-transition callback with reversed completion: old code recorded ['new', 'old']; the fixed latest-wins path records only ['new']. Initial loads still show a skeleton when necessary, but refreshing loaded reports/chapters no longer discards the visible data. Selected book/review signatures omit unrelated progress, and background patches coalesce to animation frames. Route-bound contexts and deferred focus/scroll/handoffs avoid interrupting a newer screen. Saving waits for current evidence; unchanged tokens retain choices/consent while actual token changes still reset them.
+
+A real service-worker install exposed a branding regression that worker-blocked browser checks missed: favicon.ico was in SHELL but the server returned 404 for its suffix. Cache.addAll rejected the whole install. The static route now serves only that additional image MIME type; a new API test fetches every precached asset and still rejects traversal/unknown types. Installed navigation now uses HTML/modules from one cache generation, with uncached APIs. Explicit Settings update confirmation remains the only app-controlled reload path. A second real-worker check exposed an update-ready race: Settings could check before installation finished. Readiness is now shared state included in the Settings signature, with deduplicated notices. The explicit activation check passes after that fix.
+
+- **117 Python tests pass in 19.701 s**, including the static/PWA API regression, generated-media publication/backup/unchanged audio and the real speech decoder smoke tests. The final frontend follow-up passes all seven design/syntax checks and all **eleven JS test files** (2.937 s). New JS cases cover retained values, failed refresh, bounded eviction/abort, unknown versions, out-of-order transport completion, serialized fresh polls, Settings read/save races, latest navigation, save gates during refresh and installed-shell HTML.
+- The new flow workflow passes **eight light/dark × 390/1024px × reduced/live-motion contexts and eight axe scans** with deliberately held network reads. An unrelated job update causes zero mutations in the selected evidence tree. Fields retain node identity, input, caret, window scroll and screen position during a selected evidence refresh. Unchanged consent survives; changed tokens clear it. A chapter refresh failure keeps the old list and an explicit retry works. Late completion after leaving does not replace Settings; rapid navigation settles at the latest route. SessionStorage proves one document boot across polling/hash navigation.
+- The separate real PWA context passes initial install/control, a waiting worker update without a page reload, tabs while waiting, explicit confirmed activation/reload and offline cached navigation. Boot counts change only for the test's explicit reloads. The explicit Settings reload was also checked separately after its route guard. The install wait is bounded so a missing precache entry fails CI rather than hanging.
+- The full sweep passes **216 route/viewport/theme observations, 36 axe scans and focused workflow checks**. Reconciled tests pass both themes/two axe scans and the 390px reduced / 1024px animated 180-marker, bulk, stationary-desktop and notification-timer checks; the latter were repeated after frame scheduling changes. Final delayed-read tests cover the no-layout-shift status update. Existing accessibility rules and live motion remain enabled.
+- Final browser runs use CI's Chromium 151.0.7922.34; the earlier system Chromium 154 run also passed the eight flow contexts. Tests use worker-disabled generated fixtures with API mutations blocked (real PWA actions only change browser cache/lifecycle). No actual media, Unraid job/container or registry image was changed. No model, ASR budget, worker/thread or publication-token policy changes. This is not a Tower performance benchmark or proof about Safari/OS memory-pressure reloads.
+- Workspace evidence: `/workspace/ck-flow-browser-final`, `/workspace/ck-flow-pwa-explicit`, `/workspace/ck-flow-sweep`, `/workspace/ck-flow-reconciled-final`; logs `/tmp/ck-flow-full.log`, `/tmp/ck-flow-browser-final.log`, `/tmp/ck-flow-pwa-explicit.log`. CI now includes the flow/PWA workflow. Deploy the new image and activate its frontend through the safe Settings reload; do not clear site storage. Unchanged evidence needs no rescan or reapproval solely for this UI update.
+
+
+## Full brand integration — 2026-10-20
+
+Jeremy explicitly approved the full Manrope font/palette update and Paper save button. All original kit marks/wordmarks/icons remain unchanged; app typography uses supplied static Medium/ExtraBold converted without subsetting to local WOFF2 (60,544 bytes total). Copyright/OFL and archive/source/output hashes are retained. No app dependency or external font/asset host is introduced. The shared light-theme muted text was darkened from the kit example after axe measured 4.42:1 on the amber warning surface; corrected tokens pass AA without excluding rules.
+
+- Seven frontend/design/syntax checks and all ten JavaScript test files pass after the asset/font/cache changes (3.531 s). The earlier complete 116-test backend/frontend run remains green; branding changes no backend behavior.
+- The full browser sweep re-passes **216 route/viewport/theme observations, 36 axe scans and focused save/consent/Paper-color/failure/token/rail/keyboard/Settings checks**. Original white-color assertions were deliberately updated to the user's approved exact Paper RGB(247,242,232); visibility and disabled/readiness assertions remain.
+- Sixteen brand-shell contexts pass: system light/dark and explicit preferences opposite the OS at 320/390/820/1440px. Both local Manrope faces actually load; correct theme-specific small marks/outlined wordmarks load and fit. Screenshots are in `/workspace/ck-brand-theme`.
+- All eight match-quality contexts/axe scans re-pass under the new font, including equal-height wrapping columns, contained/non-overlapping summary rows, linked warnings and current-score behavior. All ten Bedlam contexts/axe scans and both reconciled theme/axe workflows re-pass. The 390px reduced-motion and 1024px animated 180-marker/notification-timer cases also pass.
+- The accessibility stability gate re-passes both themes: six repeated-resize and two settled real-fade scans; deliberate fading/static low-contrast negative controls still fail as required and timing styles are removed on both paths. Across these runs there are **64 passing static axe scans**, plus the intentional negative controls. No retries, ignored nodes or weakened contrast rules.
+- Workspace evidence: `/workspace/ck-brand-sweep`, `/workspace/ck-brand-quality`, `/workspace/ck-brand-bedlam`, `/workspace/ck-brand-reconciled`, `/workspace/ck-brand-stability` and corresponding `/tmp/ck-brand-*.log` logs. Tests are local Chromium 151 against worker-disabled generated fixtures with browser writes blocked. Physical Safari/home-screen refresh and Unraid's stored Icon-field refresh remain user deployment checks; instructions are in deploy/UNRAID-INSTALL.md. No deployed image, container, real audiobook or job changed.
+
+
+## Evidence-backed minimum, balanced comparisons and change overview — 2026-10-20
+
+- **116 Python tests pass (23.121 s)**, including seven new review-quality cases, all ten JS test files and frontend/design/syntax checks. Python/JavaScript agree on scores and sequence warnings. Tests cover eligible 80% -> 100% selections, arbitrary-name/keep/remove/override non-credit, missing timing/duration/anchors, competition, part numbering, duplicates/inversions/gaps, version-bound approval and stable canonical normalization. Source/evidence changes still invalidate the token.
+- A generated 200-second sine M4B really finalizes at the 95% minimum from 80% original audio + 20% qualified selections. The receipt keeps both counts, original backup is exact, retained times remain unchanged, and AAC identity/full decode checks pass. Final pre-commit validation initially exposed raw-versus-normalized token drift; hashing the same canonical reviewed draft at both stages fixes it without bypassing approval checks.
+- Eight new live-motion theme/320/390/820/1440px contexts and **eight axe scans** pass. Checks cover Undo, random-name non-credit, selected-only radio fill, original audio count, consent/readiness, equal-height side-by-side wrapping boxes, bounded readable change previews/counts, containment/no overlapping rows, summary-to-check navigation/Changed filtering and linked duplicate/title-conflict warnings. Visual inspection caught fixed shared-button height clipping; preview rows now grow to their content.
+- Re-ran the full sweep: **216 viewport/theme observations, 36 axe scans and focused workflows pass**. Re-ran all ten Bedlam theme/size contexts and ten axe scans; both reconciled theme workflows, two axe scans, 390px reduced-motion and 1024px animated 180-marker/notification-timer cases also pass. No rule is excluded and normal motion remains enabled outside settled snapshots.
+- Tests use Chromium 151 and worker-disabled generated fixtures with browser writes blocked. Full-suite API tests need the sandbox networking capability: without it TestClient stalled; the isolated seven API tests and the complete suite pass with networking enabled. This was a local sandbox restriction, not an application or test relaxation.
+- Workspace evidence: `/workspace/ck-quality-workflow`, `/workspace/ck-quality-bedlam-final`, `/workspace/ck-quality-reconciled-final`, `/workspace/ck-quality-sweep-final`; final suite `/tmp/ck-quality-all-final.log`. Physical Safari/VoiceOver and deployed PWA/image behavior remain field checks. Existing audio/model concurrency budgets are unchanged; no new ASR or per-choice network requests.
+- The earlier exported actual Bedlam report was assessed read-only: normalized 67/78 original audio plus eleven hypothetical unique qualified choices -> 78/78 combined, zero order warnings. This is not the owner's newer 72/78 deployed scan, a full-book re-listen or publication. Actual source bytes, job, Unraid config and registry image remain unchanged.
+- On upgrade, version-bound browser choices/consent reset once. Reapply selections against the current preview; cached recognition evidence is reusable. Branch/PR only; Jeremy controls image build, merge and release.
+
+
+## Chapter checks consistency — 2026-10-20
+
+109 Python tests pass (24.457 seconds), including frontend/design/syntax checks and all nine JS test files. Added semantic UI regressions show suggestions in the comparison without selecting them or modifying the actual save plan, manual decisions, Changed filtering or audio evidence. Choosing/keeping/reopening a marker preserves those distinctions.
+
+The full browser sweep passes 216 viewport/theme observations, 36 axe scans and focused workflow checks. Expanded Bedlam checks cover 320/390/820/1024/1440px in both themes, shared suggested titles, Not selected → Your decision transitions, stable audio-match counts, inline 44px actions, filters, automatic-match correction/restore and guarded save readiness. Writes are intercepted against a generated worker-disabled fixture. Settled screenshots disable finite animations; the motion behavior is separately covered by the existing reconciled workflow. No actual book, job, container or image was changed.
+
+## Bedlam section identity and full timeline — 2026-10-20
+
+## Actual Bedlam evidence and browser click baseline — 2026-10-20
+
+Final checks: 109 Python tests passed (15.680 seconds), including all nine JavaScript test files and frontend/design checks; JavaScript syntax and git diff checks pass. The corrected reconciled workflows pass with Chromium 151.0.7922.34 (the CI browser), both themes, 390px reduced motion and 1024px live motion, with notification timer checks. The focused Bedlam workflows pass all four theme/390px/1024px contexts and axe scans. The earlier unchanged 216-observation sweep passed in CI before its actionability-baseline failure.
+
+Verified the 21-file v2 archive, decoded all ten WAV headers and replayed the first-five saved transcripts. Both problem WAVs were additionally transcribed through the actual current CPU/int8 small.en path (four threads/one worker): correct Prologue and Havana / Chapter 1 matches; approximately 21.6 seconds combined inference and 1.0 GiB process peak RSS on cloud hardware. No source audio, deployed job or container changed. Report/catalog boundaries differ at most 0.037 seconds; this is not complete-audio proof. Full-book rescanning and Tower resource behavior remain unvalidated.
+
+The browser scroll regression baseline now records Remove pointerdown after Playwright actionability scrolling, retaining the strict <2 px post-decision displacement assertion and live animations. This corrects the failed a892f0d CI measurement without weakening the user-visible behavior check.
+
+
+- **108 Python tests passed** in 24.489 seconds, including real generated-media finalization, unchanged audio, original backup, first-marker protection, conflicting IDs/order and PyAV runtime checks. Seven new semantic/export tests plus an automatic-match replacement test cover the new behavior. The generated removal test now explicitly accepts the released published section.
+- **Seven frontend/design/syntax checks** pass after final copy changes; **all nine JS test files** pass. Regression cases cover editable automatic matches, released section identity, unchanged recognition percentages, non-duplicated progress, chronological original/planned labels and manual rename/keep/removal.
+- Synthetic Bedlam browser case passes in light/dark at **390 and 1024px**, with zero page errors and **four axe-core WCAG 2.2 AA scans**. Covers current draft over stale checks, formerly false Prologue assignment, four timing suggestions, filters, existing/planned titles, original-match edit/restore, persisted polling state and unchanged save guards. These are illustrative transcripts, not actual-book listening evidence.
+- Reconciled workflows pass in both themes, plus 180-marker progressive rendering/manual override/bulk Undo and notification hover/focus/resume checks at 390px reduced-motion and 1024px animated desktop.
+- The full settled-layout sweep passes 216 observations across nine route states/twelve sizes/both themes, plus 36 axe scans and focused consent/rail/keyboard/settings interactions.
+- During browser validation, dense timeline controls failed target-size checks; nearby jump targets are now grouped with 44px hit areas while all chapter rows remain accessible. A separate transient contrast failure was traced to in-progress/offscreen entrance fades in the snapshot harness. Layout/color snapshots now freeze transitions/entrance durations; live motion remains tested in the dedicated workflow. No contrast assertions or axe rules were removed.
+- Evidence exporter tests use a read-only synthetic SQLite database, a library-side report folder and generated dummy clip files. They verify archive members and reject missing clips/unknown IDs/path-like IDs without publishing an empty archive. The script is standard-library-only and can run through stdin in an older container.
+- Actual uploaded archive: valid gzip, 45 bytes, no tar members. No report/audio could be examined; no actual ASR accuracy, local duration equality or model/RSS benchmark is claimed. Fresh exported clips/report are still needed. No real library writes, Unraid configuration changes or image publication occurred.
+- Local evidence: `/tmp/ck-bedlam-full-final.log`, `/tmp/ck-bedlam-frontend-final.log`, `/tmp/ck-bedlam-browser-final.log`, `/tmp/ck-bedlam-reconciled.log`, `/workspace/ck-bedlam-browser/results.json` and `/workspace/ck-bedlam-sweep/results.json` (workspace paths).
+
+## Container-source reconciliation and notification/review integration — 2026-10-19
+
+- Full Python suite: **100 tests passed** in 36.285 seconds. Includes the supplied acceptance/database/recovery/backend contracts and retained real generated-media publication, backup, unchanged-audio and PyAV mono/stereo decode checks. Docker now runs the supplied subprocess runtime check alongside the existing decoder checks before model download.
+- Seven frontend/design/syntax tests passed after the final approval-validator change; all nine JavaScript test files passed. The validator now mirrors the backend rule that either member of an inverted pair may carry the explicit order override, while duplicate IDs still block.
+- Full Chromium sweep: **216 observations** across nine route states, twelve sizes (320–1920px) and both themes; **36 axe-core WCAG 2.2 AA scans**, no violations. No page errors. Consent off/on/off, white button/blockers, duplicate submits, failed requests, changed draft, disclosures, keyboard skip link, rail/Escape/focus, live resize, long text and diagnostics passed.
+- Dedicated merged workflows passed in both themes: ordered choices, rename/Change, reload persistence, changed-token reset, retained failed submissions, next-book handoff, authenticated cover hydration, three simultaneous notifications, queued replacement without slot movement, stable DOM across polling and five responsive panel sizes. Additional axe scans reported no violations.
+- A synthetic **180-marker** preview passed at 390px with reduced motion and 1024px with motion: initial 30-card bound, progressive reveal, first-marker protection, explicit out-of-order selection, bulk/Undo, removal/Change, no desktop scroll jump, notification hover/focus pause for over six seconds each and resumed expiry. This is functional evidence, not a hardware performance benchmark.
+- Fixed a real nested DOM render exception exposed by editing the Advanced minimum and blurring the input. Input-state changes commit immediately; renders coalesce after the event. Reentrant rendering is guarded, and error fallback clears stale approval controls.
+- Archive provenance and merge decisions: [reconciliation record](docs/provenance/container-source-reconciliation.md). Core deployed backend modules and supplied acceptance/database/recovery/contract tests match the upload. New branch behavior is covered by additional frontend/browser tests.
+- Evidence in the development workspace: `/tmp/chapterkeeparr-merged-tests-final.log`, `/tmp/chapterkeeparr-frontend-final.log`, `/tmp/chapterkeeparr-reconciled-browser-final.log`, `/workspace/chapterkeeparr-reconciled-sweep/results.json` and `/workspace/chapterkeeparr-reconciled-browser/reconciled-results.json`. These are workspace paths, not paths on the MacBook or Unraid server.
+- All browser writes were intercepted against a generated fixture with workers disabled. No actual books, running Unraid configuration or registry image were changed. Image build/pull, physical iPhone/Safari, screen readers, native zoom, deployed PWA upgrade and real inference/resource measurements remain owner/field validation.
+
 # Build validation — 2026-09-23
+
+## Stable progress and browser drafts — 2026-10-02
+
+- Seven frontend tests and eight worker tests pass, including generated-media conversion/validated save. JavaScript syntax and diff whitespace checks pass.
+- Four database tests pass, including regression from 67% to a 50% checkpoint, subsequent progress, and explicit retry resetting to zero.
+- Browser regression with generated fixtures passes: renamed marker, minimum threshold and section acknowledgments survive reload; another book's update/reordering preserves selection; 1440px and 390px have no overflow or JavaScript errors. Fixed a details-toggle/input timing race found during this check.
+- Draft storage unit tests cover book isolation, JSON persistence, token mismatch, detached state, removal of transient busy/error fields, successful clearing and storage-failure memory fallback.
+- No real media writes or Tower deployment. Autosave is browser-local; clearing site data removes drafts. Existing speech-runtime timeout from the previous milestone is not resolved by these UI/progress changes.
+
+## Review column repair and dense rows
+
+Removed an unmatched closing div in the server-details fragment that pushed actions outside the selected-book column. Browser assertions verify exactly two desktop grid children and action containment in the right column. At 1440px and 390px: no runtime errors/overflow, one transcript per expanded marker, working shared circular playback, and preserved edits across pagination. Seven frontend tests pass. Quoted transcript expands in place; original names appear only when different from the selected save name.
+
+## Compact review — 2026-10-01
+
+- Seven frontend test cases pass, including JavaScript unit and syntax checks. No backend changes.
+- Chrome at 1440px and 390px with a 40-marker fixture: pagination limits rows to 15, custom names persist across page changes, no runtime errors or horizontal overflow. Status badges include text as well as color.
+
+## Review filters and short transcripts — 2026-10-01
+
+- 81 tests pass; transcript formatting additionally checked for two-sentence clipping, empty input and long-text bounds.
+- Generated-fixture Chrome checks pass at 1440px and 390px: Select All, clear all, mixed selection, confirmed/unconfirmed counts, preserved hidden name edits, transcript display, no runtime errors or horizontal overflow. Publication behavior is unchanged.
+
+## PyAV compatibility fix — 2026-10-01
+
+- Pin `av==18.1.0` for Faster-Whisper 1.1.1: PyAV 19 removed `metadata_errors` from `av.open`, producing the Tower failure.
+- Real Faster-Whisper audio decoding of a generated one-second WAV passes with 16,000 samples on PyAV 18.1.0, both inside and outside the local sandbox. No speech model download or real audiobook required.
+- Full suite: **81 tests pass**, including the upgraded runtime decode check (28.995 seconds). Previous local import timeout did not recur in this run.
+- Docker build now executes the same decoder check, replacing the insufficient import-only check. Docker/Tower image execution remains untested locally; rebuild and recreate the container to install the dependency pin.
+
+## Marker decision editor — 2026-10-01
+
+- 81 tests passed after backend/editor changes, including generated FFmpeg rename/removal publication with original backup and unchanged audio validation. Invalid/missing/duplicate decisions, first-marker removal, unconfirmed removal, invalid names and coverage-threshold bypass are rejected.
+- Chrome fixture checks at 1440px and 390px in light/dark: no runtime errors or horizontal overflow; rename and removal state survives responsive rendering; first marker has no removal option. Saved excerpt playback stops after 15 seconds. Phone confirmation and intercepted save payload match selected edits. No real audiobook modified.
+- Fixture preview uses generated tones and workers disabled. Live Tower deployment, real recognition quality and physical iPhone playback are not validated here.
+- The October 1 full rerun passed 80 tests but timed out in the unchanged fresh-process `faster_whisper` import check (60 seconds), which also timed out in isolation; the earlier 81-test run passed. This is an unresolved local runtime-validation limitation, not a failed marker-save assertion. Dependencies were not changed by this feature. Tower speech startup must be verified before processing books with this build.
 
 - 17 Python tests passed with FastAPI 0.115.12 / Uvicorn 0.34.2 web dependencies.
 - Generated MP3 fixture converted and repaired using real FFmpeg/ffprobe; MP3s removed after success and NFO preserved. Metadata/speech decisions mocked in this fixture.
@@ -59,3 +180,139 @@ Not validated here: Linux/amd64 Docker build, Unraid CPU speech performance, the
 - Checked by script on every screen: named buttons and links, labelled inputs, no duplicate ids, 44px targets (switches extend their hit area). Keyboard: `/` search with arrows, Enter and Esc; modal focus trap, Esc and focus return. Reduced motion replaces loops with a single fade.
 - Spot-check playback verified against a generated M4B with chapters. Not validated: a physical iPhone install, and screen readers beyond the ARIA structure.
 
+## UI/UX audit and planning — 2026-10-19
+
+- Read-only app audit against main at `c94c05298ec90ffa45d1d432eb6541bb4045b6a3`, using an isolated generated fixture DB and `ENABLE_WORKERS=0`. No real library files or production settings were changed.
+- Nine route states at twelve CSS viewport sizes in both themes: 216 screen observations plus consent checks. Additional live-resize and keyboard checks reproduced title-width collapse and review overflow after shrinking an expanded desktop window.
+- Stable dark-theme axe checks at 390/1024 px reproduced obscured Library grouping/sorting targets at 1024 px; light-theme checks also flagged muted metadata contrast. Automated scans do not establish full accessibility conformance.
+- Folder dialog semantics, Escape/focus return, and edition-query preservation passed the tested interactions. Existing five JavaScript test files pass.
+- Saved the backend/hardware plan and finalized the UI/UX plan with audit evidence, seven visual mockups, and a documentation-only interactive prototype. Prototype checks passed checkbox off/on/off visibility, white action styling, continued blocking below the minimum, cover-rail expand/Escape, and no page overflow in seven captured states.
+- The deployed private LAN app was not accessed. Its screenshot has a sticky acceptance footer and draft controls beyond current main; installed build identity remains unknown.
+- Production implementation and physical iPhone/Safari, native zoom/keyboard, screen-reader, deployed/PWA version, and full accessibility validation remain outstanding. Plans and mockups are not implemented features.
+
+See [the UI/UX plan](docs/plans/ui-ux-optimization.md), [audit evidence](docs/plans/ui-ux-audit-2026-10-19.json), and [backend plan](docs/plans/backend-optimization.md).
+
+
+
+
+
+## UI/UX implementation — 2026-10-19
+
+- Fresh clone/fetch verified GitHub main at `c94c052`; implementation branch `feat/responsive-review-workspace` includes the saved planning commits. Main is 15 commits ahead of v0.5.0; the earlier audit folder is a partial copy and is not the implementation checkout.
+- Python 3.12 with repository development requirements: **77 unittests pass**, including generated-media publication/audio-preservation/backup regressions, authenticated build/update API checks, release failure/development-build handling and shared image/API/frontend/PWA identity stamping.
+- JavaScript syntax/design guards and **seven JavaScript test files pass**, including consent/draft-state and waiting-service-worker/cache-isolation regressions.
+- Browser sweep: **216 observations** across nine route states, twelve viewport sizes and both themes; no page overflow, duplicate IDs or JavaScript page errors. **36 axe-core WCAG 2.2 AA scans** report no violations. This is automated evidence, not a conformance certification.
+- Focused browser checks pass in both themes: checkbox off/on/off, white action, remaining approval/coverage blockers, duplicate submit suppression, retained choices after simulated failure, reset after a changed draft, native disclosure persistence, skip-link route preservation, rail expansion/Escape/focus, selected-book heading focus, live resize, explicit expanded sidebar at 768/820/900/1024, long unbroken titles/narrators, form retention and redacted diagnostics. All acceptance writes were intercepted; no real library was published.
+- Figtree WOFF2 is bundled (27,784 bytes) with its OFL license. Background polling is reduced to once per minute; build identity is calculated once at API startup; manual release checks are serialized and cached for five minutes. No throughput/RAM/iGPU claim is established by these UI checks.
+- Browser test setup is in `tests/browser/README.md`; the release workflow now runs generated-fixture browser/accessibility checks and uploads results. Local results precede remote CI and deployment.
+- Remaining release checks: identify/reconcile the deployed container commit (its supplied sticky editor is not in GitHub main), actual iPhone/Safari/software keyboard, VoiceOver plus desktop screen reader, native zoom, actual container build and PWA upgrade/reload behavior. No merge, tag, image publication, production deployment or real audiobook changes were performed.
+
+See `docs/plans/ui-ux-implementation-validation-2026-10-19.json` for the compact record. The backend optimization roadmap remains deferred.
+
+## Unraid installation preparation — 2026-10-19
+
+- Parsed both Docker Manager XML templates and checked unique config targets,
+  host port 8787 → container port 8000, separate test/production config and library
+  paths, nonprivileged mode, paused initial workers, one book worker, four speech
+  threads and four-CPU/4 GB limits. Test template omits downloads; production's
+  optional downloads mount remains read-only.
+- Docker Compose **v2.40.3** successfully rendered `deploy/compose.registry.yaml`
+  with the example env and an explicit validation image reference (not pulled).
+  Verified no `build`, correct resource limits, loopback binding, port 8787,
+  separate test mounts, and paused workers. An empty image variable correctly
+  fails configuration. These checks did not contact the Docker daemon.
+- Relevant frontend/design/syntax regression suite: **7 tests passed**, including
+  its JavaScript syntax checks and seven JavaScript unit-test files. No frontend
+  or processing code changed in this installation-preparation increment.
+- `git diff --check` passed. Reviewed instructions for stopped-state complete
+  config backup, retained old image, single-instance config/port ownership,
+  image-plus-database rollback and copied/test-library validation before cutover.
+- Still pending: owner-triggered image build/public GHCR package setup, anonymous
+  image pull, real Docker Manager import, container startup/inference/resource
+  measurements, and on-device UI/PWA checks. No release, production deployment
+  or real-library modification was performed.
+
+## Build warnings and template access — 2026-10-19
+
+- Verified owner-triggered GitHub Actions run `39290834143` for `94ee511`:
+  both `test` and `image` completed successfully. The previous pending-image
+  status above describes preparation time; actual public pulls/Unraid behavior
+  remain unverified.
+- Checked upstream release metadata and `action.yml` at the exact pinned
+  versions: checkout 7.0.1, setup-python 7.0.0, setup-node 7.1.0,
+  upload-artifact 7.0.2, setup-buildx 4.4.1, login 4.6.0, metadata 6.2.0 and
+  build-push 7.4.0. All declare `node24`, and all current supplied inputs remain
+  supported. Workflow YAML parses; the PR image-publish exclusion and permissions
+  remain unchanged. These static checks do not execute the upgraded actions.
+- Removed the constant platform flag from FROM; verified CI and both Compose
+  files still select linux/amd64. Both Unraid XML templates still parse and use
+  host port 8787. Added concrete XML download and MacBook-to-Unraid copy steps.
+- Relevant frontend/design/syntax regression suite: **7 tests passed**, including
+  JavaScript syntax and unit tests. Diff whitespace check passed. No app code,
+  runtime dependency, processing policy or media file changed. The updated workflow
+  and Dockerfile require a subsequent owner-run image build for dynamic validation.
+
+## Speech decoder compatibility fix — 2026-10-19
+
+- Reproduced the owner's exact `metadata_errors` TypeError with faster-whisper
+  1.1.1 / PyAV 19.0.1 on generated 16 kHz mono and 48 kHz stereo PCM WAVs.
+  The existing fresh-process import check passed on that broken combination.
+  PyAV's v19.0.0 notes confirm removal of `av.open` metadata arguments.
+- Pinned `av==18.1.0`. The same regression then passed: real decode and stereo
+  downmix/resampling produce 4,000 finite float32 samples at 16 kHz from a
+  quarter-second signal, within amplitude bounds, with input SHA-256 unchanged.
+  Tests use no speech model, service, real book or mocked decoder.
+- **78 Python regression tests passed** with the corrected decoder, including
+  generated-media publication/audio-preservation/backup and JavaScript
+  syntax/design/unit checks. No publication thresholds or inference settings
+  changed.
+- A fresh Python 3.12 virtual environment installed production requirements
+  successfully; `pip check` reported **No broken requirements found**, and both
+  runtime tests passed there. An earlier pip check in the shared-platform test
+  environment reported an unrelated inherited sse-starlette/Starlette conflict;
+  it was not present in this clean production-only environment.
+- Dockerfile now runs the same runtime tests after installing requirements,
+  before model download, and removes the temporary test source. Actual updated
+  Docker image construction and the owner's retry remain pending. No release
+  workflow, server configuration or real audiobook was changed by the agent.
+
+## Backend contract review — 2026-09-30
+
+- Final full unittest suite: **79 tests pass** (9.326 seconds), including frontend JavaScript syntax and unit checks and the fresh-process speech dependency import. An earlier run overlapped edits and had an import timeout; the completed final run passes unchanged dependency checks.
+- Eight new tests exercise API acceptance through an actual generated-audio metadata save, forced Re-verify without approval replay, explicit force override and active-job conflict, changed-edition approval reset, draft-only redrafting with retained coverage warnings, matching-gate error classification, retained MP3 conversion/source mutation guards, converted-folder resolution, and preservation of evidence on unavailable storage. Some tests cover multiple contracts.
+- Existing publication tests cover original-file backups, unchanged audio, cancelled acceptance, failed output validation, source changes before/during validation and MP3 retention. Provider and speech responses are mocked for generated-media contract tests.
+- No frontend files or real audiobook files changed. No Tower deployment, Docker execution, live provider/model accuracy benchmark or new physical-device UI validation performed.
+- API handoff: G-019 documents no-body forced Re-verify and optional `force`; G-030 documents retained-conversion redrafting. The frontend's obsolete Re-verify warning is a separate copy follow-up.
+## Embedded heading detection — 2026-10-02
+
+- Recovery suite: 19 tests pass, covering embedded numeric and written headings, word-time acceptance despite an early segment start, missing/malformed/nonfinite alignment, low probabilities, missing pause, distant headings, narrative references, decimals, conflicting headings and repeated published numbers. Both backend adapters request and preserve word alignment (mocked inference).
+- Frontend suite: 7 tests pass. Review JavaScript syntax and diff whitespace checks pass. No frontend changes in this milestone.
+- Full suite: 86 tests ran, 85 passed; fresh-process speech decoder dependency check exceeded its 60-second timeout. Parser tests and generated-audio publication tests passed. A standalone runtime recheck also timed out at 60 seconds; runtime validation remains incomplete.
+- No actual Tower speech inference, performance benchmark or real Chapter 61 validation. No real audiobook writes. Word timing is additional inference work, and conservative pause/context checks may leave genuine headings unresolved.
+
+## Manual published assignments — 2026-10-02
+
+- 16 acceptance tests pass, including canonical title lookup (client title ignored), unknown/duplicate/out-of-order ID rejection, assignment removal/custom rename restoring acknowledgment, and real generated-media finalization preserving timestamp, original backup and manual provenance separately from speech percentage.
+- Seven frontend tests pass. Browser verification at 1440px and 390px covers both picker directions, search, assignment badges, reload persistence, duplicate prevention and no overflow/runtime errors. Native input/change double-open regression fixed.
+- Preview uses generated fixtures with workers disabled; no real audiobook modification or Tower deployment. Prior speech-runtime startup limitation remains unrelated and unresolved.
+
+### Nearest unassigned picker
+Seven frontend tests pass, including unit cases for near-start/late timestamps, stable equal-distance ties, excluding speech/manual assignments and released assignments. Desktop/light and phone/dark browser checks verify only two unassigned fixture sections, nearest first, assigned choices absent, both assignment directions, reload persistence and intercepted final acceptance payload. No media writes.
+
+### Assignment clarity
+Seven frontend tests pass. Browser regression includes selected-title visibility, clearing a manual assignment inside the picker, returned section availability, grouped headings and reassignment on desktop/light and phone/dark, in addition to persistence and intercepted-save payload checks. No backend/publication-policy changes.
+
+### Stable unconfirmed filter
+Seven frontend tests pass. Desktop/light and phone/dark browser workflow starts under Unconfirmed matches and verifies manual assignment remains visible, including reload, removal/reassignment and intercepted acceptance. No backend changes.
+
+### Main assignment action and no-match alternatives
+Seven frontend tests pass. Desktop/light and phone/dark browser checks pass for direct selection, assignment, no-eligible-section rename/removal alternatives, unchecked removal confirmation, first-marker removal protection and no overflow/runtime errors. Syntax and whitespace checks pass. No real media writes.
+
+### Apply Recommended Matches
+Seven frontend tests pass. New unit cases cover close matches, preserving edits, order rejection, competing sections, distant choices and competing local markers. Desktop/light and phone/dark browser checks pass for one-click assignment, red-to-yellow state, stable filter, disabled repeat and reload persistence. Syntax/whitespace checks pass after final button-copy adjustment. No file publication performed.
+
+### Review decisions and explicit order overrides
+17 acceptance tests and seven frontend tests pass. New backend coverage requires literal boolean order acknowledgment and rejects duplicate IDs even with override. Desktop/light and phone/dark browser flow verifies hidden/toggled scoped search, bulk count recovering from zero to one after unmatch, rename and pending/confirmed removal badges, order-override cancel/confirm and reload persistence, and no overflow/runtime errors. Fixed a nested DOM update error found when leaving a rename input for removal. No real media modified; previous speech runtime limitation remains.
+
+
+Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.

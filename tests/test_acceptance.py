@@ -33,6 +33,19 @@ def approval(r):
 
 
 class AcceptanceTests(unittest.TestCase):
+    def test_marker_edits_are_explicit_and_do_not_raise_coverage(self):
+        r=report_fixture();a=approval(r)
+        ds=[{'index':i,'action':'keep'} for i in range(1,5)]
+        ds[1]={'index':2,'action':'rename','title':'My chapter'}
+        ds[3]={'index':4,'action':'remove','confirmed':True}
+        a.update(marker_decisions=ds,preserve_unresolved=False)
+        self.assertEqual(acceptance.validate(r,a)['supported_percent'],75)
+        self.assertEqual(acceptance.marker_plan(r,a),[{'start_seconds':0.,'title':'Old 1'},{'start_seconds':1.,'title':'My chapter'},{'start_seconds':2.,'title':'Old 3'}])
+        for edits in ([{'index':1,'action':'remove','confirmed':True}]+ds[1:], ds[:-1], ds[:-1]+[ds[0]], ds[:-1]+[{'index':4,'action':'remove'}], ds[:-1]+[{'index':4,'action':'suggested'}], ds[:-1]+[{'index':4,'action':'rename','title':'\n'}]):
+            with self.subTest(edits=edits),self.assertRaises(engine.NeedsReview):
+                acceptance.validate(r,{**a,'marker_decisions':edits})
+        with self.assertRaises(engine.NeedsReview): acceptance.validate(r,{**a,'minimum_percent':80})
+
     def test_all_exceptions_and_threshold_are_explicit(self):
         r=report_fixture();a=approval(r)
         self.assertEqual(acceptance.validate(r,a)['supported_percent'],75)
@@ -102,6 +115,36 @@ class AcceptedPublicationTests(unittest.TestCase):
         self.assertEqual([c['tags']['title'] for c in chapters],['Chapter 1','Chapter 2','Chapter 3','Old 4'])
         self.assertEqual([float(c['start_time']) for c in chapters],[0,1,2,3])
         self.assertIn('exceptions',flow.present(saved)['overall'])
+    def test_real_save_with_rename_and_navigation_removal(self):
+        answer=approval(self.report)
+        answer['optional_sections'].append('2.0')  # Removing a confirmed marker releases its section.
+        answer['marker_decisions']=[{'index':1,'action':'keep'},{'index':2,'action':'rename','title':'Custom name'},
+                                    {'index':3,'action':'remove','confirmed':True},{'index':4,'action':'keep'}]
+        self.job['review_answer']['finalization']=answer
+        worker.execute(self.store,self.job,'w')
+        saved=self.store.get_job(self.job_id)
+        self.assertEqual(saved['status'],'complete',saved.get('error'))
+        data=engine.probe('ffprobe',self.source)
+        self.assertEqual([c['tags']['title'] for c in data['chapters']],['Old 1','Custom name','Old 4'])
+        self.assertEqual([float(c['start_time']) for c in data['chapters']],[0,1,3])
+        self.assertAlmostEqual(engine.duration(data),4,delta=.1)
+        self.assertEqual(Path(saved['result']['report']['backup']).read_bytes(),self.original)
+    def test_real_save_with_published_assignment_keeps_audio_and_provenance(self):
+        answer=approval(self.report)
+        answer['marker_decisions']=[dict(index=i,action='suggested') for i in range(1,4)]+[dict(index=4,action='published',section_id='3.0')]
+        answer['optional_sections']=[]
+        self.job['review_answer']['finalization']=answer
+        worker.execute(self.store,self.job,'w')
+        saved=self.store.get_job(self.job_id)
+        self.assertEqual(saved['status'],'complete',saved.get('error'))
+        result=saved['result']['report']
+        self.assertEqual(result['recovery_acceptance']['supported_percent'],75)
+        self.assertEqual(result['recovery_acceptance']['manual_assignments']['3.0']['index'],4)
+        self.assertEqual(result['recovery_acceptance']['sections'],[])
+        self.assertEqual(Path(result['backup']).read_bytes(),self.original)
+        chapters=engine.probe('ffprobe',self.source)['chapters']
+        self.assertEqual(chapters[-1]['tags']['title'],'Chapter Sydney')
+        self.assertEqual([float(c['start_time']) for c in chapters],[0,1,2,3])
     def test_changed_audio_blocks_before_retag(self):
         self.source.write_bytes(self.original+b'changed')
         with patch.object(engine,'retag') as retag:
@@ -144,3 +187,65 @@ class AcceptedPublicationTests(unittest.TestCase):
         self.assertEqual(saved['status'],'complete',saved.get('error'))
         self.assertTrue((book/'Tracks.m4b').is_file())
         self.assertEqual(len(list(book.glob('*.mp3'))),2)
+
+class PublishedAssignmentTests(unittest.TestCase):
+    def test_assignment_resolves_section_with_canonical_title_and_original_time(self):
+        r=report_fixture();a=approval(r)
+        a['marker_decisions']=[dict(index=i,action='suggested') for i in range(1,4)]+[dict(index=4,action='published',section_id='3.0',title='Untrusted title')]
+        a['optional_sections']=[]
+        info=acceptance.validate(r,a)
+        self.assertEqual(info['sections'],[])
+        self.assertEqual(info['supported_percent'],75)
+        self.assertEqual(info['manual_assignments']['3.0']['index'],4)
+        self.assertEqual(acceptance.marker_plan(r,a)[-1],dict(start_seconds=3.,title='Chapter Sydney'))
+        for bad in ('missing','0.0',None):
+            a['marker_decisions'][-1]['section_id']=bad
+            with self.assertRaises(engine.NeedsReview):acceptance.validate(r,a)
+
+    def test_removing_or_custom_renaming_assignment_returns_unlocated_section(self):
+        for action in ('keep','rename','remove'):
+            r=report_fixture();a=approval(r)
+            a['marker_decisions']=[dict(index=i,action='suggested') for i in range(1,4)]+[dict(index=4,action=action,title='Chapter Sydney',confirmed=True)]
+            a['optional_sections']=[]
+            with self.assertRaises(engine.NeedsReview):acceptance.validate(r,a)
+            a['optional_sections']=['3.0']
+            self.assertEqual(acceptance.validate(r,a)['manual_assignments'],{})
+
+    def test_duplicate_manual_assignment_and_out_of_order_are_rejected(self):
+        r=report_fixture();a=approval(r)
+        a['marker_decisions']=[dict(index=i,action='keep') for i in range(1,5)]
+        a['marker_decisions'][2]=dict(index=3,action='published',section_id='3.0')
+        a['marker_decisions'][3]=dict(index=4,action='published',section_id='3.0')
+        with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+        a['marker_decisions'][3]=dict(index=4,action='published',section_id='2.0')
+        with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+
+class OrderOverrideTests(unittest.TestCase):
+    def test_order_override_is_explicit_and_never_permits_duplicate_id(self):
+        r=report_fixture()
+        ds=[dict(index=1,action='published',section_id='3.0'),dict(index=2,action='suggested'),dict(index=3,action='suggested'),dict(index=4,action='keep')]
+        a={'marker_decisions':ds}
+        with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+        ds[0]['override_order']='true'
+        with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+        ds[0]['override_order']=True
+        self.assertEqual(acceptance.marker_plan(r,a)[0]['title'],'Chapter Sydney')
+        self.assertTrue(acceptance.manual_assignments(r,a)['3.0']['override_order'])
+        ds[3]=dict(index=4,action='published',section_id='3.0',override_order=True)
+        with self.assertRaises(engine.NeedsReview):acceptance.marker_plan(r,a)
+
+class MatchedCorrectionTests(unittest.TestCase):
+    def test_replacing_a_supported_match_requires_a_decision_for_its_released_section(self):
+        r=report_fixture();a=approval(r)
+        a['marker_decisions']=[dict(index=1,action='suggested'),dict(index=2,action='suggested'),
+                               dict(index=3,action='published',section_id='3.0'),dict(index=4,action='keep')]
+        a['optional_sections']=[]
+        with self.assertRaisesRegex(engine.NeedsReview,'Explicitly accept'):
+            acceptance.validate(r,a)
+        a['optional_sections']=['2.0']
+        info=acceptance.validate(r,a)
+        self.assertEqual([s['id'] for s in info['sections']],['2.0'])
+        self.assertEqual(info['supported_percent'],75)
+        a['marker_decisions'][3]=dict(index=4,action='published',section_id='2.0',override_order=True)
+        a['optional_sections']=[]
+        self.assertEqual(acceptance.validate(r,a)['sections'],[])

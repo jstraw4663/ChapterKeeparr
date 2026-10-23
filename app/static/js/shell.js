@@ -3,7 +3,7 @@
 // offline banner and search overlay (§8 Search).
 
 import { html, bool } from './format.js';
-import { icon, logo, ring } from './icons.js';
+import { icon, logo, wordmark, ring } from './icons.js';
 import { NAV } from './router.js';
 import { state, counts, refresh } from './store.js';
 import { getPrefs, setPrefs, rememberRecent } from './prefs.js';
@@ -19,10 +19,10 @@ const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']];
 
 export function shellMarkup() {
   return html`
-  <a class="skip" href="#view">Skip to content</a>
+  <a class="skip" href="#view" data-act="skip-content">Skip to content</a>
   <div class="app">
     <aside class="rail" aria-label="Sidebar">
-      <a class="brand" href="#/" aria-label="ChapterKeeparr, Library">${logo(30)}<span class="lbl word">ChapterKeeparr</span></a>
+      <a class="brand" href="#/" aria-label="ChapterKeeparr, Library">${logo(30)}<span class="lbl word">${wordmark()}</span></a>
       <nav class="nav" aria-label="Primary">
         ${NAV.map(item => html`<a class="side" href="${item.href}" data-nav="${item.name}" aria-label="${item.label}">
           <span class="glyph">${icon(item.icon, 20)}${item.name === 'queue' ? ring('qring', 0) : ''}</span><span class="lbl">${item.label}</span>
@@ -53,7 +53,7 @@ export function shellMarkup() {
     </main>
   </div>
   <header class="mh" data-mh>
-    <a class="mh-brand" href="#/" aria-label="ChapterKeeparr home"><span class="mh-logo">${logo(28)}</span><span class="mh-word">ChapterKeeparr</span></a>
+    <a class="mh-brand" href="#/" aria-label="ChapterKeeparr home"><span class="mh-logo">${logo(28)}</span><span class="mh-word">${wordmark()}</span></a>
     <div class="mh-search">
       <button type="button" class="mh-sbtn" data-act="msearch-open" aria-label="Search">${icon('search', 22)}</button>
       <label for="m-q" class="sr">Search your library</label>
@@ -70,6 +70,7 @@ export function shellMarkup() {
   <div class="offline hidden" role="alert" data-offline><span class="dot lg dot-bad pulse"></span><span><strong>Can’t reach the server.</strong> Showing the last known state.</span><button type="button" class="tbtn" data-act="retry-now">Retry now</button></div>
   <div class="moffline hidden" role="alert" data-moffline><span class="dot dot-bad pulse"></span><span class="grow">Can’t reach the server · last known state</span><button type="button" class="tbtn" data-act="retry-now" style="height:32px">Retry</button></div>
   <div id="player-slot"></div>
+  <div id="review-save"></div>
   <div id="notes"></div>
   <div id="overlays"></div>`;
 }
@@ -87,12 +88,14 @@ export function applyAppearance() {
 
 export function initCollapse() {
   const saved = getPrefs().sidebarCollapsed;
-  const collapsed = saved ?? (window.innerWidth >= 768 && window.innerWidth < 1024);
+  const collapsed = saved ?? (window.innerWidth >= 768 && window.innerWidth < 1100);
   document.documentElement.classList.toggle('collapsed', collapsed);
   syncCollapseButton();
 }
 function syncCollapseButton() {
   const collapsed = document.documentElement.classList.contains('collapsed');
+  const activity = document.querySelector('[data-activity-card]');
+  if (activity) { activity.inert = collapsed; activity.setAttribute('aria-hidden', String(collapsed)); }
   const btn = document.querySelector('[data-act="collapse"]');
   if (!btn) return;
   btn.setAttribute('aria-expanded', String(!collapsed));
@@ -290,6 +293,10 @@ function openSettingsSheet() {
 
 // ---------- shell actions (delegated from main.js) ----------
 export const shellActions = {
+  'skip-content'(el, event) {
+    event.preventDefault();
+    document.getElementById('view')?.focus();
+  },
   collapse() {
     const rootEl = document.documentElement;
     if (!rootEl.classList.contains('collapsed')) aimActivityCard();
@@ -308,6 +315,8 @@ export function initShell() {
   bindSearch();
   initCollapse();
   aimActivityCard();
+  const sidebarQuery = window.matchMedia('(min-width: 768px) and (max-width: 1099px)');
+  sidebarQuery.addEventListener?.('change', initCollapse);
   window.addEventListener('resize', () => aimActivityCard());
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyAppearance);
   window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', applyAppearance);

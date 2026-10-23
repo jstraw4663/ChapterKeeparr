@@ -15,7 +15,7 @@ The UI follows an approved redesign. Full spec: [docs/design/DESIGN.md](docs/des
 ### Must
 1. **Use tokens, not colors.** Every color, shadow and easing comes from `docs/design/tokens.css` custom properties. The only raw hex values allowed are cover placeholder colors and on-cover status pills.
 2. **Use the shared components.** Buttons, fields, switches, segmented controls, tabs, pills, panels, collapsibles, sheets, modals, notifications, log rows. Don't hand-roll a new variant; extend the component.
-3. **One family, Figtree.** Sizes and weights from DESIGN.md §4.
+3. **One family, Manrope.** User-approved brand kit (2026-10-20) supersedes Figtree; use the supplied Medium/ExtraBold faces and the hierarchy in DESIGN.md §4.
 4. **Status words are fixed:** Queued, Converting, Needs review, Failed, Verified, Optimized, Cancelled. Steps are Inspect → Match edition → Check audio → Save.
 5. **Every screen works on a 390px phone** with the same capabilities as desktop. Touch targets ≥ 44px. Test both themes.
 6. **One primary button per screen region.** Destructive actions always confirm (inline on desktop, sheet on phone).

@@ -75,9 +75,11 @@ function morphNode(from, to) {
 
 function syncAttributes(from, to) {
   for (const { name } of [...from.attributes]) {
+    if (from.tagName === 'DETAILS' && name === 'open') continue;
     if (!to.hasAttribute(name)) from.removeAttribute(name);
   }
   for (const { name, value } of [...to.attributes]) {
+    if (from.tagName === 'DETAILS' && name === 'open') continue;
     if (name === 'class') {
       const kept = RUNTIME_CLASSES.filter(c => from.classList.contains(c) && !to.classList.contains(c));
       const next = kept.length ? `${value} ${kept.join(' ')}` : value;

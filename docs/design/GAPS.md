@@ -14,6 +14,18 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 
 ## Summary
 
+### Chapter draft review — 2026-10-03
+
+The marker editor, section picker, filter, pagination and removal checkbox described in the two entries below (and G-049) are replaced by the ordered card list in `CHAPTER_REVIEW.md`. The decision contract is unchanged: `{index, action: published|keep|rename|remove, section_id?, override_order?, title?, confirmed: true}` plus `optional_sections`. Removal is chosen explicitly on its card and sent with `confirmed: true`; the phone confirmation sheet at save time is gone (the gap checkbox stays the commit point). Client-side derivations: kind tags, between-neighbours, likely extra boundaries, and which `sections` count as missing (one an open marker already offers as its nearest choice isn't shown as missing until that marker is decided). New gap: G-050 (book length).
+
+### Review conveniences — 2026-10-01
+
+Acceptance preview markers now include the saved `transcript`. The editor displays up to two sentences (360-character maximum, with an ellipsis for long speech), adds All/Unconfirmed/Confirmed filtering based on original speech support, and preserves all hidden decisions. Published exceptions have Select All with mixed-selection state; bulk selection still sends every individual reference ID through existing server validation. No publication rules change.
+
+### Marker decision editor — 2026-10-01
+
+User-authorized frontend/backend change. Recovery preview now includes `markers` (index, original title/time, suggested title, supported, excerpt, removable). Acceptance optionally accepts `marker_decisions`, one per original marker: `{index, action: keep|suggested|rename|remove, title?, confirmed?}`. Legacy approvals remain supported. Removal requires confirmation and cannot remove the first marker. No timestamps move and no audio is deleted. Recognition percentage retains the original denominator, independent of edits. Decisions and resulting marker counts are recorded in the acceptance report. The UI defaults to identified names for supported markers and original names otherwise, displays a save summary, exposes saved excerpts with a 15-second playback limit, and confirms removal in a phone sheet. Unlocated references have no fabricated preview or inferred mapping to local markers. Changing drafts clears unsaved decisions.
+
 | ID | Area | Build today | Owner | Status | Blocks |
 |---|---|---|---|---|---|
 | G-001 | Status vocabulary | partial | frontend | done | — |
@@ -34,12 +46,12 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 | G-016 | Optimized rule | partial | both + Jeremy | placeholder in UI | — |
 | G-017 | EPUB pairing | partial | backend | placeholder in UI | — |
 | G-018 | Edit details | missing | backend | placeholder in UI | — |
-| G-019 | Re-verify | partial | backend | placeholder in UI | — |
+| G-019 | Re-verify | exists | frontend | backend done; remove old warning | — |
 | G-020 | Suggestions scan | missing | backend | placeholder in UI | Suggestions is partial |
 | G-021 | BookOrbit | missing | backend + Jeremy | placeholder in UI | — |
 | G-022 | Folder browser counts + guess | partial | backend | placeholder in UI | — |
 | G-023 | Settings persistence | partial | both | placeholder in UI | — |
-| G-024 | Health + version | partial | backend | placeholder in UI | — |
+| G-024 | Health + version | exists | frontend + backend | implemented; device validation pending | — |
 | G-025 | Queued jobs ("Up next") | exists | frontend | done | — |
 | G-026 | PWA | partial | frontend | done | — |
 | G-027 | Static file serving allowlist | — | backend (tiny) | done | — |
@@ -59,10 +71,11 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 | G-041 | Download report | — | frontend | done | — |
 | G-042 | Current-file duration | — | frontend | done | — |
 | G-043 | `skipped` status not in vocabulary | — | Jeremy | done | — |
-| G-045 | Figtree hosting | — | frontend | open | needs G-027 to self-host |
+| G-045 | Figtree hosting | exists | frontend | done | bundled variable WOFF2 + OFL |
 | G-046 | Worker activity line | exists | frontend | done | — |
 | G-047 | No stable book id | missing | backend | open | — |
 | G-048 | Chapter playback reduced to 15 s | — | Jeremy | open | — |
+| G-050 | Book length in the draft preview | partial | backend | placeholder in UI | — |
 
 ---
 
@@ -189,10 +202,10 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: backend · Status: placeholder in UI
 
 ### G-019 · Re-verify
-- Build today: **partial.** `POST /api/jobs/{id}/retry` requeues any finished job, but options keep `force=false`, and the engine **skips** a book whose successful receipt matches. So "Re-verify" on a complete book usually ends as `skipped` / "Unchanged".
-- UI now: the Re-verify button calls retry and warns "The server may keep the previous verification if nothing changed (G-019)."
-- Proposed contract: `POST /api/jobs/{id}/retry` with optional body `{"force": true}`.
-- Owner: backend · Status: placeholder in UI
+- Build today (2026-09-30): **exists.** `POST /api/jobs/{id}/retry` without a body forces fresh verification for complete/skipped jobs. Optional body `{"force": true}` explicitly bypasses the completion receipt; `{"force": false}` permits receipt reuse. Active jobs still return 409.
+- Retry always clears prior finalization approval. Finished jobs use the normal verification path, never replay an accepted draft. Converted folder jobs resolve their single M4B.
+- Frontend follow-up: remove the obsolete warning that Re-verify may keep the previous verification. Existing no-body request already works; no payload change is needed.
+- Owner: frontend · Status: in progress (backend done)
 
 ### G-020 · Suggestions scan
 - Build today: **missing.** The closest building block is `POST /api/discover {path}` → `{"books": [{path,name,kind: m4b|mp3_folder}], "issues"}`, which lists convertible folders and M4Bs under a path but does not classify, remember ignores, or look at EPUBs.
@@ -221,9 +234,11 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: both · Status: placeholder in UI
 
 ### G-024 · Health and version
-- Build today: **partial.** `GET /api/health` → `{"status":"ok"}`. The version is hard-coded in `index.html` ("0.5.0").
-- Proposed contract: `{"status":"ok","version":"0.5.0"}`.
-- Owner: backend · Status: placeholder in UI
+- Implemented (2026-10-19): `GET /api/health` retains its public status-only contract. Authenticated `GET /api/settings` adds `build`: version, release/development channel, commit, optional build date, frontend build marker/content hash, speech backend and model basename. Source builds resolve their Git commit; container builds stamp API, frontend marker and PWA cache identity together from Docker build arguments supplied by the release workflow.
+- Settings → About and updates displays both this tab’s frontend marker and the server’s identity, plus manual `GET /api/updates` and Copy diagnostics. Diagnostics exclude credentials and library/config/work paths.
+- Manual checks use a fixed GitHub releases endpoint with bounded reads/timeouts, one request at a time and a five-minute cache. Private-repository/auth/rate-limit/no-release failures and development builds remain unknown rather than claiming Up to date. No image pull or restart occurs.
+- A waiting PWA update stays waiting until a user confirms reload; existing review tabs keep their cached shell. Unknown build fields stay `—`. Device/PWA rollout validation remains required.
+- Owner: frontend + backend · Status: implemented; release/device validation pending
 
 ### G-025 · Queued jobs
 - Build today: **exists.** `status=queued`, claimed oldest-first. Up to `WORKERS` run at once.
@@ -254,6 +269,7 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 
 ### G-030 · Review markers from audio / Resume checks
 - Build: `POST /review {recovery:"local_markers"}` produces a draft. `{action:"resume"}` reruns checks for non-identity pauses (service outage, coverage, source inventory).
+- Backend audit (2026-09-30): redrafting also supports a retained MP3-folder conversion after validating its audio hash and source inventory. It holds the book lock, retains runtime/drift coverage warnings, and persists source invalidation and identity failures. Missing or changed retained audio requires normal checks again. No new API fields.
 - Proposed home: the Problem panel quick fixes. "Resume checks" is the primary action when `review_category ≠ identity` (the problem isn't the edition). "Review markers from audio" goes in Fix the edition as a ghost button next to "Save and re-verify".
 - Owner: frontend · Status: done
 
@@ -320,9 +336,8 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Owner: Jeremy · Status: done
 
 ### G-045 · Figtree hosting
-- Google Fonts CDN (the design's reference) sends a request to Google from a self-hosted LAN app, and fails offline or in the PWA. Self-hosting needs G-027.
-- Proposal: self-host `Figtree[wght].woff2` once G-027 lands. Until then, use the Google Fonts link with a system-font fallback.
-- Owner: frontend · Status: open
+- Implemented (2026-10-19): variable Figtree WOFF2 is bundled under `app/static/fonts`, preloaded, declared with `font-display: swap`, and included in the versioned PWA shell cache. The OFL license ships alongside it. No Google Fonts request is needed.
+- Owner: frontend · Status: done
 
 ### G-046 · Worker activity line
 - Build: `result.activity` (latest worker message) and `result.speech_check {current,total}`.
@@ -339,3 +354,48 @@ Last verified against commit `4fe9b61` on 2026-09-24; statuses updated after the
 - Build: tapping a chapter plays until the chapter ends. The design (RULES: "no media-player features") limits playback to a 15-second spot check.
 - Proposal: follow the design (a 15 s stop). This reduces an existing feature, so it's logged here for sign-off.
 - Owner: Jeremy · Status: open
+
+
+### G-049 · Manual published-section assignment (implemented 2026-10-02)
+- Recovery preview includes `published_sections` with stable draft-local IDs, and each speech-supported marker's `reference_id`.
+- Acceptance `marker_decisions` supports `{index, action: "published", section_id}`. Backend resolves the canonical title, rejects unknown/duplicate/out-of-order assignments, and records manual provenance separately from recognition.
+- Explicit assignments resolve corresponding missing-section acknowledgments. Removing/changing an assignment restores that requirement. Custom names alone never imply published identity. Original speech percentage and publication safeguards are unchanged.
+- UI uses shared modal/sheet, fields, buttons and spot playback in both directions; compact outstanding-section summary, manual badge/filter and unresolved navigation. Browser drafts preserve IDs with the existing evidence-token binding.
+- 2026-10-03: that UI is replaced by the chapter draft review (CHAPTER_REVIEW.md); same contract.
+- Owner: backend/frontend · Status: done under user's explicit UI authorization.
+
+### G-050 · Book length in the draft preview
+- Build today: **partial.** The chapter draft review's colour timeline (CHAPTER_REVIEW.md §2.3) places every marker and published section across the whole book, but `recovery_acceptance_preview` has no length. The draft itself stores `duration_seconds`.
+- UI now: uses the file duration from `GET /api/jobs/{id}/source` (G-042) when it has loaded, otherwise the latest known marker or section time, so ticks near the end can sit slightly too far right until the duration arrives. Marked `// DESIGN-GAP: G-050` in `chapter-review.js`.
+- Proposed contract: add `duration_seconds` (number, or null when unknown) to `recovery_acceptance_preview`, copied from `recovery_draft.duration_seconds`. No other change.
+- Owner: backend · Status: placeholder in UI
+
+### G-051 · Conflicting section identities and a complete planned-title timeline
+- Request: distinguish decorated section labels from chapter ordinals, make automatically matched rows editable, and show Existing / Planned titles throughout the timeline.
+- Backend: shared semantic parser; derived conflict validation; preview marker `reason` / `conflict`; versioned draft tokens; automatic-match replacement releases its former section for reassignment or optional-section consent. Raw evidence, original timestamps, audio and backup checks remain.
+- UI: chronological paired titles with current-draft precedence, live browser decisions, All / Needs attention / Changed filters, Listen / Change and restore; unknown coverage says not matched, never missing audio. Dense timeline targets are grouped for accessibility; every row is individually editable. Reusing cached speech does not turn timing suggestions/manual edits into audio confirmation.
+- Status: implemented. The populated v2 archive confirms the first-five replay and fresh transcription of the two problem clips; full-book/Tower behavior remains a field check. Chapter checks now shares display-only suggestions with the cards, labels unselected proposals, keeps the original audio count stable and uses compact columns/container-responsive title pairs with inline actions. See `docs/plans/bedlam-identity-repair.md` and `VALIDATION.md`.
+
+### G-052 · Evidence-backed review minimum and readable change overview
+- User-approved policy: keep the original speech count separate; the save minimum uses original audio-supported markers plus explicit published selections that pass conservative timing, uniqueness and order checks. Keep/rename/remove choices add no credit, and the denominator remains all original markers. This is coverage of marker evidence, not a calibrated confidence or completeness probability.
+- Preview adds `quality_policy` (version, minimum audio anchors, canonical title identities, eligibility explanation), marker `eligible_reference_ids`, and published-section `number` / `scope`. Eligibility requires a complete fingerprint-bound scan, at least six stable broad audio anchors, precise recording/catalog duration agreement within 2 s, offset spread <=0.7 s, anchor span >=50%, residual <=2 s and >=10 s separation from competing sections/markers. No inference or network call is added per choice.
+- Acceptance recomputes `match_quality` on the server; receipts retain it and `minimum_metric: evidence_backed_markers` alongside unchanged original `supported_percent`. Browser scores are advisory. Versioned canonical evidence tokens invalidate old approvals; normalizing the same draft during finalization does not invalidate an otherwise current approval.
+- Shared derived warnings identify duplicated identities/numbers, inversions, explicit title-number conflicts and interior unassigned numbered sections, respecting published parts. Warnings link to the relevant Chapter checks row, including rows beyond the first 50. Unknown boundaries are not described as missing audio. Existing explicit order overrides stay recorded and cannot earn extra timing credit.
+- Existing/Proposed comparisons share wrapping, equal-width columns and equal-height outlines in cards, summaries and phone checks. Only a clicked option fills its radio; recommendations remain empty until chosen. The dense dual-marker strips are replaced with a bounded Changes at a glance list: real planned title/removal/kept counts, open decisions, up to three timestamped title comparisons and links to individual/all changed checks. Unselected proposals are labelled and excluded from the planned-change counts. Audio and retained timestamps stay unchanged.
+- Owner: backend/frontend · Status: implemented under explicit user authorization; physical Safari/assistive technology and deployed-image behavior remain field checks.
+
+### G-053 · Supplied brand kit and full visual theme
+- User explicitly approved the full Manrope/palette update and changed the earlier white-save requirement to Paper. This supersedes Figtree and neutral/white examples in older design documents; no workflow or status meaning changes.
+- Original small-size marks and outlined wordmarks follow app light/dark/system preference. Favicon, Apple icon, normal/maskable PWA icons, README logos, social assets and Unraid artwork use the supplied files. Shared tokens remain the only source for application colors; accessible amber/muted text variants preserve AA contrast on warning panels.
+- Supplied static Manrope Medium 500 and ExtraBold 800 are converted without subsetting to local WOFF2 (60,544 bytes combined), preserving copyright/OFL. Body and heading weight ranges map to those two faces. No hosted font, new app dependency or runtime conversion is added. Existing cover artwork and green/red status semantics remain.
+- Service-worker v16 precaches the new shell assets and removes the old font. Unraid's stored Icon field and installed PWA icons may require a template refresh/reinstall independently of pulling the image. Social card assets are provided; repository social-preview settings are not changed.
+- Status: implemented under explicit user authorization; validation recorded in VALIDATION.md.
+
+### G-054 · Ordered screen updates and installed-PWA stability
+- Request: stop screens reopening/refreshing after navigation or a background update; preserve a fluid mobile/desktop flow, including the installed PWA.
+- Latest navigation owns the screen swap. Skipping an animation also invalidates its delayed callback. Async screen contexts, delayed focus/scroll and review/submit handoffs cannot act on a route the user has left. Background view patches coalesce to animation frames; explicit field changes remain immediate in state and patch after their event. Unrelated job progress does not patch selected review/book details.
+- A bounded 40-entry read cache shares concurrent pointer-prefetch/detail/chapter reads, aborts superseded transports and prevents old responses from publishing even when a transport ignores abort. Loaded data stays visible during revalidation. Chapter failures retain the list and offer an explicit read retry. Evidence refresh/error blocks saving until current evidence loads, while an unchanged draft keeps decisions/consent. Genuine changed tokens still reset approval.
+- Post-mutation refreshes wait for one serialized fresh poll rather than accepting an already-running pre-mutation response. Startup Settings reads cannot overwrite a successful later save.
+- PWA navigation uses HTML and modules from the same installed shell; API requests remain network-only. A waiting update never reloads the document automatically. Update readiness is shared state so Settings cannot miss a worker that finishes installing after its initial check; notices are deduplicated. The explicit Settings confirmation is still required, and its deferred callback is route-bound.
+- Fix the branding regression where favicon.ico was precached but rejected by the static MIME allowlist. Only the icon extension is added; traversal/unknown types remain denied. New API coverage fetches every shell asset, and a real-worker browser case covers installation/control, waiting updates, explicit activation/reload and offline navigation. Shell cache v17.
+- Status: implemented. No speech/model/worker/conversion algorithm, approval-token policy or media/publication behavior changes. Physical installed Safari/OS memory eviction remains a field check, not a diagnosed cause.

@@ -1,0 +1,19 @@
+{
+  "provided_archive": "ChapterKeeparr-Brand-Kit.zip",
+  "archive_sha256": "4c18fbdd55e12d779cc368c64f823387bd02d710315feb2cbb59330ec68df970",
+  "conversion": "fontTools TTFont, flavor=woff2, no subsetting or outline changes",
+  "fonts": [
+    {
+      "source": "fonts/Manrope-Medium.ttf",
+      "source_sha256": "283a21cf1abba8ea7f6271554d730d4bfe6c146319b05de9e1a6115b8380207c",
+      "shipped": "app/static/fonts/manrope-medium.woff2",
+      "shipped_sha256": "f2e9575edf1eec68196cdf4c80ec3ab25731b5eb4c8110bd0efe4e0bb81c78e4"
+    },
+    {
+      "source": "fonts/Manrope-ExtraBold.ttf",
+      "source_sha256": "993f57eb62d212a362baaa7d91e0e805e6ebf77f4d45690fdf3035b581ff9733",
+      "shipped": "app/static/fonts/manrope-extrabold.woff2",
+      "shipped_sha256": "cf4aa1f9174437fef28198e32648264fdc660577b576d854c17cb0ef7f23a1de"
+    }
+  ]
+}

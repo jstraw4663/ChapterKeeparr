@@ -8,18 +8,19 @@
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support></Support>
+  <Icon>https://raw.githubusercontent.com/jstraw4663/ChapterKeeparr/main/assets/brand/container-icon.png</Icon>
   <Project>https://github.com/jstraw4663/ChapterKeeparr</Project>
-  <Overview>Local audiobook chapter repair workbench with a manually submitted queue and human review.</Overview>
+  <Overview>Audiobook chapter repair with human review. Requires a published public GHCR image. Workers start paused: verify paths and Settings build identity before enabling them. See the included UNRAID-INSTALL.md migration guide.</Overview>
   <Category>MediaApp:Other</Category>
   <WebUI>http://[IP]:[PORT:8000]/</WebUI>
-  <ExtraParams></ExtraParams>
+  <ExtraParams>--cpus=4 --memory=4g --memory-swap=4g</ExtraParams>
   <PostArgs></PostArgs>
   <CPUset></CPUset>
   <DateInstalled></DateInstalled>
   <DonateText></DonateText>
   <DonateLink></DonateLink>
   <Requires></Requires>
-  <Config Name="Web UI/API" Target="8000" Default="8000" Mode="tcp" Description="ChapterKeeparr web UI/API; set a token and restrict network access" Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Web UI/API" Target="8000" Default="8787" Mode="tcp" Description="Host port; container port stays 8000. Set an API token and restrict network access." Type="Port" Display="always" Required="true" Mask="false">8787</Config>
   <Config Name="Config directory" Target="/config" Default="/mnt/user/appdata/chapterkeeparr/config" Mode="rw" Description="SQLite database and configuration" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/chapterkeeparr/config</Config>
   <Config Name="Audiobook library" Target="/library" Default="/mnt/user/media/audiobooks" Mode="rw" Description="Final library files submitted to jobs; container user needs access" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media/audiobooks</Config>
   <Config Name="Downloads (read-only)" Target="/downloads" Default="/mnt/user/usenet/downloads" Mode="ro" Description="Read-only reference mount; not watched or submitted automatically" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/usenet/downloads</Config>
@@ -31,7 +32,7 @@
   <Config Name="Speech model" Target="MODEL" Default="/opt/models/small.en" Description="Bundled small.en model" Type="Variable" Display="advanced" Required="true" Mask="false">/opt/models/small.en</Config>
   <Config Name="Model cache" Target="MODEL_CACHE" Default="/models" Description="Runtime model cache location" Type="Variable" Display="advanced" Required="true" Mask="false">/models</Config>
   <Config Name="Concurrent book workers" Target="WORKERS" Default="1" Description="Concurrent book job subprocesses; use 1–8" Type="Variable" Display="advanced" Required="true" Mask="false">1</Config>
-  <Config Name="Enable job worker" Target="ENABLE_WORKERS" Default="1" Description="Run the background job processor" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
+  <Config Name="Enable job worker" Target="ENABLE_WORKERS" Default="0" Description="Start paused (0). Set to 1 only after checking config, library paths and build identity." Type="Variable" Display="always" Required="true" Mask="false">0</Config>
   <Config Name="CPU threads" Target="CPU_THREADS" Default="4" Description="faster-whisper threads per job" Type="Variable" Display="advanced" Required="true" Mask="false">4</Config>
   <Config Name="Reusable media cache limit (GB)" Target="CACHE_MAX_GB" Default="10" Description="Retained conversion and transcript cache budget under /config; reports are retained separately" Type="Variable" Display="advanced" Required="true" Mask="false">10</Config>
   <Config Name="API token" Target="CHAPTERKEEPER_API_TOKEN" Default="" Description="Optional bearer token; set before exposing the API beyond localhost" Type="Variable" Display="always" Required="false" Mask="true"></Config>

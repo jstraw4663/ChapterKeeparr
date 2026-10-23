@@ -8,6 +8,16 @@ from app.db import Store
 
 
 class StoreTests(unittest.TestCase):
+    def test_progress_never_regresses_until_explicit_retry(self):
+        job, _ = self.store.enqueue(self.book)
+        self.store.claim('owner')
+        for value, expected in ((.67,.67),(.5,.67),(.74,.74),(.35,.74),(.9,.9)):
+            updated = self.store.update_job(job['id'], progress=value, worker='owner')
+            self.assertEqual(updated['progress'], expected)
+        self.store.finish(job['id'], 'failed', worker='owner')
+        self.store.retry(job['id'])
+        self.assertEqual(self.store.claim('new')['progress'], 0)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

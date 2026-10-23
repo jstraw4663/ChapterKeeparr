@@ -2,9 +2,9 @@
 
 import { html } from './format.js';
 import { parse, legacyJobTarget, navFor } from './router.js';
-import { state, start, subscribe, onEvents, bookById, refresh } from './store.js';
+import { state, start, subscribe, onEvents, bookById, refresh, setFrontendUpdate } from './store.js';
 import { shellMarkup, applyAppearance, initShell, updateShell, setScreenChrome, shellActions, closeSearch, refreshSearch } from './shell.js';
-import { notify } from './notify.js';
+import { notify, reflowNotifications } from './notify.js';
 import { onPrefs } from './prefs.js';
 import { hydrateCovers, settleCovers } from './covers.js';
 import { top as topOverlay } from './overlay.js';
@@ -34,9 +34,34 @@ let unmount = null;
 let firstRender = true;
 let currentKey = '';
 const scrollByKey = new Map(); // route key → scroll position, for returning to a tab or list
+let rendering = false;
+let renderQueued = false;
+let navigation = 0;
+let visit = 0;
+let pendingNavigation = false;
+let displayedHash = null;
+let backgroundFrame = 0;
+
+function requestRender(force = true) {
+  if (!force) {
+    if (!backgroundFrame) backgroundFrame = requestAnimationFrame(() => {
+      backgroundFrame = 0; render(false);
+    });
+    return;
+  }
+  if (renderQueued) return;
+  renderQueued = true;
+  queueMicrotask(() => {
+    renderQueued = false;
+    cancelAnimationFrame(backgroundFrame); backgroundFrame = 0;
+    render(false, true);
+  });
+}
 
 function ctx(enter = false) {
-  return { route, state, ui, enter, phone: phoneQuery.matches, rerender: () => render(false, true) };
+  const owner = visit, hash = location.hash;
+  const isCurrent = () => owner === visit && hash === location.hash && !pendingNavigation;
+  return { route, state, ui, enter, phone: phoneQuery.matches, isCurrent, rerender: () => { if (isCurrent()) render(false, true); } };
 }
 
 /**
@@ -45,12 +70,20 @@ function ctx(enter = false) {
  * still: drop per-element entrance animations (a view transition animates instead).
  */
 function render(enter = false, force = false, { patch = false, still = false } = {}) {
-  if (!screen) return;
+  // Removing a focused field can dispatch change synchronously. Finish the
+  // current DOM patch before processing any render requested by that handler.
+  if (rendering) { requestRender(); return; }
+  rendering = true;
+  try { renderView(enter, force, { patch, still }); }
+  finally { rendering = false; }
+}
+
+function renderView(enter, force, { patch, still }) {
+  if (!screen || pendingNavigation || location.hash !== displayedHash) return;
   const view = document.getElementById('view');
   const c = ctx(enter);
   const sig = `${phoneQuery.matches}|${screen.signature ? screen.signature(c) : Math.random()}`;
   if (!force && !enter && sig === lastSig) return;
-  lastSig = sig;
   // Keep focus, caret and scroll across re-renders.
   const active = document.activeElement;
   const focusId = active && view.contains(active) ? active.id : '';
@@ -64,13 +97,21 @@ function render(enter = false, force = false, { patch = false, still = false } =
     if (enter && !patch) view.innerHTML = String(screen.render(c));
     else morphInto(view, String(screen.render(c)));
     if (still) stripEntrance(view);
+    const footerMarkup = String(screen.renderFooter?.(c) || '');
+    morphInto(document.getElementById('review-save'), footerMarkup);
+    document.documentElement.classList.toggle('reviewing', Boolean(footerMarkup));
     hydrateCovers(view);
+    reflowNotifications();
     syncInks(view);
     unmount = screen.mount?.(view, c) || null;
+    // Rendering can initialize per-route forms; capture that settled state.
+    lastSig = `${phoneQuery.matches}|${screen.signature ? screen.signature(c) : Math.random()}`;
   } catch (error) {
     // Keep the shell usable and say what broke instead of leaving a blank page.
     console.error(error);
     unmount = null;
+    document.getElementById('review-save').replaceChildren();
+    document.documentElement.classList.remove('reviewing');
     view.innerHTML = String(html`<div class="page-inset">${emptyState({ title: 'This screen couldn’t be shown', body: error?.message || 'Unexpected error', action: html`<button type="button" class="btn btn-md" onclick="location.reload()">Reload</button>` })}</div>`);
     return;
   }
@@ -84,12 +125,16 @@ function render(enter = false, force = false, { patch = false, still = false } =
 }
 
 function go() {
+  const requested = ++navigation;
+  pendingNavigation = true;
+  const hash = location.hash;
+  const current = () => requested === navigation && hash === location.hash;
   audio.stop();
   closeSearch();
   const parsed = parse(location.hash);
   if (parsed.redirect) { location.replace(parsed.redirect); return; }
   if (parsed.legacyJob) {
-    const target = () => location.replace(legacyJobTarget(bookById(parsed.legacyJob), parsed.match));
+    const target = () => { if (current()) location.replace(legacyJobTarget(bookById(parsed.legacyJob), parsed.match)); };
     if (state.loaded) target(); else refresh().then(target);
     return;
   }
@@ -102,6 +147,8 @@ function go() {
   // Tabs and lists come back where you left them; details open at the top.
   const restore = !next.id && (kind === 'pop' || kind.startsWith('tab')) ? scrollByKey.get(key) || 0 : 0;
   const swap = () => {
+    if (!current()) return;
+    pendingNavigation = false; displayedHash = hash; visit++;
     currentKey = key;
     if (!uiByRoute.has(key)) uiByRoute.set(key, {});
     ui = uiByRoute.get(key);
@@ -115,7 +162,7 @@ function go() {
     // First load keeps the designed entrance; later navigation is animated by the transition.
     render(true, false, { patch: kind === 'same', still: kind !== 'none' });
     window.scrollTo(0, restore);
-    if (kind !== 'none') document.querySelector('#view h1')?.focus({ preventScroll: true });
+    if (kind !== 'none' && !next.query.has('continued')) document.querySelector(next.name === 'review' && next.id && !phone ? '#view .revhead h2' : '#view h1')?.focus({ preventScroll: true });
     return settleCovers(document.getElementById('view'));
   };
   transition(kind, swap, { bookId: kind === 'push' ? next.id : kind === 'pop' ? from?.id : '' });
@@ -187,6 +234,9 @@ function boot() {
   window.addEventListener('resize', reink);
   document.fonts?.ready.then(reink);
   document.addEventListener('keydown', event => {
+    if (event.defaultPrevented || topOverlay()) return;
+    screen?.onKeyDown?.(event, ctx());
+    if (event.defaultPrevented) return;
     if (!ui.menu || document.querySelector('.layer')) return;
     if (event.key === 'Escape') { event.preventDefault(); closeMenu({ focusToggle: true }); return; }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -199,8 +249,10 @@ function boot() {
   });
   const onField = event => {
     const el = event.target;
-    if (!(el instanceof HTMLElement) || el.closest('.layer') || !document.getElementById('view').contains(el)) return;
-    screen?.onInput?.(el, event, ctx());
+    if (!(el instanceof HTMLElement) || el.closest('.layer') || (!document.getElementById('view').contains(el) && !document.getElementById('review-save').contains(el))) return;
+    // Commit field state immediately, then patch after the input/change event
+    // finishes so a blur during morphing cannot start a nested DOM update.
+    screen?.onInput?.(el, event, { ...ctx(), rerender: requestRender });
   };
   document.addEventListener('input', onField);
   document.addEventListener('change', onField);
@@ -211,12 +263,17 @@ function boot() {
     screen.onSubmit(form, event, ctx());
   });
   window.addEventListener('hashchange', go);
-  phoneQuery.addEventListener?.('change', () => { lastSig = ''; go(); });
+  phoneQuery.addEventListener?.('change', () => {
+    // Resizing is not navigation: retain the current draft, playback and scroll.
+    closeSearch();
+    setScreenChrome({ topbar: screen?.topbar !== false, detail: typeof screen?.detail === 'function' ? screen.detail(ctx()) : Boolean(screen?.detail && phoneQuery.matches) });
+    lastSig = ''; render(false, true); updateShell(route);
+  });
   onPrefs(() => { applyAppearance(); });
   subscribe(() => {
     updateShell(route);
     refreshSearch();
-    render(false);
+    requestRender(false);
     topOverlay()?.refresh?.();
   });
   onEvents(events => events.forEach(notify));
@@ -226,7 +283,22 @@ function boot() {
   });
   go();
   start();
-  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').then(registration => {
+    let announced = false;
+    const available = () => {
+      setFrontendUpdate(true);
+      if (announced) return;
+      announced = true;
+      notify({ kind: 'info', title: 'A frontend update is ready', body: 'Finish your review, then open Settings to reload safely.', href: '#/settings/about', action: 'Settings', dest: null, at: Date.now() });
+    };
+    if (registration.waiting) available();
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) available();
+      });
+    });
+  }).catch(() => {}));
 }
 
 boot();

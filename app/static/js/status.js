@@ -111,7 +111,7 @@ export function toStatus(job) {
       base.pct = percent(job.progress);
       base.cancelling = Boolean(job.cancel_requested);
       const speech = job?.result?.speech_check;
-      const listening = speech && Number(speech.total) ? ` · listening ${speech.current} of ${speech.total}` : '';
+      const listening = speech && Number(speech.total) ? (speech.retry ? ` · retrying marker ${speech.current} of ${speech.total}` : ` · listening ${speech.current} of ${speech.total}`) : '';
       detail = base.cancelling ? 'Cancelling at the next safe point'
         : step.index ? `Step ${step.index} of 4 · ${stepName(step)}${listening}` : 'Starting';
       break;

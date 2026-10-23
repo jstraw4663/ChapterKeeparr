@@ -4,17 +4,26 @@
 
 import { html, clock, bool } from '../format.js';
 import { reportOf } from '../status.js';
-import { spotButton, ldot } from '../ui.js';
+import { spotButton, ldot, button, segmented, titleComparison } from '../ui.js';
+import { chapterTimeline, hms } from '../chapter-review.js';
 import * as audio from '../audio.js';
 
 /** Checks from the latest verification, or the local-marker recovery draft. */
-export function checksOf(job) {
+export function checksOf(job, { preview, form = {} } = {}) {
   const report = reportOf(job);
+  const draft = report.recovery_draft;
+  if (draft?.markers?.length && (!report.recovery_acceptance || job.status === 'awaiting_review')) {
+    const p = preview || { markers: draft.markers.map((m, i) => ({ index: i+1, title: m.old_title,
+      suggested_title: m.title, seconds: m.old_seconds, supported: m.status === 'supported',
+      reference_id: m.status === 'supported' ? String(m.reference_start) : null,
+      transcript: m.transcript, excerpt: m.audio_excerpt, reason: m.reason })),
+      published_sections: (draft.reference_chapters || []).map(c => ({ id: String(c.start), title: c.title })) };
+    return chapterTimeline(p, form);
+  }
   if (Array.isArray(report.checks) && report.checks.length) {
     return report.checks.map((c, i) => ({ n: i + 1, name: c.title || `Chapter check ${i + 1}`, seconds: c.boundary_seconds, passed: c.passed === true,
       pending: c.passed == null, transcript: typeof c.transcript === 'string' ? c.transcript : c.transcript ? JSON.stringify(c.transcript) : '', excerpt: c.audio_excerpt || null, reason: c.reason || '' }));
   }
-  const draft = report.recovery_draft;
   if (draft?.markers?.length) {
     return draft.markers.map((m, i) => ({ n: i + 1, name: m.title || m.old_title || `Marker ${i + 1}`, seconds: m.old_seconds, passed: m.status === 'supported',
       pending: false, transcript: m.transcript || '', excerpt: m.audio_excerpt || null, reason: m.reason || '', draft: true }));
@@ -33,13 +42,40 @@ export function checkTimeline(rows, duration, { small = false, label = 'Where ea
   const max = duration || Math.max(1, ...rows.map(r => Number(r.seconds) || 0)) * 1.04;
   return html`<div class="timeline ${small ? 'sm' : ''}" role="img" aria-label="${label}"><div class="rail-line"></div>${rows.map((r, i) => {
     const left = Math.max(0, Math.min(100, ((Number(r.seconds) || 0) / max) * 100));
-    return html`<span class="pt tick ${r.passed ? 'pass' : 'fail'}" style="left:${left.toFixed(2)}%;animation-delay:${(0.3 + i * 0.06).toFixed(2)}s"></span>`;
+    return html`<span class="pt tick ${r.manual ? 'chosen' : r.passed ? 'pass' : 'fail'}" style="left:${left.toFixed(2)}%;animation-delay:${(0.3 + i * 0.06).toFixed(2)}s"></span>`;
   })}</div>`;
 }
 
 /** Rows with spot-check buttons; expanding a row shows what was heard. */
 export function checkRows(job, rows, ctx) {
   const now = audio.current();
+  if (rows[0]?.original != null) {
+    const filter = ctx.ui.checkFilter || 'all';
+    const visible = rows.filter(r => filter === 'changed' ? r.changed : filter === 'attention' ? r.needsAttention : true);
+    const limit = ctx.ui.checkLimit || 50;
+    return html`<div class="col gap12 chapter-checks">
+      <div class="check-filters">${segmented({ label: 'Filter chapter timeline', options: [['all', 'All'], ['attention', 'Needs attention'], ['changed', 'Changed']], value: filter, act: 'chapter-filter' })}</div>
+      <p class="meta">Suggestions need your decision. Accepted choices update this preview; files change only when you save. Select a row to read its audio evidence.</p>
+      <div class="check-legend meta"><span><i class="dot dot-ok"></i>Audio match</span><span><i class="dot check-chosen"></i>Your decision</span><span><i class="dot dot-warn"></i>Needs review</span></div>
+      <div class="check-heading" aria-hidden="true"><div class="check-columns"><span>Time</span><span>Existing title</span><span>Proposed title</span><span>Evidence / decision</span></div><span>Actions</span></div>
+      <div class="check-list" role="list" aria-label="Chapter title comparison">
+      ${visible.slice(0, limit).map(r => {
+        const open = ctx.ui.check === r.n;
+        const label = r.issues?.length ? 'Sequence warning' : r.validated ? 'Validated choice' : r.manual ? 'Your decision' : r.conflict ? 'Conflicting match' : r.reviewing ? 'Reviewing match' : r.proposal ? 'Suggested' : r.passed ? 'Audio match' : 'Needs review';
+        return html`<div class="checkrow" data-check-row="${r.n}" data-key="chapter-check-${r.n}" role="listitem"><div class="check-entry">
+          <button type="button" class="crow check-compare" data-act="check-open" data-arg="${r.n}" aria-expanded="${bool(open)}">
+            <span class="meta tabular">${hms(r.seconds)}</span>
+            ${titleComparison({existing:r.original, proposed:r.proposal || r.planned, note:r.proposal ? 'Not selected' : r.validated ? 'Timing and order checked' : r.needsAttention && !r.manual && !r.reviewing ? 'Original kept until you decide' : ''})}
+            <span class="pill sm ${r.conflict || r.needsAttention ? 'tone-warn' : r.manual ? 'tone-muted' : r.passed ? 'tone-ok' : 'tone-muted'}">${label}</span>
+          </button>
+          <div class="check-actions">${spotButton({ playing: now?.key === `chk:${job.id}:${r.n}`, label: `${r.name} at ${hms(r.seconds)}`, act: 'check-play', arg: r.n, cls: 'playbtn', disabled: !r.excerpt, disabledReason: 'No saved audio for this check' })}
+          ${ctx.editMatches ? button({ label: 'Change', act: 'cr-edit-match', arg: `m${r.n}`, size: 'sm', disabled: ctx.reviewBusy, extra: { 'aria-label': `Change match at ${clock(r.seconds)}` } }) : ''}</div>
+        </div>${r.issues?.length ? html`<div class="check-issues">${r.issues.map(issue=>html`<p class="meta warn-text">${issue.message}</p>`)}</div>` : ''}${open ? html`<p class="opened transcript">${r.transcript || 'No transcript was saved for this check.'}${r.reason ? html` · ${r.reason}` : ''}</p>` : ''}</div>`;
+      })}</div>
+      ${!visible.length ? html`<p class="meta">No chapters match this filter.</p>` : ''}
+      ${visible.length > limit ? button({ label: `Show more chapters (${visible.length-limit} left)`, act: 'chapter-check-more' }) : ''}
+    </div>`;
+  }
   return html`<div class="col" style="border-top:1px solid var(--line)">${rows.map(r => {
     const key = `chk:${job.id}:${r.n}`;
     const open = ctx.ui.check === r.n;

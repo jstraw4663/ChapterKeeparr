@@ -1,6 +1,18 @@
-const CACHE = 'chapterkeeparr-shell-v10';
+const CACHE = 'chapterkeeparr-shell-v17';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
+  '/static/brand/mark-dark.svg',
+  '/static/brand/mark-light.svg',
+  '/static/brand/wordmark-dark.svg',
+  '/static/brand/wordmark-light.svg',
+  '/static/brand/og-image.png',
+  '/static/favicon.ico',
+  '/static/icon-maskable-192.png',
+  '/static/icon-maskable-512.png',
+  '/static/js/scroll.js',
+  '/static/js/chapter-review.js',
+  '/static/js/review-quality.js',
+  '/static/js/chapter-review-view.js',
   '/',
   '/manifest.webmanifest',
   '/static/icon-180.png',
@@ -8,6 +20,7 @@ const SHELL = [
   '/static/icon-512.png',
   '/static/icon.svg',
   '/static/js/api.js',
+  '/static/js/assets.js',
   '/static/js/audio.js',
   '/static/js/books.js',
   '/static/js/covers.js',
@@ -22,7 +35,9 @@ const SHELL = [
   '/static/js/overlay.js',
   '/static/js/player.js',
   '/static/js/prefs.js',
+  '/static/js/review-drafts.js',
   '/static/js/router.js',
+  '/static/js/review-state.js',
   '/static/js/screens/book.js',
   '/static/js/screens/common.js',
   '/static/js/screens/evidence.js',
@@ -36,13 +51,21 @@ const SHELL = [
   '/static/js/shell.js',
   '/static/js/status.js',
   '/static/js/store.js',
+  '/static/js/resource-cache.js',
   '/static/js/ui.js',
+  '/static/fonts/manrope-medium.woff2',
+  '/static/fonts/manrope-extrabold.woff2',
   '/static/styles.css',
   '/static/tokens.css',
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
+});
+
+// A waiting worker activates only after the user chooses a safe reload.
+self.addEventListener('message', event => {
+  if (event.data === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -58,15 +81,20 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/')));
+    // Keep HTML and JS from the same installed build. A waiting update never
+    // mixes a new network index with the active worker’s older modules.
+    event.respondWith(caches.open(CACHE).then(async cache => (await cache.match('/')) || fetch(request)));
     return;
   }
-  if (SHELL.includes(url.pathname)) event.respondWith(fetch(request).then(async response => {
+  if (SHELL.includes(url.pathname)) event.respondWith(caches.open(CACHE).then(async cache => {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return fetch(request).then(async response => {
     if (response.ok) {
       const copy = response.clone();
-      const cache = await caches.open(CACHE);
       await cache.put(request, copy);
     }
     return response;
-  }).catch(() => caches.match(request)));
+    });
+  }));
 });

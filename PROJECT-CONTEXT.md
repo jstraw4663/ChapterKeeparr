@@ -1,6 +1,109 @@
 # ChapterKeeparr project context
 
+## Stable navigation, reads and PWA shell — 2026-10-20
+
+Jeremy reports most screens briefly opening and then appearing to reload, especially in the installed PWA. Reproduced an actual native-transition race: a skipped old update callback can still overwrite the latest screen. Added navigation generations, route-bound async rendering/focus/handoffs and frame-coalesced background patches. Relevant per-book signatures keep unrelated progress from remounting a selected book/review. The same canonical draft retains browser choices/consent; a real evidence change still resets approval.
+
+Loaded detail/chapter data now remains visible while a shared bounded cache revalidates it; superseded reads abort and cannot publish out of order. Evidence refresh/errors block save without removing the editor; book chapter failures retain their data and allow an explicit read retry. One post-mutation fresh poll runs after an already-started poll; known-stale results are skipped. Startup Settings reads cannot overwrite a newer successful save. No new polling loop, ASR, thread budget or media work.
+
+Real-worker testing found a branding regression: the worker precached favicon.ico while the server's static route denied that extension, preventing installation. Added the correct icon MIME type and an API test that fetches every shell entry. PWA navigations now serve the installed build's cached HTML with matching modules, and API calls stay uncached. Worker readiness now updates shared state so Settings cannot miss a just-installed update, and notices are deduplicated. Worker updates only activate/reload through the existing explicit Settings confirmation. Shell cache v17; local data and approval-token semantics are unchanged. Safari/OS process eviction is not proven or ruled out by Chromium testing. See VALIDATION.md and G-054.
+
+
+## Full Chapter C brand kit — 2026-10-20
+
+Jeremy supplied ChapterKeeparr-Brand-Kit.zip and explicitly approved full Manrope typography, the Ink/Paper/Cream/Amber palette and Paper in place of the previous white save button. This overrides the older neutral/Figtree examples; workflow, consent, status semantics and publication safeguards are unchanged. Original outlined wordmarks and simplified small marks follow app light/dark/system preferences. Browser, Apple, PWA (separate maskable safe zones), README and both Unraid templates use supplied artwork. Assets and provenance are in assets/brand; GitHub social preview is supplied for manual upload, not configured remotely.
+
+Two supplied static font weights are converted without subsetting to local WOFF2, 60,544 bytes combined, with original copyright/OFL. The UI retains its existing hierarchy through body/heading ranges. Shared accessible theme tokens are mirrored in app/static and docs/design; warning text/muted text use contrast-safe amber/stone variants rather than recoloring original artwork. Service worker shell v16 replaces the old Figtree asset. No runtime dependency, font service, media work or extra model/thread is added. Unraid's stored Icon field and existing installed-PWA icons can require an independent refresh; pulling an image does not rewrite an existing template.
+
+
+## Evidence-backed review and readable changes — 2026-10-20
+
+Jeremy approved original audio plus validated explicit published matches for the save minimum. The new pure metadata policy checks source binding, stable broad audio anchors, precise duration agreement, unique near-boundary timing and order. Original speech evidence stays separate; names/keep/remove never add credit, and all original markers remain in the denominator. The server recomputes the score and records both evidence categories in the receipt. Duplicate identities/numbers, inversions, title conflicts and interior unassigned numbered sections produce linked review warnings with part-aware numbering. Existing publication, gap consent, source fingerprint, original backup, preserved times and unchanged-audio checks remain.
+
+Existing/Proposed boxes now use balanced wrapping columns with equal-height outlines in both review sections. Unselected options stay empty. The dense Edition/Your file strips are replaced with a bounded Changes at a glance comparison list and real change/removal/kept/open counts; links open relevant rows or all Changed checks on desktop and phones. Shell v15 includes the new pure scoring module. No new model, dependency, thread or per-choice network request is introduced.
+
+Evidence tokens now bind the normalized reviewed draft and policy version. Previously saved local choices/consent must be selected again once after this upgrade; cached audio evidence can be reused. Canonical normalization itself stays token-stable during finalization, while source/evidence changes invalidate approval. Local validation and limitations are recorded in VALIDATION.md. Actual Bedlam evidence replay was read-only and used the earlier exported report, not the latest deployed 72/78 scan. No Unraid image, real audiobook or deployed job was changed. Jeremy retains image workflow/release control.
+
+
+## Deterministic accessibility release gate — 2026-10-20
+
+GitHub runs 19/20 used the same 3f57161 commit; 19 failed a contrast scan and 20 succeeded. Runs 16, 10 and 9 show the same Activity-card/resize contrast race. The earlier run 13 scroll baseline is a separate corrected issue. Image jobs are gated by tests, so a failed test publishes no image.
+
+Root cause reproduced with the actual Activity-card fade: reduced-motion CSS still runs 200 ms fades and uses stronger !important selectors than the old snapshot freeze. networkidle/route readiness does not imply resize/element animation completion. All static axe scans now share a temporary high-specificity timing override, paint the settled state, retain every WCAG/contrast rule and restore normal CSS in finally. The dedicated live motion/scroll/timer cases stay enabled. Full JSON reports and failure screenshots enter existing CI artifacts. A new stability check repeats rapid resizing in both themes, holds the actual fade to reproduce the defect, and proves static low-contrast text still fails; it also verifies timing overrides are removed on both success and failure. No app, media, worker, container or image behavior changed; no retries or release triggers were added.
+
+
+## Chapter checks consistency — 2026-10-20
+
+Chapter checks now displays the same shared, unique in-order suggestions as the review cards, explicitly Not selected until accepted. Display-only proposals do not change the publication plan, original speech score, decision set or consent. Current choices/Undo/Change/restore update the comparison immediately; Changed continues to describe the selected plan. Reopened automatic matches appear in Needs attention.
+
+Desktop comparisons use aligned headings and inline Listen/Change; narrow panels stack labelled title pairs using a 680px container query. All timestamps use h:mm:ss. Manual decisions have their own ink timeline dots/legend, and the original audio-match count stays stable across edits. Row selection still reveals transcripts. No new API, model, inference, dependency or audiobook write was introduced. Service-worker shell v14 refreshes these assets.
+
+
+## Actual Bedlam excerpts and CI actionability check — 2026-10-20
+
+The populated v2 archive confirms the identity collision. All 78 saved local/catalog boundaries differ by at most 0.037 seconds. Replaying first-five cached transcripts and independently transcribing both problem WAVs with CPU/int8 small.en produces Prologue at 581.335 s and Havana / Chapter 1 at 1918.061 s. First-five replay yields 69/78 after retaining later saved evidence, not a full-book verification. Audio/report remain outside Git; source and deployed job are unchanged. See the updated Bedlam repair guide. Added a heading-only regression for the actual legacy segment shapes.
+
+The owner-run a892f0d workflow and its PR run failed the desktop scroll assertion: it measured before reopening the card, including Playwright actionability scrolling. The test now measures at Remove pointerdown and still asserts no app-induced displacement after animated completion. No app scroll or accessibility rule is disabled. A new owner-run build is needed for this test-only follow-up; no release was triggered.
+
+
+## Bedlam identity and complete review timeline — 2026-10-20
+
+Implemented Jeremy's approved section-identity and workflow changes. Shared semantics distinguish decorated Prologue/Epilogue labels from numbered chapters and recognize part-prefixed Chapters 1/38/52. Recovery can identify timed named headings and demotes contradictory legacy/order/timing evidence before it becomes a hard UI anchor. Preview, acceptance and saved plans share the normalized interpretation; original evidence and source/audio checks are retained. Versioned draft tokens require fresh consent after this semantic update. The existing transcript/model cache is retained; no new model, GPU path or worker/thread expansion was introduced.
+
+Chapter checks show chronological Existing / Planned title pairs with current-draft precedence, live local decisions, filters, Listen and Change. Automatic matches can be edited/restored; replacing/removing a matched marker releases its published section for reassignment/explicit consent. Counts describe decisions; unknown coverage is not called missing audio; skipping is never a suggested match. Dense timeline hit targets are grouped, with each chapter still individually available in the list.
+
+The uploaded bedlam-review.tar.gz was only 45 bytes and contained no files. Actual recording/word-timing validation remains pending. A checked read-only exporter now uses the SQLite job's recorded report/attempt paths, verifies first-five-marker clips and archive contents, caps inputs at 25 MiB and refuses incomplete/empty output. The old hand-written export assumed the wrong folder layout.
+
+Validation: 108 Python tests passed, including generated-media publication/backup/unchanged-audio checks; all nine JavaScript test files and seven frontend/design/syntax checks pass. Synthetic Bedlam workflows pass in both themes at 390/1024px, including matched-row correction/restore and axe scans; reconciled/180-marker/motion/notification workflows pass. The full settled-layout sweep passes 216 observations across nine route states/twelve sizes/both themes, plus 36 axe scans and focused consent/rail/keyboard/settings interactions.
+
+See [the repair and export guide](docs/plans/bedlam-identity-repair.md). No real audiobook/job/configuration or registry image was changed; Jeremy retains image/release control.
+
+
+## Reconciled container source and testable review UI — 2026-10-19
+
+Merged Jeremy's uploaded active-container source with the responsive-review branch using shared ancestor `5055ded`. The prior GitHub branch was missing deployed manual-assignment/retry/recognition work; those implementations and tests are now preserved alongside the existing build diagnostics, public GHCR/Unraid installation kit and PyAV compatibility fix. The archive manifest is historical provenance in `docs/provenance`, not this build's identity. See [the reconciliation record](docs/provenance/container-source-reconciliation.md).
+
+Jeremy chose to complete the ordered-card/sticky-footer review design, with Accept and save hidden until consent is checked, then white. The editor supports explicit published assignments, rename/removal, missing-section decisions, order overrides, conservative bulk suggestions/Undo, browser-local token-bound drafts and guarded save handoff to the next book. Large lists render in batches; manual choices do not increase speech coverage. Field updates are deferred and the render loop guards against nested DOM updates during blur.
+
+Notifications hydrate book covers and display up to three stable simultaneous cards with a bounded waiting queue. Polling preserves nodes and remaining time. Hover, focus, panel scrolling, hidden tabs and clipped cards pause expiry. The panel reflows above mobile navigation/save controls.
+
+Validation: 100 Python tests passed, including generated-media acceptance/backup/audio checks and real mono/stereo speech decoding; seven frontend/design/syntax cases and all nine JavaScript test files passed. The full browser sweep passed 216 viewport/theme observations and 36 axe scans. Dedicated workflows passed in both themes; synthetic 180-marker checks passed on 390px reduced-motion and 1024px animated desktop, including override selection, bulk Undo, progressive rendering, stationary desktop decisions and notification timer pause/resume.
+
+This is a branch/PR update only. Jeremy must run the branch image workflow and pull the resulting tag/digest before testing on Unraid; no production deployment, image publication or real-library write was performed. Physical Safari/assistive technology, real model resource use and deployed PWA upgrade remain field checks.
+
+## Stable progress and browser review drafts — 2026-10-02
+
+Worker progress updates are now monotonically increasing in SQLite within a run; claim/retry resets remain explicit. Local listening uses 50–68%, wider retries 68–74%, before existing validation/save stages. Retry detail is distinct from first-pass listening. This remains a phase-weighted estimate, not elapsed-time prediction.
+
+Review selection stays on the current book when the waiting list is reordered by a background completion. Input changes persist immediately in per-book browser localStorage, with an in-tab fallback and storage-failure notice. Recovery edits/threshold/acknowledgments restore only for the same server draft token. Changed evidence starts a clean acceptance form with a notice; successful acceptance clears saved edits. No file mutation occurs through autosave. Browsers/devices do not share edits. Service-worker cache is v16.
+
+## Embedded heading detection — 2026-10-02
+
+Local-marker recovery now considers explicit chapter headings inside speech segments using retained word timestamps from both speech backends. Additional matches require the existing -2.1/+8 second proximity window, word probabilities >=0.7, a preceding pause >=0.35 seconds, ordered finite word intervals, and a heading duration <=4 seconds. Common narrative references are excluded. Missing alignment stays unresolved; existing bounded wider retries still apply. Unique published identity, conflicting evidence, duplicate-marker detection, and all publication guards remain in force. This extension is draft recovery only; standard verification's heading parser is unchanged. Speech cache is versioned v2 to regenerate word evidence, and recovery version is 5. Word alignment adds inference work; Tower performance and the actual Chapter 61 recording remain unvalidated. Redraft after deployment to apply the new evidence rules; saved drafts are not silently rewritten.
+
 ## Canonical source
+
+Latest layout repair: removed an unmatched closing div in the server-details template. Desktop book list is the sole left column; header/actions/evidence/history stay in the right. Dense marker rows use shared circular spot-play controls and one quoted italic transcript, unwrapped in place when expanded. Original names are shown only when they differ from the proposed save name. Browser DOM containment, playback, pagination and mobile checks passed; see VALIDATION.md.
+
+### Compact review — 2026-10-01
+
+Marker review uses expandable rows, green Confirmed/amber Unconfirmed text badges, one-line speech previews, and 15-row pagination within the selected filter. Decisions and expanded state survive page changes; all-marker save counts remain unchanged. Full transcript preview, playback and edits are inside each row.
+
+### Review conveniences — 2026-10-01
+
+Added Select All for unmatched published sections, short verbatim saved-transcript previews, and All/Unconfirmed/Confirmed marker filtering. Filters retain edits and global save counts; manual renaming does not change confirmation status. No new speech processing or publication-policy changes.
+
+### Speech decode compatibility fix — 2026-10-01
+
+Tower reported `open() got an unexpected keyword argument 'metadata_errors'`. Faster-Whisper 1.1.1 calls PyAV with this argument; PyAV 19 removed it, but Faster-Whisper's dependency constraint permits that release. Pin PyAV to 18.1.0 (the local installed version). Docker now runs `scripts/check_speech_runtime.py` to decode generated WAV data with the real Faster-Whisper decoder before model installation, instead of checking imports alone. Runtime unittest invokes the same check. Rebuild the image and recreate the container; retry the failed book afterward. No chapter policy changes.
+
+### Marker decisions — 2026-10-01
+
+User requested an interactive implementation of per-marker keep/rename/remove decisions. The recovery review screen now exposes original names/times, identified names, saved excerpts and explicit navigation removal. Backend validates a complete decision set, protects the first marker, keeps the original recognition denominator and records edits in acceptance. Audio, source identity, backup and output validation safeguards still apply. Unmatched published sections remain separate acknowledgments. Frontend edits were explicitly requested for this work.
+
+### Backend review of redesigned UI — 2026-09-30
+
+Reviewed the four Needs review actions against API and worker behavior. Fixed completion-receipt reuse on Re-verify, stale finalization approval on retry, converted-folder retry resolution, retained-conversion redrafting, and lost coverage warnings during manual redrafting. Redrafting now holds the book lock and checkpoints invalidation/identity failures. Early storage failures retain prior review evidence. No frontend files or real audiobook files were changed. API handoff details are in `docs/design/GAPS.md` (G-019/G-030); validation is in `VALIDATION.md`.
 
 This folder is the development Git project (main branch, committed initial build): `/Users/jeremystraw/Documents/Codex/ChapterKeeparr`.
 It was copied from the previous task's `chapterkeeper` 0.2.1 source; that source and its release ZIPs remain unchanged. The recovery design is in `ALIGNMENT-RECOVERY-PLAN.md`.
@@ -76,3 +179,96 @@ Validation totals and deployment status are not established by this context upda
 
 The frontend was rebuilt to the approved design in `docs/design/` (Claude owns `app/static/`). The only backend change is the widened static-file route (GAPS G-027). Every build feature kept a home, including explicit recovery acceptance, which still requires each consent and never auto-publishes. Placeholders for missing server support are listed in `docs/design/GAPS.md`; next steps in `docs/design/FOLLOW_UPS.md`. UI previews use the generated fixture `tests/fixtures/ui_seed.py`; no real audiobook was read or modified for the redesign.
 
+
+
+## UI/UX implementation (2026-10-19; awaiting PR review/deployment)
+
+Implementation is based on freshly fetched GitHub main `c94c052` plus the saved plan commits. The previous audit directory was a partial source snapshot; the complete Git checkout is `/workspace/ChapterKeeparr-implementation`. Main is 15 commits ahead of tag v0.5.0. The deployed container and MacBook checkout identities remain unknown.
+
+The review workspace now gives selected books a compact expandable cover rail, readable adaptive header and responsive details. Gap consent immediately hides/reveals the white save action, while all existing server publication gates remain unchanged. UI approvals are draft-token-bound; polling/resizing preserve valid edits, native disclosures and playback. Shared responsive layouts and 44px hit areas were improved, and the skip link keeps the current route.
+
+Settings now shows server build identity and client/frontend identity, a manual cached release check and redacted diagnostics. Docker/release builds embed their version/channel/commit/date; source checkouts remain development builds. Figtree ships locally. Hidden tabs poll more slowly; PWA updates wait for a user-confirmed reload. No conversion/matching backend optimization, real-media publication, merge, tag, release or production deployment was performed.
+
+See VALIDATION.md for actual regression evidence and remaining physical-device/accessibility/PWA checks.
+
+## Public-image installation preparation (2026-10-19)
+
+The owner chose public GHCR pulls while keeping the GitHub source repository
+private. `deploy/UNRAID-INSTALL.md` documents the owner-run branch-preview build,
+one-time package visibility change, anonymous-pull verification, Docker Manager
+template import, copied/test-library checks, stopped-state migration and rollback.
+No public image availability is established by preparing these files.
+
+Both Unraid templates use host port 8787 per the owner's latest instruction;
+stop the existing container before starting the test replacement. The test template
+uses a separate config and dedicated test-library mapping. The production template
+requires preserving the existing actual mappings. Workers start paused, with one
+book slot, four speech threads, a four-CPU quota and 4 GB memory cap. Pull-only
+Compose and an example env file provide equivalent test defaults and require an
+explicit published image reference. The prior instructions to save registry
+credentials to flash were removed for the public-pull workflow.
+
+XML and Compose configuration validation does not validate an actual image build,
+Unraid import, inference performance or deployment. No release workflow was
+triggered, no image pushed, and no running installation changed during this work.
+
+## Build warning follow-up (2026-10-19)
+
+The owner subsequently ran workflow `39290834143` on commit `94ee511`;
+GitHub reports both test and image jobs succeeded. This establishes a successful
+owner-run image build/push, not public anonymous access or an Unraid installation.
+Its Node 20 action-runtime warnings and constant FROM platform lint warning were
+nonfatal. Follow-up changes pin verified Node 24 versions of all workflow actions
+and select linux/amd64 through CI/Compose rather than the Dockerfile FROM line.
+Install documentation now includes an authenticated direct XML download link,
+MacBook SSH/SCP commands and a clear workspace-versus-host distinction. No new
+release/image workflow or deployment was triggered by the agent.
+
+## Speech decoder dependency regression (2026-10-19)
+
+The owner installed the preview and enabled its paused worker. A later book failed
+at Check audio with `open() got an unexpected keyword argument 'metadata_errors'`.
+Reproduced exactly with generated mono/stereo WAVs: faster-whisper 1.1.1 calls
+`av.open(metadata_errors='ignore')`, which PyAV 19 removed. Its unconstrained
+`av>=11` dependency allowed the incompatible PyAV 19.0.1 install. PyAV upstream's
+19.0.0 release notes confirm removal; upgrading to faster-whisper 1.2.1 alone
+would retain the same call.
+
+Pin PyAV 18.1.0, the latest release before that removal, without changing the
+speech model, inference options or publication policy. A real decoder regression
+now checks mono/stereo WAV decoding, 48-to-16 kHz resampling, float32 shape and
+signal validity, and unchanged source bytes. The Docker build runs these runtime
+tests before downloading the model. No model or external service is needed for
+the regression. Existing verified receipts can skip decoding, so the first book's
+unchanged result did not establish decoder compatibility. See VALIDATION.md for
+results. The owner must build/pull the updated preview before retrying the job.
+
+## Manual published assignments — 2026-10-02
+
+Implemented assigning published section IDs to existing marker timestamps in either direction using a searchable desktop modal/mobile sheet with excerpt context. Unassigned published sections appear first; duplicate and out-of-order placements are disabled and rejected by the backend. Outstanding acknowledgments exclude manual assignments and return when those assignments are changed/removed. Custom names remain distinct. Manual badges and filters, collapsed outstanding-section list and previous/next unresolved controls reduce scrolling. Autosave retains decisions; canonical names and manual provenance are recorded on finalization without raising speech recognition coverage. Existing source, backup and unchanged-audio checks remain. Worker-disabled generated-data preview is on port 8777; service-worker cache v17. No Tower deployment or real-book writes.
+
+### Nearest unassigned picker — 2026-10-02
+Published-section picker now hides retained speech/manual assignments and sorts remaining sections by absolute published-start versus local-marker-time distance (stable published-order ties). Reverse picker shows unassigned, retained timestamps in nearest-first order. Small closest-available and published-time/distance text is advisory only; no auto-selection or confirmation change. Replaced/removed assignments release their old published identity. Service-worker cache v18.
+
+### Assignment clarity — 2026-10-02
+Expanded manually assigned rows explicitly show Selected section and its canonical title. Picker shows current manual selection and Remove assignment, which keeps the marker/time/audio and restores the original name, immediately returning the released section to available choices. Picker groups Recommended (closest available, advisory), Other available and Out of chapter order, retaining distance sorting within groups and disabled invalid choices. Cache v19.
+
+### Stable unconfirmed filter — 2026-10-02
+Unconfirmed matches now reflects the original speech result throughout a draft review, retaining manually assigned rows and their badges. Unresolved navigation still skips assigned decisions, but uses the full unconfirmed list for page positions. Service-worker cache v20.
+
+Removed Previous/Next unresolved controls and their handlers at user request. Marker filters and pagination remain. Cache v21.
+
+### Main assignment action and no-match alternatives
+Marker rows lead with Select Unmatched Section (Change selected section for assigned rows) beside an Other options selector. When no eligible section exists, the picker offers custom naming or navigation removal with explanatory copy. Removal stages an unconfirmed decision in the existing row, preserving the explicit checkbox and phone save confirmation; the first marker cannot be removed. Cache v22.
+
+### Apply Recommended Matches — 2026-10-02
+User-triggered bulk assignment acts across the book, preserving explicit edits. Only unique unassigned published matches within five seconds, with ten-second separation from competing sections/local markers and consistent published order, are applied from a single snapshot. Combined-order revalidation precedes mutation. No cascade by elimination. These remain manually assigned evidence and require Accept and save. Red Unconfirmed and yellow Manually assigned distinguish remaining work; unconfirmed-filter membership stays stable. Cache v23.
+
+### Complex Frankenstein local fixture
+`tests/fixtures/complex_review.py` expands only the synthetic Eve Fixture/B000FIXT05 job in an explicit ui_seed config. Local port 8777 now exposes 23 markers and 23 reference sections: six bulk timing recommendations, ambiguous/distant/competing cases, extra boundaries, no-evidence marker, same-title distinct references, unmatched bonus content, and pagination. Tone excerpts and illustrative transcripts, with deliberately invalid publication fingerprints. Scenario guide is written beside the fixture config. Never applied to deployment config automatically.
+
+### Review decisions and explicit order overrides — 2026-10-02
+Picker search is collapsed behind the Out of chapter order search icon and filters only that group. Manual out-of-order selection requires an inline confirmation with the section/time and warning; `override_order: true` is recorded on that explicit published decision and in acceptance provenance. Backend permits inversions involving explicitly overridden manual decisions but still rejects duplicate/unknown IDs and retains all source/time/audio guards. Recommendations never set overrides. Unmatch deletes the prior decision so valid recommendations become eligible again. Manual rename/removal/keep have distinct badges; incomplete names/removals remain action-needed. Input renders are microtask-deferred to prevent nested DOM morphing during blur. Cache v24.
+
+
+Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.

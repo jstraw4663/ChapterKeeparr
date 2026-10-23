@@ -1,3 +1,5 @@
+> Brand update approved by Jeremy on 2026-10-20: Manrope Medium / ExtraBold replaces Figtree; Ink / Paper / Cream surfaces and Amber primary actions replace the prior neutral palette. `tokens.css` is authoritative for accessible theme variants. The consent-gated save action uses Paper (#F7F2E8) with Ink text in both themes. Existing screen hierarchy, status semantics, spacing, shared components and motion remain. Outlined brand wordmarks use original supplied artwork. This amendment supersedes conflicting typography, palette and white-button examples below.
+
 # ChapterKeeparr design system
 
 This is the source of truth for how ChapterKeeparr looks, moves and behaves. If code and this file disagree, this file wins until someone updates it on purpose.
@@ -234,7 +236,7 @@ Status changes from the server surface as short notifications that never stay on
    - Desktop, sidebar expanded: the note unfolds out from just under the Settings item in the sidebar (clip reveal + 16px drop, 0.6s).
    - Desktop, sidebar collapsed: floats in at the bottom-left of main (rise 28px + fade, 0.55s).
    - Phone: floats in above the tab bar and FAB.
-2. **Hold** about 3.6s. A thin line along the bottom shrinks to show the time left.
+2. **Hold** for 6 seconds of visible, unattended time. Hover, keyboard focus, scrolling the panel, a hidden tab or a clipped card pauses its timer. A thin line along the bottom shows time left. Up to three cards occupy fixed slots; later events wait (bounded at 100), with an overflow count. Dismissal refills the same slot without moving the other cards. Polling preserves card nodes and timers. Small screens scroll the panel above navigation and the review save bar.
 3. **Minimize**: the note shrinks and flies into its destination badge (0.72s, `cubic-bezier(.55,0,.25,1)`), then the badge pops (scale 1.7 → 0.9 → 1, 0.55s) with a halo ring (0.7s).
    - "Needs review" notes go to the **Needs review** badge.
    - Everything else about a job goes to the **Queue** badge.
@@ -242,7 +244,7 @@ Status changes from the server surface as short notifications that never stay on
 4. Clicking × minimizes immediately (same animation).
 5. Every notification is also written to the **Activity** log (Queue page), and job events to that book's **History**.
 
-Content: book cover thumbnail with a small status icon, one-line title ("A Parade of Horribles needs review"), one-line detail, and an action link (Review / Watch / Open) when there's somewhere useful to go. Notifications respect the "Status notifications" setting; when it's off, events still go to the log and badges still update.
+Content: authenticated book cover thumbnail, hydrated when the card arrives, with a small status icon, one-line title ("A Parade of Horribles needs review"), one-line detail, and an action link (Review / Watch / Open) when there's somewhere useful to go. Notifications respect the "Status notifications" setting; when it's off, events still go to the log and badges still update.
 
 ## 10. Accessibility
 
@@ -284,7 +286,7 @@ Changes made while building the redesign against the real server, one line each 
 - **Phone tab bar marks the current tab with a pill behind the icon** and a bolder label, not colour alone. (2026-09-25)
 - **Needs review detail is organised as What happened → What to do next → Evidence.** "What happened" is plain language per pause reason with the key facts (edition, checks passed); the server's sentence, technical details, timing diagnostics and gates sit under one "Details from the server" link. "What to do next" is a short list of exclusive choices (`choices()`), each with a one-line explanation and one button: for chapter timing, Draft chapters from the audio / Choose a different edition / Run the checks again, and once a draft is ready, Save using the draft first (the accepted-exceptions form, all consents kept). Chapter checks and History are collapsed under Evidence. The phone's sticky Skip / Save bar is gone; Cancel job is the header's trash button on both layouts. Reason: the previous layout showed up to seven buttons at once with no order, and the chapter-recovery steps looked like alternatives rather than a sequence. (2026-09-25)
 - **Edition search has an explicit Search button and a "Fill from" drop-down** (Use filename, Use tags) instead of two chips; icon-only on phone. It uses the shared `menuButton()`. (2026-09-25)
-- **Sending a book back from Needs review returns to the list.** Save and re-verify, Resume checks and Finalize go to `#/review?resumed=<id>` (desktop shows a "back in the queue" panel with Watch in queue / Review next) instead of opening the next book. The notification opens that book in the Queue, and on phone the whole notification is tappable. (2026-09-25)
+- **Sending a book back from Needs review opens the next book** (CHAPTER_REVIEW.md §6). Accept and save, Save and re-verify, Resume checks and Finalize show "<Title> went back to the queue" with **Open queue** (opens that book in the Queue; on phone the whole notification is tappable; it flies into the Queue badge as usual). The current book fades out (180ms, up 6px), the next book in Needs review opens in place and scroll glides to the top; with none left, "Nothing left to review" with Open queue. Reduced motion skips the fade. Supersedes the 2026-09-25 "returns to the list" rule. (2026-10-03)
 
 ## 13. Component index
 
@@ -326,3 +328,14 @@ Changes made while building the redesign against the real server, one line each 
 | Book derivation, grouping, sorting | `app/static/js/books.js` | `deriveLibrary()`, `groupBooks()`, `sortBooks()` |
 | Notification destinations | `app/static/js/events.js` | `destinationFor()`, `diffJobs()` |
 | Icons | `app/static/js/icons.js` | `icon()`, `logo()` |
+
+
+## Responsive workspace refinement (2026-10-19)
+
+The approved UI/UX plan in `docs/plans/ui-ux-optimization.md` extends the existing design. Selecting a review book collapses its list to an 80px cover rail. A separate accessible expand button overlays the readable title list; pointer/focus previews and Escape supplement it. When the workspace is too narrow for a useful detail pane, the compact covers move to a horizontal row. Phones retain list/detail navigation. Review navigation occupies its own row above the cover/title metadata.
+
+Gap consent controls visibility of Accept and save: unchecked hides it completely, checked shows the named white review-save variant in both themes. A dashed border and nearby explanation distinguish a blocked white action. The full acceptance predicate, current draft token and server fingerprint/publication checks still govern authorization. No threshold is changed automatically.
+
+Shared interactive targets use 44px minimums. Container queries adapt Library tools, New job, Settings, book metadata and review headers to available workspace width. An explicit sidebar preference is retained; the automatic mode adapts during resizing. Hidden activity cards are inert. Native disclosure state, focus, form values and previews survive ordinary updates; resizing across the phone breakpoint does not navigate or stop playback.
+
+Settings adds About and updates. Build metadata comes from the server’s embedded build identity, while this tab has its own shipped asset marker. Update checks are manual and read-only. Waiting service workers never force a reload of unsaved review work. Figtree is bundled locally under the OFL license.

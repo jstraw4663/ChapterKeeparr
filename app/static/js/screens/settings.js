@@ -1,8 +1,9 @@
-// Settings (SCREENS.md → Settings). Changes save automatically.
+// Settings (SCREENS.md → Settings). Preferences save automatically. Access tokens use Save.
 // Device settings live in this browser; server-wide preferences need G-023.
 // Build-only settings with a home here: access token (G-034), server readout
 // (G-035) and the recovery acceptance minimum (G-036).
 
+import { ASSET_VERSION } from '../assets.js';
 import { html, dash } from '../format.js';
 import { icon } from '../icons.js';
 import { api, needsServer } from '../api.js';
@@ -13,8 +14,8 @@ import { notify } from '../notify.js';
 import { ownAction } from '../events.js';
 import { applyAppearance } from '../shell.js';
 
-const SECTIONS = [['appearance', 'Appearance'], ['library', 'Library'], ['conversion', 'Conversion defaults'], ['metadata', 'Metadata'], ['bookorbit', 'BookOrbit'], ['notifications', 'Notifications'], ['server', 'Server']];
-const local = { token: null, tokenMsg: '', minimum: null, minMsg: '', saving: false };
+const SECTIONS = [['appearance', 'Appearance'], ['library', 'Library'], ['conversion', 'Conversion defaults'], ['metadata', 'Metadata'], ['bookorbit', 'BookOrbit'], ['notifications', 'Notifications'], ['server', 'Server'], ['about', 'About and updates']];
+const local = { token: null, tokenMsg: '', minimum: null, minMsg: '', saving: false, updates: null, checking: false, copyMsg: '', diagnostics: '' };
 
 function section(id, title, rows, ctx) {
   if (ctx.phone) return html`<section id="set-${id}" class="col gap8" aria-labelledby="h-${id}"><h2 class="eyebrow" id="h-${id}" style="padding:0 4px">${title}</h2><div class="panel" style="padding:0 16px">${rows}</div></section>`;
@@ -25,6 +26,9 @@ function body(ctx) {
   const p = getPrefs();
   const s = state.settings;
   const st = ctx.phone;
+  const build = s?.build;
+  const update = local.updates;
+  const stale = state.frontendUpdate || ctx.ui.waitingUpdate || (build?.frontend_version && build.frontend_version !== ASSET_VERSION);
   const connected = state.connected;
   const roots = s?.library_roots || [];
   const minimum = local.minimum ?? s?.recovery_minimum_percent ?? '';
@@ -41,9 +45,9 @@ function body(ctx) {
   ${section('conversion', 'Conversion defaults', html`
     ${row('Chapter checks', 'Used for every new job on this device unless you change it there.', segmented({ label: 'Chapter checks', options: [['spot', 'Spot checks'], ['all', 'Every chapter']], value: p.jobDefaults.verify_all ? 'all' : 'spot', act: 'checks' }))}
     ${row('Keep source MP3s', 'Off deletes them after the M4B is verified.', toggle({ label: 'Keep source MP3s', checked: p.jobDefaults.keep_mp3s, act: 'keep' }))}
-    ${row('Save to', 'Finished books are saved next to their source. Another location needs server support (G-039).', html`<span class="val">Next to source</span>`)}
-    ${row('Minimum for accepted exceptions', 'When some chapters can’t be located, finalizing needs at least this share of markers identified. Each book still needs your explicit approval.', html`<div class="col gap4" style="align-items:flex-end"><div class="row gap8"><label for="set-min" class="sr">Minimum identified markers (%)</label><input id="set-min" class="input" type="number" min="1" max="100" step="0.1" inputmode="decimal" value="${minimum}" style="width:110px" ${connected === false ? 'disabled' : ''}><span class="meta">%</span></div>${local.minMsg ? html`<span class="meta" role="status">${local.minMsg}</span>` : ''}</div>`)}
-    <p class="meta" style="padding:0 0 14px">Checks and MP3 defaults are saved on this device. Saving them on the server needs support (G-023).</p>`, ctx)}
+    ${row('Save to', 'Finished books are saved next to their source. Other output locations aren’t available yet.', html`<span class="val">Next to source</span>`)}
+    ${row('Minimum for accepted exceptions', 'Finalizing requires this share of original markers supported by audio or selected matches that pass timing, uniqueness and order checks. Custom names add no credit; each book still needs your approval.', html`<div class="col gap4" style="align-items:flex-end"><div class="row gap8"><label for="set-min" class="sr">Minimum evidence-backed markers (%)</label><input id="set-min" class="input" type="number" min="1" max="100" step="0.1" inputmode="decimal" value="${minimum}" style="width:110px" ${connected === false || state.authNeeded || local.saving ? 'disabled' : ''}><span class="meta">%</span></div>${local.minMsg ? html`<span class="meta" role="status">${local.minMsg}</span>` : ''}</div>`)}
+    <p class="meta" style="padding:0 0 14px">Checks and MP3 defaults are saved on this device. These preferences apply only to this browser.</p>`, ctx)}
   ${section('metadata', 'Metadata', html`
     ${row('Default region', 'Tried first when matching an edition.', html`<div style="width:${ctx.phone ? '100%' : '220px'}">${selectField({ id: 'set-region', label: 'Default region', options: REGIONS, value: 'us', disabled: true, extra: { title: needsServer('G-023') } })}</div>`)}
     ${row('Metadata provider', 'Source for editions and chapter timelines.', html`<span class="val">Libex search · Audnexus timelines</span>`)}`, ctx)}
@@ -55,13 +59,28 @@ function body(ctx) {
     ${row('Status notifications', 'Pop up briefly, then tuck into Queue or Needs review.', toggle({ label: 'Status notifications', checked: p.notifications, act: 'notif' }))}`, ctx)}
   ${section('server', 'Server', html`
     ${row('ChapterKeeparr server', 'This app is a front end for the service on your server.', html`<span class="row" style="gap:8px;font-size:14px;font-weight:600"><span class="dot lg ${conn[0]}"></span>${conn[1]}</span>`)}
-    ${row('Version', 'Reported by the server.', html`<span class="val">— <span class="meta mono">(G-024)</span></span>`)}
     ${row('Access token', s?.auth_required || state.authNeeded ? 'This server requires a token. It’s stored in this browser and sent only to this server.' : 'Only needed if the server sets CHAPTERKEEPER_API_TOKEN. Stored in this browser.', html`<form class="col gap8" data-form="token" style="align-items:${ctx.phone ? 'stretch' : 'flex-end'}"><div class="row gap8"><label for="set-token" class="sr">Access token</label><input id="set-token" class="input" type="password" autocomplete="off" placeholder="Optional access token" value="${tokenValue}" style="width:${ctx.phone ? '100%' : '240px'}"><button type="submit" class="btn btn-md">Save</button></div>${local.tokenMsg ? html`<span class="meta" role="status">${local.tokenMsg}</span>` : ''}</form>`)}
     ${row('Workers', 'Books processed at the same time.', html`<span class="val">${dash(s?.workers)}</span>`)}
     ${row('CPU threads', 'Speech recognition threads per book.', html`<span class="val">${dash(s?.cpu_threads)}</span>`)}
     ${row('Cache budget', 'Retained conversions and transcripts.', html`<span class="val">${s?.work_cache_budget_gb != null ? `${s.work_cache_budget_gb} GB` : '—'}</span>`)}
     ${row('Work folder', '', html`<span class="val mono">${dash(s?.work_dir)}</span>`)}
-    ${row('Config folder', '', html`<span class="val mono">${dash(s?.config_dir)}</span>`)}`, ctx)}`;
+    ${row('Config folder', '', html`<span class="val mono">${dash(s?.config_dir)}</span>`)}`, ctx)}
+  ${section('about', 'About and updates', html`
+    ${row('Installed version', 'The server build; development builds may include unreleased changes.', html`<span class="val">${dash(build?.version)}${build?.channel ? ` · ${build.channel}` : ''}</span>`)}
+    ${row('Build commit', 'Use this identifier when troubleshooting.', html`<span class="val mono">${dash(build?.revision)}</span>`)}
+    ${row('Build date', 'Recorded when the container image was built.', html`<span class="val">${dash(build?.built_at)}</span>`)}
+    ${row('Frontend', 'This tab’s assets and the server’s expected frontend.', html`<span class="val mono">${ASSET_VERSION}<br>Server: ${dash(build?.frontend_version)}<br>Files: ${dash(build?.frontend_assets)}</span>`)}
+    ${row('Speech backend / model', 'Configured on the server at startup.', html`<span class="val">${dash(build?.speech_backend)} / ${dash(build?.model)}</span>`)}
+    ${stale ? html`<p class="alert-warn" role="status">This tab is using an older frontend. Finish or save your work before reloading.</p><button type="button" class="btn" data-act="reload-assets">Reload after finishing review</button>` : ''}
+    <div class="col gap12" style="padding:18px 0">
+      <p id="update-state" class="meta" role="status" aria-live="polite">${local.checking ? 'Checking for updates…' : update?.message || 'Updates have not been checked. Checking does not install or restart anything.'}${update?.latest_version ? ` Latest release: ${update.latest_version}.` : ''}</p>
+      ${update?.checked_at ? html`<p class="meta">Last check: ${new Date(update.checked_at).toLocaleString()}. Results are cached for five minutes.</p>` : ''}
+      <div class="row wrap gap8"><button type="button" class="btn btn-md" data-act="check-updates" aria-describedby="update-state" ${local.checking || connected === false || state.authNeeded ? 'disabled' : ''}>${local.checking ? 'Checking…' : 'Check for updates'}</button><a class="textlink" href="https://github.com/jstraw4663/ChapterKeeparr/releases" target="_blank" rel="noopener noreferrer">View release notes</a></div>
+      <p class="meta">On Unraid, update the container through Docker after reviewing the release notes. This app does not pull images or restart the server. Private release access may require signing in to GitHub.</p>
+      <div><button type="button" class="btn btn-md" data-act="copy-diagnostics">Copy diagnostics</button></div>
+      <p class="meta" role="status">${local.copyMsg}</p>
+      ${local.diagnostics ? html`<details class="tech"><summary>Diagnostics to copy</summary><pre class="diagnostics">${local.diagnostics}</pre></details>` : ''}
+    </div>`, ctx)}`;
 }
 
 export default {
@@ -70,34 +89,42 @@ export default {
   detail: true,
 
   signature(ctx) {
-    return [state.connected, state.authNeeded, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section].join('|');
+    return [state.connected, state.authNeeded, JSON.stringify(state.settings), JSON.stringify(getPrefs()), JSON.stringify(local), ctx.route.section, state.frontendUpdate, ctx.ui.waitingUpdate].join('|');
   },
 
   render(ctx) {
     const { phone, enter } = ctx;
     if (phone) {
       return html`<div class="back-head" style="padding:0 8px"><a class="textlink" href="#/" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Back</a></div>
-        <div class="page-inset col" style="gap:22px"><div class="col gap4" style="margin:0 4px"><h1 class="h1" tabindex="-1">Settings</h1><p class="meta">Changes save automatically.</p></div>${body(ctx)}</div>`;
+        <div class="page-inset col" style="gap:22px"><div class="col gap4" style="margin:0 4px"><h1 class="h1" tabindex="-1">Settings</h1><p class="meta">Preferences save automatically. Access tokens use Save.</p></div>${body(ctx)}</div>`;
     }
     const current = ctx.route.section || 'appearance';
-    return html`<div class="page-head ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">Settings</h1><p class="lede">Changes save automatically.</p></div>
+    return html`<div class="page-head ${enter ? 'rise' : ''}"><h1 class="h1" tabindex="-1">Settings</h1><p class="lede">Preferences save automatically. Access tokens use Save.</p></div>
       <div class="setgrid"><nav class="col ${enter ? 'rise' : ''}" aria-label="Settings sections" style="gap:2px;position:sticky;top:24px;animation-delay:.05s">${SECTIONS.map(([id, label]) => html`<a class="snav" href="#/settings/${id}" ${id === current ? html`aria-current="true"` : ''}>${label}</a>`)}</nav>
       <div class="col gap20 ${enter ? 'rise' : ''}" style="animation-delay:.1s">${body(ctx)}</div></div>`;
   },
 
   mount(root, ctx) {
-    if (ctx.enter && ctx.route.section) setTimeout(() => document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }));
+    if (ctx.enter) {
+      loadSettings();
+      navigator.serviceWorker?.getRegistration().then(registration => {
+        if (ctx.isCurrent?.() !== false && registration?.waiting && !ctx.ui.waitingUpdate) { ctx.ui.waitingUpdate = true; ctx.rerender(); }
+      }).catch(() => {});
+    }
+    const focusTimer = ctx.enter && ctx.route.section ? setTimeout(() => { if (ctx.isCurrent?.() !== false) document.getElementById(`set-${ctx.route.section}`)?.scrollIntoView({ block: 'start' }); }) : null;
     const min = root.querySelector('#set-min');
     // Re-renders keep this element (morph.js), so assign rather than add a listener.
     if (min) min.onchange = async () => {
       const value = Number(min.value);
       if (!(value >= 1 && value <= 100)) { local.minMsg = 'Enter a percentage between 1 and 100.'; ctx.rerender(); return; }
+      local.saving = true; local.minMsg = 'Saving…'; ctx.rerender();
       try {
         state.settings = await api.setRecoveryMinimum(value);
         local.minimum = null; local.minMsg = 'Saved.';
       } catch (error) { local.minMsg = error.message; }
-      ctx.rerender();
+      local.saving = false; ctx.rerender();
     };
+    return () => clearTimeout(focusTimer);
   },
 
   onInput(el) {
@@ -112,11 +139,35 @@ export default {
     local.token = null;
     local.tokenMsg = value ? 'Token saved in this browser.' : 'Token cleared.';
     notify(ownAction(value ? 'Access token saved' : 'Access token cleared', 'Used for requests from this browser'));
-    refresh(); loadSettings();
+    refresh({ fresh: true }); loadSettings();
     ctx.rerender();
   },
 
   actions: {
+    'check-updates': async (el, ev, ctx) => {
+      if (local.checking || state.connected === false || state.authNeeded) return;
+      local.checking = true; ctx.rerender();
+      try { local.updates = await api.updates(); }
+      catch (error) { local.updates = { state: 'unknown', message: error.message, checked_at: new Date().toISOString() }; }
+      finally { local.checking = false; ctx.rerender(); }
+    },
+    'copy-diagnostics': async (el, ev, ctx) => {
+      const s = state.settings;
+      local.diagnostics = JSON.stringify({ build: s?.build || null, frontend: ASSET_VERSION, connected: state.connected, auth_required: Boolean(s?.auth_required), workers: s?.workers, cpu_threads: s?.cpu_threads, cache_budget_gb: s?.work_cache_budget_gb, recovery_minimum_percent: s?.recovery_minimum_percent, update_check: local.updates }, null, 2);
+      try { await navigator.clipboard.writeText(local.diagnostics); local.copyMsg = 'Diagnostics copied. Tokens and library paths are excluded.'; }
+      catch { local.copyMsg = 'Clipboard access is unavailable. Expand Diagnostics to copy and copy the text below.'; }
+      ctx.rerender();
+    },
+    'reload-assets': async (el, ev, ctx) => {
+      const { confirmSheet } = await import('../overlay.js');
+      if (!await confirmSheet({ title: 'Reload this tab?', body: 'Unsaved form choices will be lost. Only reload after finishing your review.', confirmLabel: 'Reload tab' })) return;
+      const registration = await navigator.serviceWorker?.getRegistration();
+      if (ctx.isCurrent?.() === false) return;
+      if (registration?.waiting) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => { if (ctx.isCurrent?.() !== false) location.reload(); }, { once: true });
+        registration.waiting.postMessage('ACTIVATE_UPDATE');
+      } else location.reload();
+    },
     theme: (el, ev, ctx) => { setPrefs({ theme: el.dataset.arg }); applyAppearance(); ctx.rerender(); },
     motion: (el, ev, ctx) => { setPrefs({ reduceMotion: !getPrefs().reduceMotion }); applyAppearance(); ctx.rerender(); },
     notif: (el, ev, ctx) => { setPrefs({ notifications: !getPrefs().notifications }); ctx.rerender(); },

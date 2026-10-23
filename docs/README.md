@@ -13,3 +13,11 @@ What's inside:
 - `docs/design/BACKLOG.md`: phase-2 ideas, deliberately not designed yet.
 - `docs/design/tokens.css`: production-ready tokens, light and dark.
 - `docs/design/reference/`: prototype source for all 20 screens plus the full prototype stylesheet.
+
+
+## Finalized optimization plans
+
+- [UI/UX optimization and visual mockups](plans/ui-ux-optimization.md) — implement first.
+- [Backend optimization and hardware validation](plans/backend-optimization.md) — agreed direction, deferred until UI validation.
+- [Audit evidence and plan index](plans/README.md).
+

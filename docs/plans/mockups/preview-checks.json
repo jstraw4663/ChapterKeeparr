@@ -1,0 +1,58 @@
+[
+  {
+    "case": "review-desktop-compact",
+    "width": 1440,
+    "height": 1100,
+    "scrollWidth": 1440,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "review-windowed-compact",
+    "width": 1024,
+    "height": 900,
+    "scrollWidth": 1024,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "review-windowed-expanded",
+    "width": 1024,
+    "height": 900,
+    "scrollWidth": 1024,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "review-mobile-unchecked",
+    "width": 390,
+    "height": 1000,
+    "scrollWidth": 390,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "review-mobile-checked",
+    "width": 390,
+    "height": 1000,
+    "scrollWidth": 390,
+    "saveVisible": true,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "settings-about-desktop",
+    "width": 1280,
+    "height": 1000,
+    "scrollWidth": 1280,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  },
+  {
+    "case": "settings-about-mobile",
+    "width": 390,
+    "height": 1000,
+    "scrollWidth": 390,
+    "saveVisible": false,
+    "saveBackground": "rgb(255, 255, 255)"
+  }
+]

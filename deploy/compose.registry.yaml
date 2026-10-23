@@ -1,0 +1,29 @@
+# Pull-only installation. This file never builds source on the Docker host.
+# Copy .env.registry.example to .env.registry and select a published image first.
+services:
+  chapterkeeparr:
+    image: ${CHAPTERKEEPARR_IMAGE:?Set CHAPTERKEEPARR_IMAGE to a published GHCR tag or digest}
+    platform: linux/amd64
+    container_name: ${CONTAINER_NAME:-chapterkeeparr-test}
+    restart: unless-stopped
+    cpus: ${CPU_LIMIT:-4}
+    mem_limit: ${MEM_LIMIT:-4g}
+    memswap_limit: ${MEMSWAP_LIMIT:-4g}
+    ports:
+      - "${CHAPTERKEEPER_BIND:-127.0.0.1}:${CHAPTERKEEPER_PORT:-8787}:8000"
+    environment:
+      PUID: ${PUID:-99}
+      PGID: ${PGID:-100}
+      LIBRARY_ROOTS: /library
+      CONFIG_DIR: /config
+      WORK_DIR: /work
+      MODEL_CACHE: /models
+      MODEL: /opt/models/small.en
+      WORKERS: ${WORKERS:-1}
+      ENABLE_WORKERS: ${ENABLE_WORKERS:-0}
+      CPU_THREADS: ${CPU_THREADS:-4}
+      CACHE_MAX_GB: ${CACHE_MAX_GB:-10}
+      CHAPTERKEEPER_API_TOKEN: ${CHAPTERKEEPER_API_TOKEN:-}
+    volumes:
+      - ${CONFIG_HOST_PATH:-/mnt/user/appdata/chapterkeeparr-test/config}:/config:rw
+      - ${LIBRARY_HOST_PATH:-/mnt/user/media/chapterkeeparr-test}:/library:rw

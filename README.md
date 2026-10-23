@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/logo-horizontal-on-dark.svg">
+    <img alt="ChapterKeeparr" src="assets/brand/logo-horizontal-on-light.svg" width="360">
+  </picture>
+</p>
+
 # ChapterKeeparr 0.5.0 (alpha)
 
 This release starts the alignment-recovery plan: persisted timing diagnostics, bounded search recovery, file minutes during matching, and an on-demand local-marker audio/EPUB draft. Use **Review markers from audio** after selecting an ASIN. Drafts do not publish or change your audiobook; unresolved sections remain visible. See `PROJECT-CONTEXT.md` for implementation status and real-book findings.
@@ -54,31 +61,35 @@ Do not expose an unauthenticated ChapterKeeparr port to the public internet. Kee
 
 ## Unraid
 
-Unraid pulls a prebuilt image from GitHub's container registry: `ghcr.io/jstraw4663/chapterkeeparr`. GitHub Actions builds it whenever a version tag is pushed (see [Releasing](#releasing)). Nothing is built on the Unraid server.
+The intended public registry is `ghcr.io/jstraw4663/chapterkeeparr`. **The first
+successful image publication and public-package setup must happen before these
+templates can pull a build.** Source tags alone do not establish image availability.
+The source repository can stay private; public image pulls need no registry login.
 
-The included [`deploy/unraid-template.xml`](deploy/unraid-template.xml) already points at `ghcr.io/jstraw4663/chapterkeeparr:latest`; update the host share paths for your installation. Map `/config` to a persistent appdata directory, `/library` to the audiobook library with read/write access, and `/downloads` to the downloads share with read-only access. Set the PUID and PGID to the IDs that own the host media files. Do not grant the container privileged mode or Docker socket access.
+Start with the [installation, migration and rollback guide](deploy/UNRAID-INSTALL.md).
+It includes owner steps to publish a branch preview without changing `:latest`,
+then test it on port 8787 using dedicated test files after stopping the existing
+container:
 
-### Registry login (once)
+- [Unraid test template](deploy/unraid-test-template.xml): host port **8787**,
+  separate test config/library, workers paused initially.
+- [Unraid production template](deploy/unraid-template.xml): host port **8787**;
+  preserve the existing mappings when migrating, with workers paused initially.
+- [Pull-only Docker Compose](deploy/compose.registry.yaml) and
+  [example environment](deploy/.env.registry.example): requires an explicitly
+  selected published image; no source build on the Docker host.
 
-The image is private, so Unraid needs a read-only login. Unraid keeps `/root` in memory, so the login is saved to the flash drive and restored at boot.
-
-1. On GitHub, create a classic personal access token with only the `read:packages` scope (Settings → Developer settings → Personal access tokens → Tokens (classic)). Fine-grained tokens can't read GHCR packages.
-2. In the Unraid terminal:
-   ```sh
-   docker login ghcr.io -u jstraw4663
-   cp /root/.docker/config.json /boot/config/ghcr-docker-config.json
-   ```
-3. Add these lines to `/boot/config/go` so the login survives a reboot:
-   ```sh
-   mkdir -p /root/.docker
-   cp /boot/config/ghcr-docker-config.json /root/.docker/config.json
-   ```
+Templates start with one book worker, four speech threads, a four-CPU quota and
+4 GB memory limit. Test on copied media before increasing concurrency. Intel iGPU
+acceleration and automatic SSD-to-array staging remain backend roadmap items.
 
 ### Update and roll back
 
-Wait for active processing to finish. In the Unraid Docker tab, click **Update** on ChapterKeeparr (or **Force update** in Advanced view if Unraid hasn't noticed the new image yet). Unraid pulls the new `:latest` and recreates the container with the existing mappings and `/config`. Reload the browser/PWA after it starts.
-
-To roll back, edit the container, change the Repository tag from `:latest` to a previous version such as `ghcr.io/jstraw4663/chapterkeeparr:0.5.0`, and Apply. Change it back to `:latest` to follow releases again.
+Use an actual published tag or immutable digest. Back up the complete config
+while the old container is stopped, retain its image/settings, and keep only one
+instance attached to production config/library. An image rollback can also require
+restoring the pre-upgrade database and any changed media. Follow the guide before
+using Unraid Update/Force update; a pinned digest does not track `:latest`.
 
 ### Releasing
 
@@ -92,7 +103,9 @@ Work happens on branches and reaches `main` through pull requests; GitHub runs t
    ```
 3. GitHub Actions runs the tests, checks the README title matches the tag, then pushes `:0.6.0` and `:latest`. Follow it under the repository's **Actions** tab, then update the container on Unraid.
 
-A tag with a suffix (`v0.6.0-rc1`) publishes only that tag, not `:latest`. Running the workflow by hand from a branch (Actions → CI and release → Run workflow) publishes `:<branch-name>` for trying a build in a separate container.
+A tag with a suffix (`v0.6.0-rc1`) publishes only that tag, not `:latest`. Running the workflow by hand from a branch (Actions → CI and release → Run workflow) publishes a sanitized branch tag (copy the exact tag from the build output) for trying a build in a separate container. Only Jeremy triggers releases; see the first-publish steps in the [install guide](deploy/UNRAID-INSTALL.md).
+
+If **test** fails, **image** is skipped and Unraid continues to pull the last successfully published build. Browser failures include detailed reports in the `ui-regression-results` artifact; see [CI browser diagnostics](tests/browser/README.md#accessibility-snapshots-and-intermittent-failures).
 
 ## Model revision and rebuilds
 
@@ -124,7 +137,7 @@ CLI compatibility: `python3 main.py "/path/to/book"` invokes the existing engine
 
 ### Upgrade on Unraid
 
-Superseded: releases are now pulled from GHCR (see [Update and roll back](#update-and-roll-back)). Copying source into `/mnt/user/appdata/chapterkeeparr/source/` and running `docker build` on Unraid is no longer needed, and neither is the `CHAPTERKEEPER_BUILD` variable. For Compose deployments, `docker compose up -d --build` still works from a checkout.
+Once a public image is published, releases can be pulled from GHCR (see [Update and roll back](#update-and-roll-back)). Copying source into `/mnt/user/appdata/chapterkeeparr/source/` and running `docker build` on Unraid is no longer needed, and neither is the `CHAPTERKEEPER_BUILD` variable. For Compose deployments, `docker compose up -d --build` still works from a checkout.
 
 No new runtime dependencies are needed. This release does not add BookOrbit integration or GPU processing.
 
@@ -147,3 +160,16 @@ Acceptance is bound to the exact draft, source audio and reference timeline. The
 ## UI redesign (2026-09-24)
 
 The teal dashboard is replaced by the redesign in `docs/design/`: a Library of covers, a Queue with live progress and an activity log, a Needs review workspace, a Book page with 15-second spot checks, a New job flow with a server folder browser, partial Suggestions and Settings. Old links (`#jobs`, `#job/<id>`, `#new-job`, `#settings`) redirect. Recovery acceptance, Review markers from audio, Resume checks, multi-book discovery, the access token and the recovery minimum all keep a place in the new screens. The static route now serves any `.js/.css/.woff2/.png/.svg` file inside `app/static`. `tests/test_frontend.py` guards the design rules and runs the JavaScript unit tests when Node is installed.
+
+
+## Responsive review and build diagnostics (implementation, 2026-10-19)
+
+Needs review opens a readable list, then an expandable compact cover rail for the selected book. Windowed desktop layouts and the shared Library/New job/Settings controls reflow by available workspace width. Phones retain list/detail navigation. Accept and save is hidden while gap consent is unchecked and white when checked; coverage, per-section approval and server publication checks still block invalid saves. A changed draft requires fresh approval.
+
+Settings → About and updates shows the installed version/channel, commit, build date when available, client/server frontend identity and speech backend/model. Copy diagnostics excludes tokens and private library/config/work paths. Manual update checks never install or restart anything, and private/no-release/rate-limit failures remain unknown.
+
+Release images receive `APP_VERSION`, `BUILD_CHANNEL`, `BUILD_REVISION` and `BUILD_DATE` from CI. The image stamps the API, frontend and PWA cache identity from that same build. A plain source checkout is a development build, not proof that it matches the latest release tag. Waiting PWA updates offer an explicit reload after review work is finished.
+
+Figtree is bundled locally with its OFL license. Background tabs poll at most once a minute; visible queue updates retain their existing cadence. No new production dependency or conversion policy is introduced.
+
+Browser regressions and CI setup are documented in [tests/browser/README.md](tests/browser/README.md). Physical-device/Safari, screen-reader and deployed PWA rollout validation remain release checks.
