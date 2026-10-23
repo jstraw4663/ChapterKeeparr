@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.request import urlopen
 from playwright.sync_api import sync_playwright, expect
 from browser_support import audit_accessibility
+from review_support import focus_marker, expect_decided, resolve_decisions
 
 
 def design_edges(browser, base, rid, errors):
@@ -30,42 +31,42 @@ def design_edges(browser, base, rid, errors):
         ctx.route('**/api/jobs/' + rid, lambda route: route.fulfill(json=detail))
         page = ctx.new_page(); page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto(base + '/#/review/' + rid, wait_until='networkidle')
-        expect(page.locator('.cr-card')).to_have_count(30)
+        expect(page.locator('.cr-card')).to_have_count(1)
+        assert page.locator('.rw-row').count() <= 60
         first = page.locator('[data-cr-item="m1"]')
         expect(first.locator('[data-act="cr-remove"]')).to_have_count(0)
         bulk = page.locator('[data-act="cr-suggestions"]')
         expect(bulk).to_be_visible(); bulk.click()
-        expect(page.locator('.cr-card.decided').first).to_be_attached()
+        expect(page.locator('[data-act="cr-undo"]')).to_be_visible()
         page.locator('[data-act="cr-undo"]').click()
-        expect(page.locator('.cr-card.decided')).to_have_count(0)
-        card = page.locator('[data-cr-item="m2"]')
+        expect(page.locator('.rw-continue')).to_have_count(0)
+        card = focus_marker(page, 'm2')
         card.locator('[data-act="cr-all"]').click()
         page.locator('#chapters-m2').fill('Chapter 100')
         card.locator('[data-act="cr-outside"]').click()
         outside = card.locator('[data-act="cr-pick"]').filter(has_text='Chapter 100')
         expect(outside).to_be_visible(); outside.click()
-        expect(card).to_have_class('cr-card decided')
+        page.get_by_role('dialog').get_by_role('button', name='Use this chapter').click()
+        expect_decided(page, 'm2')
         saved = page.evaluate("async id=>(await import('/static/js/review-drafts.js')).loadDraft(id)", rid)
         assert saved['accept']['decisions']['2']['override_order'] is True
-        card.locator('[data-act="cr-change"]').click()
         card.locator('[data-act="cr-remove"]').click()
-        expect(card).to_have_class('cr-card decided')
+        expect_decided(page, 'm2')
         if motion != 'reduce':
             page.wait_for_timeout(500)
-            card.locator('[data-act="cr-change"]').click()
             remove = card.locator('[data-act="cr-remove"]')
-            # Opening the card changes its height. Playwright can scroll to make
-            # Remove clickable; measure the app's decision from pointerdown,
-            # after that actionability scroll, rather than before opening it.
+            # Playwright can scroll to make Remove clickable. Measure from
+            # pointerdown, after that actionability scroll; the decision itself
+            # must leave the persistent editor and document position stable.
             remove.evaluate("el=>el.addEventListener('pointerdown',()=>{window.ckDecisionScrollY=scrollY},{once:true})")
             remove.click()
-            expect(card).to_have_class('cr-card decided')
+            expect_decided(page, 'm2')
             page.wait_for_timeout(500)
             before = page.evaluate('window.ckDecisionScrollY')
             assert before is not None, 'Decision pointerdown was not observed'
             assert abs(page.evaluate('scrollY') - before) < 2, 'Desktop decision moved page'
         page.locator('[data-cr-more]').evaluate("el=>el.scrollIntoView({block:'center'})")
-        page.wait_for_function("document.querySelectorAll('.cr-card').length >= 60")
+        page.wait_for_function("document.querySelectorAll('.rw-row').length > 60")
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1')
         # Timers pause for both pointer and keyboard users, then resume.
         page.goto(base + '/#/queue', wait_until='networkidle')
@@ -118,19 +119,15 @@ def main():
             assert save.evaluate('e=>getComputedStyle(e).backgroundColor') == 'rgb(247, 242, 232)'
             gap.uncheck(); expect(save).to_be_hidden(); gap.check()
             page.locator('[data-act="cr-lower"]').click()
-            # Real decision controls, including an inline rename and undo via Change.
+            # Real decision controls, including an inline rename in the persistent editor.
             first = page.locator('.cr-card:not(.decided)[data-cr-item^="m"]').first
             item = first.get_attribute('data-cr-item')
             first.locator('[data-act="cr-rename"]').click()
             page.locator('#rename-' + item).fill('My reviewed chapter')
             page.locator('[data-act="cr-use-name"]').click()
-            expect(page.locator('[data-cr-item="' + item + '"]')).to_have_class('cr-card decided')
+            expect_decided(page, item)
             expect(page.locator('[data-cr-item="' + item + '"]')).to_contain_text('My reviewed chapter')
-            page.locator('[data-act="cr-change"][data-arg="' + item + '"]').click()
-            for _ in range(100):
-                picks = page.locator('.cr-card:not(.decided) .cr-options [data-act="cr-pick"]')
-                if not picks.count(): break
-                picks.first.click()
+            resolve_decisions(page)
             expect(save).to_be_enabled()
             page.screenshot(path=str(output / ('ready-' + theme + '.png')), full_page=False)
             # Individual decisions and consent survive ordinary polling and navigation.
@@ -164,15 +161,12 @@ def main():
             page.evaluate("async()=>{const s=await import('/static/js/store.js');await s.refresh()}")
             expect(gap).not_to_be_checked(); expect(save).to_be_hidden()
             expect(page.locator('.accept')).to_contain_text('The draft changed')
-            assert page.locator('.cr-card.decided').count() == 0
+            assert page.locator('.rw-continue').count() == 0
             page.unroute('**/api/jobs/' + rid, new_detail); page.unroute('**/api/jobs?limit=1000', new_list)
             # A successful accepted response advances to the next waiting book.
             ready()
             if page.locator('[data-act="cr-lower"]').count(): page.locator('[data-act="cr-lower"]').click()
-            for _ in range(100):
-                picks = page.locator('.cr-card:not(.decided) .cr-options [data-act="cr-pick"]')
-                if not picks.count(): break
-                picks.first.click()
+            resolve_decisions(page)
             gap.check(); expect(save).to_be_enabled()
             after = json.loads(json.dumps(jobs))
             for job in after:

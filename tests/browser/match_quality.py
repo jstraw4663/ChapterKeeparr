@@ -10,6 +10,7 @@ import sys
 from urllib.request import urlopen
 from playwright.sync_api import sync_playwright, expect
 from browser_support import audit_accessibility
+from review_support import focus_marker, expect_decided
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT),str(ROOT/'tests')]
 from app import acceptance
@@ -38,18 +39,20 @@ def main():
                 score=page.locator('[data-validated-score]');expect(score).to_contain_text('80%')
                 overview=page.locator('.cr-overview');expect(overview).to_contain_text('8 title changes')
                 expect(overview).to_contain_text('2 titles kept');expect(page.locator('.cr-timeline')).to_have_count(0)
-                options=page.locator('.cr-option');assert options.count()>=2
-                assert options.evaluate_all("els=>els.every(el=>el.getAttribute('aria-pressed')==='false' && parseFloat(getComputedStyle(el.querySelector('.radio')).borderTopWidth)<=2)")
+                for item in ['m10','m1']:
+                    focus_marker(page,item)
+                    options=page.locator('.rw-decision .cr-option')
+                    expect(options.first).to_be_visible()
+                    assert options.evaluate_all("els=>els.every(el=>el.getAttribute('aria-pressed')==='false' && parseFloat(getComputedStyle(el.querySelector('.radio')).borderTopWidth)<=2)")
                 page.locator('[data-act="cr-suggestions"]').click();expect(score).to_contain_text('100%')
                 page.locator('[data-act="cr-undo"]').click();expect(score).to_contain_text('80%');expect(overview).to_contain_text('8 title changes')
                 first=page.locator('[data-cr-item="m1"]');first.locator('[data-act="cr-rename"]').click();page.locator('#rename-m1').fill('A random title')
-                first.locator('[data-act="cr-use-name"]').click();expect(first).to_have_class('cr-card decided');expect(score).to_contain_text('80%')
-                first.locator('[data-act="cr-change"]').click()
-                selected=first.locator('[data-act="cr-pick"]').first.evaluate("el=>{el.click();return document.querySelectorAll('.cr-card.closing .cr-option[aria-pressed=\"true\"]').length}")
+                first.locator('[data-act="cr-use-name"]').click();expect_decided(page, 'm1');expect(score).to_contain_text('80%')
+                selected=first.locator('[data-act="cr-pick"]').first.evaluate("el=>{el.click();return document.querySelectorAll('.rw-decision .cr-option[aria-pressed=\"true\"]').length}")
                 assert selected==1,selected
-                expect(first).to_have_class('cr-card decided');expect(score).to_contain_text('90%')
-                last=page.locator('[data-cr-item="m10"]');last.locator('[data-act="cr-pick"]').first.click();expect(score).to_contain_text('100%')
-                expect(last).to_have_class('cr-card decided');expect(page.locator('.cr-blocked')).to_have_count(0)
+                expect_decided(page, 'm1');expect(score).to_contain_text('90%')
+                last=focus_marker(page, 'm10');last.locator('[data-act="cr-pick"]').first.click();expect(score).to_contain_text('100%')
+                expect_decided(page, 'm10');expect(page.locator('.cr-blocked')).to_have_count(0)
                 page.locator('#accept-gap').check();expect(page.locator('[data-act="accept"]')).to_be_enabled()
                 expect(overview).to_contain_text('10 title changes');expect(overview).to_contain_text('0 titles kept')
                 previews=overview.locator('.cr-change-preview').all()
@@ -66,12 +69,12 @@ def main():
                 expect(page.locator('[data-act="toggle"][data-arg="checks"]')).to_contain_text('8/10 audio matches')
                 expect(page.locator('[data-check-row="1"]')).to_contain_text('Validated choice')
                 for owner in [last,page.locator('[data-check-row="10"]'),overview.locator('.cr-change-preview').first]:
-                    pair=owner.locator('.title-pair');cells=pair.locator('.pair-cell').all();a,b=[c.bounding_box() for c in cells]
+                    pair=owner.locator('.cr-body .title-pair') if owner == last else owner.locator('.title-pair');cells=pair.locator('.pair-cell').all();a,b=[c.bounding_box() for c in cells]
                     assert b['x']>a['x'] and b['x']+b['width']<=width+1,(width,a,b)
                     assert abs(a['height']-b['height'])<1,(width,a,b)
                 page.locator('[data-check-row="7"] [data-act="cr-edit-match"]').click()
                 changed=page.locator('[data-cr-item="m7"]');changed.locator('[data-act="cr-rename"]').click();page.locator('#rename-m7').fill('Chapter 1')
-                changed.locator('[data-act="cr-use-name"]').click();expect(changed).to_have_class('cr-card decided')
+                changed.locator('[data-act="cr-use-name"]').click();expect_decided(page, 'm7')
                 warning=page.locator('.chapter-warnings [data-act="chapter-warning"]').filter(has_text='repeated').first
                 expect(warning).to_be_visible();warning.click()
                 expect(page.locator('[data-check-row="7"] .check-compare')).to_be_focused()

@@ -4,7 +4,7 @@ Read MEMORY.md, PROJECT-CONTEXT.md and ALIGNMENT-RECOVERY-PLAN.md before continu
 
 Preserve the distinction between recording identity, timing compatibility and speech verification. A draft or fitted timing curve is not publication approval. Retain existing safe publication checks and source backups.
 
-Run the relevant unittest suite and JavaScript syntax check for changes. Use generated media for write tests; keep actual audiobook diagnosis read-only unless the user requests publication/repair.
+Run the relevant unittest suite and JavaScript syntax check for changes. For UI interaction changes, update and run every browser suite invoked by .github/workflows/release.yml against disposable fixtures before reporting CI readiness; a focused new harness does not replace the existing matrix. Use generated media for write tests; keep actual audiobook diagnosis read-only unless the user requests publication/repair.
 
 Work on a branch and open a pull request against `main` on GitHub (`jstraw4663/ChapterKeeparr`). Unless Jeremy explicitly authorizes the specific action in the current conversation, don't merge to `main`, push version tags or trigger releases: a `v*` tag publishes the image the Unraid server runs, so only Jeremy merges and tags. Release steps are in README.md → Releasing.
 

@@ -10,6 +10,7 @@ import sys
 from urllib.request import urlopen
 from playwright.sync_api import sync_playwright, expect
 from browser_support import audit_accessibility
+from review_support import focus_marker, expect_decided
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from app import acceptance, recovery
 
@@ -42,8 +43,8 @@ def main():
                 ctx.route('**/api/jobs/'+rid,lambda route:route.fulfill(json=detail))
                 page=ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
                 page.goto(base+'/#/review/'+rid,wait_until='networkidle')
-                expect(page.locator('[data-cr-item="m3"]')).to_contain_text('1. Prologue')
-                expect(page.locator('[data-cr-item="m4"]')).to_contain_text('Review conflicting match')
+                expect(focus_marker(page, 'm3')).to_contain_text('1. Prologue')
+                expect(focus_marker(page, 'm4')).to_contain_text('Review conflicting match')
                 expect(page.locator('[data-cr-item="m4"]')).to_contain_text('I. Havana - Chapter 1')
                 page.locator('[data-act="toggle"][data-arg="checks"]').click()
                 expect(page.locator('[data-check-row]')).to_have_count(7)
@@ -83,14 +84,14 @@ def main():
                 card=page.locator('[data-cr-item="m5"]');expect(card).to_be_visible()
                 card.locator('[data-act="cr-rename"]').click();page.locator('#rename-m5').fill('My reviewed title')
                 card.locator('[data-act="cr-use-name"]').click()
-                expect(card).to_have_class('cr-card decided')
+                expect_decided(page, 'm5')
                 expect(page.locator('[data-check-row="5"]')).to_contain_text('File marker 5')
                 expect(page.locator('[data-check-row="5"]')).to_contain_text('My reviewed title')
                 page.evaluate("async()=>{const s=await import('/static/js/store.js');s.touch()}")
                 expect(page.locator('[data-check-row="5"]')).to_contain_text('My reviewed title')
-                card.locator('[data-act="cr-change"]').click()
                 card.locator('[data-act="cr-match-reset"]').click()
-                expect(card).to_have_count(0)
+                expect(card).to_be_visible()
+                expect(card.locator('.cr-body .title-pair')).not_to_contain_text('My reviewed title')
                 expect(page.locator('[data-check-row="5"]')).to_contain_text('Chapter 2')
                 expect(page.locator('[data-check-row="5"]')).to_contain_text('Audio match')
                 page.locator('[data-check-row="5"] [data-act="cr-edit-match"]').click()

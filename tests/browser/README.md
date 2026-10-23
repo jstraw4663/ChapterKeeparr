@@ -75,3 +75,8 @@ npm test
 The proxy binds only 127.0.0.1:8794; `REVIEW_URL` changes its upstream. The CLI opens a fresh context with service workers blocked so the test harness route cannot be replaced by the app shell. `REVIEW_OUTPUT` controls result/screenshot output (default /tmp/ck-focused-results). The harness checks twelve theme/width combinations and the new interaction contract. It uses local generated fixtures and does not submit acceptance writes. PWA behavior remains covered separately by flow_stability.py. This focused run is not a substitute for the full existing browser matrix before release.
 
 The recorded local browser result used the in-app browser to run focused-workspace.html. The standalone Playwright launcher was syntax-checked but stalled during startup on this host; its end-to-end invocation remains unverified. Use a fresh origin/port when manually reopening the harness because an installed app service worker can serve its own shell for navigation.
+
+
+## Focused-editor CI drivers
+
+The CI suites use review_support.py to select a marker through the list and explicitly advance with Next open. Every decision asserts that the editor remains focused and offers Continue. They do not repeatedly click the first visible option or wait for cards to collapse. Large-draft bounds apply to list rows (60 initially), with one focused editor. Matching/restore, override confirmation, score, consent, failed writes, stale evidence, queue handoff and accessibility assertions remain active. Run every command in release.yml when changing this interaction contract.

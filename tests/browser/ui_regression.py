@@ -10,6 +10,7 @@ from urllib.request import urlopen
 
 from playwright.sync_api import sync_playwright, expect
 from browser_support import SETTLED_CSS, audit_accessibility
+from review_support import resolve_decisions
 
 
 def main():
@@ -88,10 +89,7 @@ def main():
             gap.check()
             page.locator('[data-act="toggle"][data-arg="chapter-advanced"]').click()
             page.locator('#accept-min').fill('80')
-            for _ in range(30):
-                choices = page.locator('.cr-card:not(.decided) .cr-options [data-act="cr-pick"]')
-                if not choices.count(): break
-                choices.first.click()
+            resolve_decisions(page)
             try:
                 expect(save).to_be_enabled()
             except Exception:
