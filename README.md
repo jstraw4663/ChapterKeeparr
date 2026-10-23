@@ -1,4 +1,11 @@
-# ChapterKeeparr 0.5.0 (alpha)
+# ChapterKeeparr 0.6.0 (alpha)
+
+## 0.6.0 Review workspace
+
+Review now separates the marker list from a focused decision panel, with before/after labels, explicit Continue navigation, filters, a collapsible book queue and responsive phone controls. Confirmed markers remain editable with restore-to-audio-match; missing sections can be assigned to existing markers. Draft-token binding, decimal minimums, explicit consent and publication safeguards remain in force.
+
+This release also includes the existing-marker decision backend, explicit published-order overrides, retry safeguards, draft duration and embedded-tag provenance, locally hosted Figtree, and the PyAV compatibility pin with a generated-audio Docker build check. See `docs/design/needs-review/IMPLEMENTATION.md` for parity and validation details. Docker runtime and complete recovery-flow smoke checks remain required before production use.
+
 
 This release starts the alignment-recovery plan: persisted timing diagnostics, bounded search recovery, file minutes during matching, and an on-demand local-marker audio/EPUB draft. Use **Review markers from audio** after selecting an ASIN. Drafts do not publish or change your audiobook; unresolved sections remain visible. See `PROJECT-CONTEXT.md` for implementation status and real-book findings.
 

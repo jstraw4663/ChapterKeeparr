@@ -137,3 +137,8 @@ Picker search is collapsed behind the Out of chapter order search icon and filte
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+
+### Review redesign GitHub delivery — 2026-10-23
+
+Committed the complete tested working copy on redesign/chapter-review, excluding local Claude settings, duplicate source folders and ZIPs. Integrated GitHub main's GHCR release workflow and Unraid pull instructions. Prepared README version 0.6.0 for Jeremy's eventual release tag; no release tag or server update is performed by this delivery. Full redesign mapping and validation limitations are in docs/design/needs-review/IMPLEMENTATION.md.
