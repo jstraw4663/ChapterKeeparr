@@ -78,6 +78,10 @@ def main():
 
             print(f'{theme}: {len(observations)} viewport observations passed', flush=True)
             ready('#/review/' + rid, 390)
+            overview_toggle = page.locator('[data-act="toggle"][data-arg="chapter-overview"]')
+            expect(overview_toggle).to_have_attribute('aria-expanded', 'false')
+            expect(page.locator('.cr-overview')).to_be_hidden()
+            assert page.locator('.rw-workspace').bounding_box()['y'] < overview_toggle.bounding_box()['y']
             gap = page.locator('#accept-gap'); save = page.locator('[data-act="accept"]')
             expect(save).to_be_hidden()
             gap.check(); expect(save).to_be_visible(); expect(save).to_be_disabled()

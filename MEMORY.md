@@ -4,9 +4,9 @@
 Before ANY ChapterKeeparr development, check GitHub for the latest build and active work, fetch current branches, and compare with the deployed commit. Do not start from an unverified local snapshot. AGENTS.md contains the mandatory procedure.
 
 ## Latest user-confirmed Docker deployment
-- Commit: c974bb1bf2d40326517fcfc202073ca094f20bcf
-- Build date: 2026-10-20T23:37:18.798Z
-- Source: feat/responsive-review-workspace; Jeremy confirmed this in the redesign chat.
+- Commit: 1aa1d25f3441cbebdac47a25ae2152e60ed9b0de
+- Build date: 2026-10-23T17:41:25.122Z
+- Source: redesign/review-on-current-main; Jeremy supplied Settings screenshots with matching frontend/server revisions. Previous deployment was c974bb1bf2d40326517fcfc202073ca094f20bcf.
 - This records the actual deployment, not whatever branch currently points to latest.
 
 ## Reconciliation authorization and state

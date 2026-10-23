@@ -404,3 +404,8 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Rebased implementation on PR #3's merged baseline (0d63dc6), preserving Manrope, quality scoring, consent and PWA fixes. Added before/after list, stable focused editor, Continue, confirmed restoration, four filters, folding and optional queue docking.
 - Added nullable preview duration, explicit section seconds and captured embedded_tags; older reports retain file-detail fallback without tag-provenance claims.
 - Preserved Changes at a glance instead of restoring the older timeline design. Rail attention-count hydration remains deferred; real reasons are shown. See needs-review/RECONCILIATION.md for parity and release limitations.
+
+### G-056 · Workspace hidden below retained change previews on phones
+- Deployed screenshots confirmed matching frontend/server revision 1aa1d25: this was a presentation issue, not stale assets. The reconciliation retained the old expanded Changes at a glance before the workspace, making the phone look unchanged.
+- Put marker filters and the focused decision workspace before the below-minimum explanation and change previews. Keep Changes at a glance in a default-collapsed shared disclosure below the workspace, retaining its counts, comparisons and links. Preserve scoring, consent, confirmed restoration and explicit Continue. Shell cache v19.
+- This corrects the content priority; it is not a claim of pixel-for-pixel reproduction of the supplied mockups.

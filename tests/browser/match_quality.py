@@ -37,6 +37,7 @@ def main():
                 page=ctx.new_page();page.on('pageerror',lambda e:errors.append(str(e)))
                 page.goto(base+'/#/review/'+rid,wait_until='networkidle')
                 score=page.locator('[data-validated-score]');expect(score).to_contain_text('80%')
+                page.locator('[data-act="toggle"][data-arg="chapter-overview"]').click()
                 overview=page.locator('.cr-overview');expect(overview).to_contain_text('8 title changes')
                 expect(overview).to_contain_text('2 titles kept');expect(page.locator('.cr-timeline')).to_have_count(0)
                 for item in ['m10','m1']:
