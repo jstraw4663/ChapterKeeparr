@@ -399,3 +399,8 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - PWA navigation uses HTML and modules from the same installed shell; API requests remain network-only. A waiting update never reloads the document automatically. Update readiness is shared state so Settings cannot miss a worker that finishes installing after its initial check; notices are deduplicated. The explicit Settings confirmation is still required, and its deferred callback is route-bound.
 - Fix the branding regression where favicon.ico was precached but rejected by the static MIME allowlist. Only the icon extension is added; traversal/unknown types remain denied. New API coverage fetches every shell asset, and a real-worker browser case covers installation/control, waiting updates, explicit activation/reload and offline navigation. Shell cache v17.
 - Status: implemented. No speech/model/worker/conversion algorithm, approval-token policy or media/publication behavior changes. Physical installed Safari/OS memory eviction remains a field check, not a diagnosed cause.
+
+### G-055 · Focused Review redesign on reconciled main
+- Rebased implementation on PR #3's merged baseline (0d63dc6), preserving Manrope, quality scoring, consent and PWA fixes. Added before/after list, stable focused editor, Continue, confirmed restoration, four filters, folding and optional queue docking.
+- Added nullable preview duration, explicit section seconds and captured embedded_tags; older reports retain file-detail fallback without tag-provenance claims.
+- Preserved Changes at a glance instead of restoring the older timeline design. Rail attention-count hydration remains deferred; real reasons are shown. See needs-review/RECONCILIATION.md for parity and release limitations.

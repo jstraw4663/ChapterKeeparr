@@ -1,12 +1,19 @@
 # ChapterKeeparr
 
-Read PROJECT-CONTEXT.md and ALIGNMENT-RECOVERY-PLAN.md before continuing recovery work. Update project context and validation notes as milestones change.
+Read MEMORY.md, PROJECT-CONTEXT.md and ALIGNMENT-RECOVERY-PLAN.md before continuing recovery work. Update project context and validation notes as milestones change.
 
 Preserve the distinction between recording identity, timing compatibility and speech verification. A draft or fitted timing curve is not publication approval. Retain existing safe publication checks and source backups.
 
 Run the relevant unittest suite and JavaScript syntax check for changes. Use generated media for write tests; keep actual audiobook diagnosis read-only unless the user requests publication/repair.
 
-Work on a branch and open a pull request against `main` on GitHub (`jstraw4663/ChapterKeeparr`). Don't merge to `main`, push version tags or trigger releases: a `v*` tag publishes the image the Unraid server runs, so only Jeremy merges and tags. Release steps are in README.md → Releasing.
+Work on a branch and open a pull request against `main` on GitHub (`jstraw4663/ChapterKeeparr`). Unless Jeremy explicitly authorizes the specific action in the current conversation, don't merge to `main`, push version tags or trigger releases: a `v*` tag publishes the image the Unraid server runs, so only Jeremy merges and tags. Release steps are in README.md → Releasing.
+
+## Mandatory baseline check before every development task
+
+1. Fetch GitHub (`origin`) before editing. Inspect latest main, active development PRs/branches, and relevant image/workflow commits; never assume a local checkout or main is the latest deployed build.
+2. Compare those commits with Jeremy's latest deployed Docker commit/build date in MEMORY.md. Preserve newer fixes, branding, scoring/publication contracts and deployment infrastructure. If the deployed branch is ahead of main, reconcile the baseline before implementing; ask only when the intended baseline is unclear.
+3. Record the selected commit, working-tree changes and any differences from the deployed build in PROJECT-CONTEXT.md. Start new work from current fetched main once the intended baseline is merged. Do not overwrite newer work with an older local implementation.
+4. A merge is not an image release or container update. Record each separately. Update MEMORY.md whenever Jeremy supplies a newer deployed build or changes these rules.
 
 ## Design (UI)
 

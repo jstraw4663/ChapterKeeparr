@@ -1065,6 +1065,11 @@ def inspect_identity(source, root, args, questions, report):
     data = probe(args.ffprobe, source)
     report['source_duration_seconds'] = duration(data)
     t = tags(data)
+    embedded_ids = sorted(set(asin_from_tags(t)))
+    report['embedded_tags'] = {'title': t.get('album') or t.get('title'),
+                               'author': t.get('artist') or t.get('author'),
+                               'narrator': t.get('narratedby') or t.get('narrator') or t.get('composer'),
+                               'asin': embedded_ids[0] if len(embedded_ids) == 1 else None}
     title = args.title or t.get('album') or t.get('title')
     author = args.author or t.get('artist') or t.get('author')
     narrator = args.narrator or t.get('narratedby') or t.get('narrator') or t.get('composer')

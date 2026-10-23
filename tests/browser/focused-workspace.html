@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Reconciled Review checks</title><style>body{font:14px system-ui}iframe{height:900px;border:1px solid}pre{white-space:pre-wrap}</style><h1>Reconciled Review checks</h1><button id="run">Run checks</button><pre id="results">Ready</pre><iframe id="app" title="Generated Review fixture"></iframe><script type="module">
+const frame=document.querySelector('#app'),results=document.querySelector('#results');
+const pause=ms=>new Promise(r=>setTimeout(r,ms));
+const wait=async fn=>{for(let n=0;n<100;n++){if(fn())return;await pause(50)}throw Error('Timed out')};
+const assert=(v,msg)=>{if(!v)throw Error(msg)};const log=s=>results.textContent+='\n'+s;
+const click=s=>{const el=frame.contentDocument.querySelector(s);assert(el,'Missing '+s);el.focus();el.click()};
+const input=(s,value)=>{const el=frame.contentDocument.querySelector(s);el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))};
+document.querySelector('#run').onclick=async()=>{results.textContent='RUNNING';try{
+ const jobs=(await(await fetch('/api/jobs')).json()).jobs;const job=jobs.find(j=>j.result?.report?.recovery_draft?.markers?.length===23);assert(job,'Use generated complex fixture');
+ const path='/#/review/'+job.id;localStorage.removeItem('chapterkeeparr.review.v1.'+job.id);localStorage.removeItem('chapterkeeparr.review.v1.rail');
+ const load=async width=>{frame.style.width=width+'px';frame.src='/?audit='+Date.now()+path.slice(1);await new Promise(r=>frame.onload=r);await wait(()=>frame.contentDocument.querySelector('.rw-decision'))};
+ for(const theme of ['light','dark'])for(const width of [360,390,768,1024,1200,1440]){
+  await load(width);const d=frame.contentDocument,w=frame.contentWindow;d.documentElement.dataset.theme=theme;
+  await pause(650);assert(d.documentElement.scrollWidth<=width+1,`${theme} ${width} overflow: ${d.documentElement.scrollWidth}`);
+  assert(w.getComputedStyle(d.body).fontFamily.includes('Manrope'),'Brand font reverted');
+  const script=d.createElement('script');script.src='/__axe.js';d.head.append(script);await new Promise(r=>script.onload=r);
+  const scan=await w.axe.run(d,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}});
+  const bad=scan.violations.filter(v=>['serious','critical'].includes(v.impact));assert(!bad.length,JSON.stringify(bad.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
+  log(`PASS ${theme} ${width}: Manrope retained, no overflow or serious/critical axe violations`);
+ }
+ await load(1440);let d=frame.contentDocument;
+ click('.rw-decision [data-act="cr-pick"]');await pause(100);
+ assert(d.querySelector('.rw-decision').dataset.key==='editor-m1','Decision moved focus');
+ assert(d.querySelector('.rw-continue'),'Continue missing');assert(d.querySelectorAll('.rw-decision .cr-option[aria-pressed="true"]').length===1,'Selected radio ambiguous');
+ click('.rw-continue [data-act="cr-next"]');await pause(100);assert(d.querySelector('.rw-decision').dataset.key==='editor-m2','Continue did not move');log('PASS explicit Continue and selected choice');
+ click('[data-act="rw-filter"][data-arg="all"]');await pause(100);click('[data-act="cr-jump"][data-arg="m3"]');await pause(100);
+ click('.rw-decision [data-act="cr-rename"]');input('[data-cr-name="m3"]','Manual title');click('[data-act="cr-use-name"]');await pause(100);
+ assert(d.querySelector('.rw-decision').textContent.includes('Manual title'),'Confirmed rename failed');click('[data-act="cr-match-reset"]');await pause(100);assert(!d.querySelector('.rw-decision .title-pair').textContent.includes('Manual title'),'Restore failed');log('PASS confirmed override and restore');
+ click('[data-act="cr-suggestions"]');await pause(100);assert(d.querySelector('[data-act="cr-undo"]'),'Bulk undo missing');click('[data-act="cr-undo"]');await pause(100);log('PASS suggestions and Undo');
+ click('[data-act="review-dock"]');await load(1440);d=frame.contentDocument;assert(d.querySelector('.revgrid.docked'),'Dock not persisted');click('[data-act="review-dock"]');
+ assert(d.querySelector('.rw-decision').dataset.key==='editor-m3','Focus lost on reload');log('PASS queue docking and focused marker persistence');
+ click('[data-act="toggle"][data-arg="chapter-advanced"]');input('#accept-min','43.25');await pause(100);assert(d.querySelector('#accept-min').value==='43.25','Decimal minimum lost');
+ assert(d.querySelector('#accept-action').hidden,'Save visible before consent');d.querySelector('#accept-gap').click();await pause(100);assert(!d.querySelector('#accept-action').hidden,'Save not revealed after consent');assert(d.querySelector('[data-act="accept"]').disabled,'Unresolved draft enabled');log('PASS decimal threshold and current consent/validation contract');
+ await load(390);d=frame.contentDocument;const a=d.querySelector('.rw-decision').getBoundingClientRect(),b=d.querySelector('.rw-markers').getBoundingClientRect();assert(a.top<b.top,'Phone editor not above list');
+ click('[data-act="choose"][data-arg="draft"]');click('[data-act="markers"]');await wait(()=>d.querySelector('[role="dialog"]'));assert(d.querySelector('[role="dialog"]').textContent.includes('replaces'),'Draft replacement warning absent');d.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ log('PASS narrow editor ordering and redraft replacement confirmation');log('COMPLETE');
+}catch(e){log('FAIL '+e.stack)}};
+</script></html>

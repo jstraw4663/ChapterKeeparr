@@ -43,6 +43,7 @@ def preview(report, default=95):
     eligible, quality_reason = review_quality.eligibility(draft, remote)
     section_meta, identities = review_quality.metadata(remote, markers)
     return {'token': token(report), 'supported_percent': 100*supported/len(markers),
+            'duration_seconds': draft.get('duration_seconds'),
             'default_minimum_percent': default, 'supported': supported, 'total': len(markers),
             'ready': bool(draft.get('complete') and not draft.get('invalidated') and remote),
             'markers': [{'index': i+1, 'title': m.get('old_title',''), 'seconds': m['old_seconds'],
@@ -53,8 +54,8 @@ def preview(report, default=95):
                          'reason': m.get('reason') or '', 'conflict': bool(m.get('prior_match') and m.get('status') != 'supported'),
                          'eligible_reference_ids': eligible[i],
                          'removable': i > 0} for i,m in enumerate(markers)],
-            'sections': [{'id': str(c['start']), 'title': c['title']} for c in draft.get('missing_sections',[])],
-            'published_sections': section_meta,
+            'sections': [{'id': str(c['start']), 'seconds': float(c['start']), 'title': c['title']} for c in draft.get('missing_sections',[])],
+            'published_sections': [{**section, 'seconds': float(section['id'])} for section in section_meta],
             'quality_policy': {'version': review_quality.VERSION, 'minimum_audio_anchors': 6,
                                'identities': identities, 'reason': quality_reason},
             'unresolved_markers': [{'index': i+1, 'title': m.get('old_title') or 'Untitled marker',

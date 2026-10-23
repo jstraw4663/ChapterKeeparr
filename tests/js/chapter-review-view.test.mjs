@@ -9,11 +9,14 @@ test('draft comparisons render and recommendations remain unselected',()=>{
   const html=String(chapterReviewView(p,{}));
   assert.match(html,/title-pair/);assert.match(html,/Existing/);assert.match(html,/Proposed/);
   assert.match(html,/Not selected/);assert.match(html,/aria-pressed="false"/);
-  assert.doesNotMatch(html,/aria-pressed="true"/);
+  assert.doesNotMatch(html, /class="cr-option[^>]+aria-pressed="true"/);
 });
-test('only the clicked choice is pressed during the decision animation',()=>{
-  const html=String(chapterReviewView(p,{closing:{m1:{final:'Opening Credits',decision:{action:'published',section_id:'0'},selectedChoice:{type:'section',index:1,sectionId:'0'}}}}));
-  assert.equal((html.match(/aria-pressed="true"/g)||[]).length,1);
+test('selected decision stays open with Continue and exactly one pressed option',()=>{
+  const html=String(chapterReviewView(p,{focus:'m1',decisions:{1:{index:1,action:'published',section_id:'0'}}}));
+  assert.equal((html.match(/class="cr-option[^>]+aria-pressed="true"/g)||[]).length,1);
+  assert.match(html,/Continue to next open decision/);
+  assert.match(html,/data-key="editor-m1"/);
+  assert.doesNotMatch(html,/class="cr-card decided"/);
 });
 
 test('change overview distinguishes unselected suggestions, renames and removals',()=>{

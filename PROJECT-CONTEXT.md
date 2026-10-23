@@ -272,3 +272,10 @@ Picker search is collapsed behind the Out of chapter order search icon and filte
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+
+## Current reconciliation baseline — 2026-10-23
+
+Read MEMORY.md first. Jeremy confirmed deployed c974bb1 (2026-10-20T23:37:18.798Z) and authorized PR #3 merge. Fetched main is now 0d63dc6; redesign/review-on-current-main starts there with no tracked local modifications. Earlier redesign/chapter-review remains intact as reference. Local .claude settings and duplicate source ZIP/folder remain untracked. Port layout and additive API fields only; retain deployed scoring, branding and stability fixes.
+
+Reconciled implementation completed on redesign/review-on-current-main: stable focused decisions, all-marker list, filters/folds, dock, honest tags/history and additive preview fields. 119 Python / 75 JavaScript checks pass, twelve theme/width browser cases pass. See docs/design/needs-review/RECONCILIATION.md. Docker and full browser release matrix remain outstanding; no image/container deployed.

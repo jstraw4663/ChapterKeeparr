@@ -29,12 +29,13 @@ const detailErrors = new Map();
 const detailRevisions = new Map();
 const changedDetail = id => detailRevisions.set(id, (detailRevisions.get(id) || 0) + 1);
 const sources = new Map();   // jobId → current file duration in seconds (G-042)
+let railDocked = Boolean(loadDraft('rail')?.docked);
 let selectedBook = loadDraft('selection')?.id;
 
 function persist(book, ctx) {
   const form = forms.get(book.id) || {};
   const fields = Object.fromEntries(['title', 'author', 'narrator', 'asin', 'region', 'query'].map(k => [k, form[k]]));
-  const saved = saveDraft(book.id, { accept: ctx.ui.accept?.[book.id] || loadDraft(book.id)?.accept, fields });
+  const saved = saveDraft(book.id, { accept: ctx.ui.accept?.[book.id] || loadDraft(book.id)?.accept, fields, path:ctx.ui.path?.[book.id] });
   ctx.ui.localDraftWarning = saved ? '' : 'Browser storage is unavailable. Edits are retained in this tab only; keep it open until you save.';
 }
 
@@ -180,14 +181,14 @@ function nextSteps(book, form, sit, ctx) {
   }
   options.push({ id: 'resume', title: 'Run the checks again', desc: RESUME[sit.category] || RESUME.other, body: html`<div>${serverButton({ label: 'Run checks again', kind: 'primary', act: 'resume', size: 'md' })}</div>` });
 
-  const chosen = ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : undefined);
+  const chosen = ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : loadDraft(book.id)?.path);
   const open = options.some(o => o.id === chosen) ? chosen : options[0].id;
   const heading = html`<h2 class="eyebrow" style="padding:0 4px">What to do next</h2>`;
   if (options.length === 1) {
     const [only] = options;
     return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="panel col gap12" style="padding:18px"><span class="meta" style="font-size:14px">${only.desc}</span>${only.body}</div></section>`;
   }
-  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}${choices({ label: 'What to do next', act: 'choose', open, items: options })}</section>`;
+  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="rw-paths" role="group" aria-label="Recovery path">${options.map(option=>button({label:option.title,act:'choose',arg:option.id,extra:{'aria-pressed':bool(open===option.id)}}))}</div><div class="panel col gap12 rw-path" data-key="path-${open}"><p class="meta">${options.find(o=>o.id===open).desc}</p>${options.find(o=>o.id===open).body}</div></section>`;
 }
 
 function draftBody(book, form) {
@@ -211,15 +212,15 @@ function editionResults(form) {
 
 function editionBody(book, form, ctx) {
   const seconds = sources.get(book.id);
-  const identity = reportOf(book.job).identity || {};
+  const identity = reportOf(details.get(book.id) || book.job).embedded_tags || {};
   const embedded = identity.asin && identity.asin !== form.asin ? identity.asin : '';
   return html`<form class="col gap14" data-form="fix">
-    ${seconds ? html`<p class="meta" style="font-size:14px">Your file runs ${minutes(seconds)}. Pick the edition whose runtime matches.</p>` : ''}
+    ${seconds ? html`<p class="meta" style="font-size:14px">Your file runs ${minutes(seconds)}. Compare edition runtimes; a similar length does not establish the recording identity.</p>` : ''}
     <div class="row gap8">
       <div class="inputwrap grow"><label for="rv-find" class="sr">Search editions by title or ASIN</label><span class="icon">${icon('search', 18)}</span><input id="rv-find" class="input" type="search" style="height:48px;border-radius:14px" placeholder="${ctx.phone ? 'Search editions' : 'Search editions by title or ASIN'}" value="${form.query}" enterkeyhint="search" autocomplete="off"></div>
       ${menuButton({ id: 'rv-fill', label: 'Fill the search from this book', text: ctx.phone ? '' : 'Fill from', open: ctx.ui.menu === 'rv-fill', items: [
         { label: 'Use filename', icon: 'file', act: 'use-filename' },
-        { label: 'Use tags', icon: 'tag', act: 'use-tags' },
+        { label: reportOf(details.get(book.id) || book.job).embedded_tags ? 'Use embedded tags' : 'Use file details', icon: 'tag', act: 'use-tags' },
       ] })}
       ${ctx.phone
         ? iconButton({ icon: 'search', label: 'Search editions', act: 'find', cls: 'icb solid', disabled: form.searching })
@@ -274,7 +275,7 @@ function checksSection(book, ctx) {
 
 function historySection(book, ctx) {
   const entries = historyFor(details.get(book.id) || book.job, readLog());
-  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Everything recorded for this book', open: ctx.ui.open?.history ?? false, body: html`${historyList(entries)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history isn’t available yet.</p>` });
+  return collapsible({ id: 'history', title: 'History', summary: ctx.phone ? '' : 'Partial server history and unsaved decisions', open: ctx.ui.open?.history ?? false, body: html`${historyList(entries)}${(ctx.ui.accept?.[book.id]?.localHistory || []).map(entry=>html`<p class="meta">${relative(entry.at)} · ${entry.text} · unsaved in this browser</p>`)}<p class="meta" style="padding:6px 0 12px">Built from what the server records today. A full event history isn’t available yet.</p>` });
 }
 
 function detail(book, list, idx, ctx) {
@@ -300,10 +301,11 @@ function listItem(book, current, ctx) {
 
 
 function reviewRail(list, book, ctx) {
-  const expanded = Boolean(ctx.ui.reviewListExpanded);
+  const expanded = Boolean(ctx.ui.reviewListExpanded || railDocked);
   return html`<aside class="revlist-shell ${expanded ? 'expanded' : ''}" aria-label="Review book navigation">
     <div class="revlist-panel">
       ${iconButton({ icon: expanded ? 'chevronLeft' : 'list', label: expanded ? 'Collapse book list' : 'Expand book list', act: 'review-list', extra: { id: 'review-list-toggle', 'aria-expanded': bool(expanded), 'aria-controls': 'review-books' } })}
+      ${button({label:railDocked?'Undock queue':'Dock queue',act:'review-dock',size:'sm',extra:{'aria-pressed':bool(railDocked)}})}
       <nav id="review-books" class="revlist" aria-label="Books waiting for review">${list.map(b => listItem(b, b.id === book.id, ctx))}</nav>
     </div><span class="rail-preview" id="review-title-preview" role="tooltip" hidden></span>
   </aside>`;
@@ -386,7 +388,7 @@ async function searchEditions(book, ctx) {
 }
 
 /** Open one "What to do next" choice for this book (they're exclusive). */
-const choose = (ctx, book, id) => { ctx.ui.path = { ...(ctx.ui.path || {}), [book.id]: id }; };
+const choose = (ctx, book, id) => { ctx.ui.path = { ...(ctx.ui.path || {}), [book.id]: id }; persist(book,ctx); };
 
 const move = (ctx, delta) => {
   const { list, idx } = current(ctx);
@@ -415,7 +417,7 @@ export default {
   renderFooter(ctx) {
     const { book } = current(ctx); if (!book || book.status.key !== 'review' || !ctx.route.id) return '';
     const sit = situation(book);
-    if (sit.key !== 'draft' || (ctx.ui.path?.[book.id] && ctx.ui.path[book.id] !== 'finalize')) return '';
+    if (sit.key !== 'draft' || ((ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : loadDraft(book.id)?.path)) && (ctx.ui.path?.[book.id] ?? (ctx.route.query.has('match') ? 'edition' : loadDraft(book.id)?.path)) !== 'finalize')) return '';
     const f = draftForm(book, sit.preview, ctx);
     return chapterSaveBar(sit.preview, f, acceptanceState(sit.preview, f, acceptanceOptions(book)));
   },
@@ -438,7 +440,7 @@ export default {
     if (!list.length) return html`${heading}${allClear(ctx)}`;
     const resumed = !ctx.route.id && ctx.route.query.get('resumed');
     if (!ctx.route.id) return html`${heading}${resumed ? resumedPanel(bookById(resumed), list, ctx) : ''}<nav class="review-overview col gap8" aria-label="Books waiting for review">${list.map(b => listItem(b, false, ctx))}</nav>`;
-    return html`${heading}<div class="revgrid">${reviewRail(list, book, ctx)}${detail(book, list, idx, ctx)}</div>`;
+    return html`${heading}<div class="revgrid ${railDocked ? 'docked' : ''}">${reviewRail(list, book, ctx)}${detail(book, list, idx, ctx)}</div>`;
   },
 
   onInput(el, ev, ctx) {
@@ -508,6 +510,7 @@ export default {
     'chapter-filter': (el, ev, ctx) => { ctx.ui.checkFilter = el.dataset.arg; ctx.ui.checkLimit = 50; ctx.rerender(); },
     'chapter-check-more': (el, ev, ctx) => { ctx.ui.checkLimit = (ctx.ui.checkLimit || 50)+50; ctx.rerender(); },
     ...cancelActions,
+    'review-dock': (el, ev, ctx) => { railDocked=!railDocked; saveDraft('rail',{docked:railDocked}); ctx.rerender(); },
     'review-list': (el, ev, ctx) => { ctx.ui.reviewListExpanded = !ctx.ui.reviewListExpanded; ctx.rerender(); },
     'reload-draft': (el, ev, ctx) => {
       const { book } = current(ctx); if (!book || detailLoads.has(book.id)) return;
@@ -547,7 +550,7 @@ export default {
     'use-embedded': (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
-      const asin = reportOf(book.job).identity?.asin;
+      const asin = reportOf(details.get(book.id) || book.job).embedded_tags?.asin;
       if (!asin) return;
       form.note = `ASIN changed from ${form.asin || 'empty'} to ${asin}, the ID embedded in the file.`;
       form.asin = asin;
@@ -563,13 +566,14 @@ export default {
       setTimeout(() => document.getElementById('rv-find')?.focus());
     },
     'use-tags': (el, ev, ctx) => {
-      // DESIGN-GAP: G-014 — raw embedded tags aren't exposed; report.identity mixes tags, EPUB and answers.
+      // Older reports need the explicitly labelled mixed-provenance fallback.
       const { book } = current(ctx); if (!book) return;
       const form = readForm(book);
-      const id = reportOf(book.job).identity || {};
+      const report = reportOf(details.get(book.id) || book.job);
+      const id = report.embedded_tags || report.identity || {};
       form.title = id.title || form.title; form.author = id.author || form.author; form.narrator = id.narrator || form.narrator; form.asin = id.asin || form.asin;
       form.query = id.asin || id.title || form.query;
-      form.note = 'Filled from the file’s details as the server read them (tags, EPUB or earlier answers). Edit the search if needed, then search. Raw embedded tags aren’t available separately yet.';
+      form.note = report.embedded_tags ? 'Filled from captured embedded tags. Edit before searching if needed.' : 'Filled from file details (tags, EPUB or earlier answers); raw tags were not captured for this older job.';
       ctx.rerender();
       setTimeout(() => document.getElementById('rv-find')?.focus());
     },
@@ -588,14 +592,17 @@ export default {
     },
     find: (el, ev, ctx) => { const { book } = current(ctx); if (book) searchEditions(book, ctx); },
     save: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'verify'); },
-    markers: (el, ev, ctx) => { const { book } = current(ctx); if (book) submit(book, ctx, 'local_markers'); },
+    markers: async (el, ev, ctx) => { const { book } = current(ctx); if (!book) return;
+      if (situation(book).key === 'draft' && !await confirmSheet({title:'Replace this draft?',body:'Drafting again replaces the current chapter evidence and invalidates its saved decisions. Your audio stays unchanged.',confirmLabel:'Replace draft'})) return;
+      if(ctx.isCurrent?.() !== false) submit(book,ctx,'local_markers'); },
     resume: async (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
+      const form=formFor(book); if(form.busy || offline() || state.authNeeded) return; form.busy=true; ctx.rerender();
       try {
         await api.resumeChecks(book.id);
         expect(book.id, 'queued');
         await sentToQueue(book, 'Running the required checks again', ctx);
-      } catch (error) { reportError(error, 'Couldn’t resume checks'); }
+      } catch (error) { form.busy=false; ctx.rerender(); reportError(error, 'Couldn’t resume checks'); }
     },
     accept: async (el, ev, ctx) => {
       const { book } = current(ctx); if (!book) return;
@@ -615,11 +622,17 @@ export default {
         expect(book.id, 'queued');
         await sentToQueue(book, 'Saving new chapter names · audio unchanged', ctx);
       } catch (error) {
+        let changed = false;
         if (error.status === 409) {
-          delete ctx.ui.accept?.[book.id]; details.delete(book.id); detailVersions.delete(book.id);
-          await jobDetail(book.id, { force: true }).catch(() => {});
+          try {
+            const latest = await jobDetail(book.id, { force: true });
+            rememberDetail(book.id, latest); detailVersions.set(book.id, latest.updated_at);
+            changed = latest.recovery_acceptance_preview?.token !== approval.token;
+          } catch { /* Keep decisions until refreshed evidence can be compared. */ }
         }
-        setAccept({ ...(error.status === 409 ? { token: null, sections: [], preserve: false, gap: false } : {}), busy: false, message: error.message });
+        setAccept(changed
+          ? { token:null, decisions:{}, editingMatches:{}, sections:[], placed:[], preserve:false, gap:false, bulkUndo:null, localHistory:[], busy:false, message:'The chapter evidence changed. Review it again before saving.' }
+          : { busy:false, message:error.message });
       }
     },
     'desk-cancel': (el, ev, ctx) => { const { book } = current(ctx); if (book) { ctx.ui.confirm = `cancel:${book.id}`; ctx.rerender(); } },

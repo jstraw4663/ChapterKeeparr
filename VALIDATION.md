@@ -316,3 +316,6 @@ Seven frontend tests pass. New unit cases cover close matches, preserving edits,
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+### Reconciled focused Review — 2026-10-23
+Baseline: main 0d63dc617c8c5d37b34b8b0a7ebd6f018f0567d2, containing deployed c974bb1. Full Python suite: 119 passed; JavaScript suite: 75 passed. Additive API provenance/duration tests and focused workspace tests included. Browser fixture checks passed at 360/390/768/1024/1200/1440px in both themes with Manrope retained, no page overflow and no serious/critical axe violations; interaction checks covered Continue, chosen option, confirmed restoration, suggestions/Undo, docking/focus persistence, decimal threshold, consent gating and redraft confirmation. No real media written. Docker unavailable; full legacy browser matrix and physical-device validation remain release gates. See docs/design/needs-review/RECONCILIATION.md.

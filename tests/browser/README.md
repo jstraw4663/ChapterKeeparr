@@ -58,3 +58,20 @@ The synthetic match-quality workflow runs both themes at 320/390/820/1440 px wit
 Run `python tests/browser/flow_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/flow` against the disposable server (or `--pwa-only` while checking worker lifecycle). Eight theme/390px/1024px/reduced/live-motion contexts hold actual read responses, progress another job, and verify zero selected-view DOM mutations for unrelated progress; focused input/caret/scroll retention; retained chapter evidence with save blocked during refresh; unchanged-token consent retention versus changed-token reset; single shared reads; chapter refresh failure/retry; late completion after leaving; latest rapid navigation; and one document boot through all hash navigation/polls. API mutations are blocked.
 
 A separate real-service-worker context installs/controls the app, queues a waiting update via a different worker script URL, changes tabs with no document reload, explicitly confirms Settings activation/reload, and reloads offline from the cached installed shell. SessionStorage boot counters prove which operations create a new document. This catches failures that a mocked worker or worker-blocked layout test cannot, including missing precache assets. API tests also fetch the entire shell list over the real static route and retain traversal/type-denial checks. Physical Safari/iOS or OS memory-pressure reloads are not simulated.
+
+## Focused Review workspace (reconciled redesign)
+
+With the generated complex Review fixture server on port 8793 and workers disabled:
+
+```sh
+cd tests/browser
+npm ci
+npx playwright install chromium
+node serve-focused.mjs
+# In another terminal, from tests/browser:
+npm test
+```
+
+The proxy binds only 127.0.0.1:8794; `REVIEW_URL` changes its upstream. The CLI opens a fresh context with service workers blocked so the test harness route cannot be replaced by the app shell. `REVIEW_OUTPUT` controls result/screenshot output (default /tmp/ck-focused-results). The harness checks twelve theme/width combinations and the new interaction contract. It uses local generated fixtures and does not submit acceptance writes. PWA behavior remains covered separately by flow_stability.py. This focused run is not a substitute for the full existing browser matrix before release.
+
+The recorded local browser result used the in-app browser to run focused-workspace.html. The standalone Playwright launcher was syntax-checked but stalled during startup on this host; its end-to-end invocation remains unverified. Use a fresh origin/port when manually reopening the harness because an installed app service worker can serve its own shell for navigation.

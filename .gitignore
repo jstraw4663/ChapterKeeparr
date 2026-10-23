@@ -5,3 +5,5 @@ config/
 work/
 .DS_Store
 .claude/worktrees/
+
+node_modules/

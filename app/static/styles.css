@@ -1061,3 +1061,31 @@ html[data-motion="reduce"] .cr-body,html[data-motion="reduce"] .cr-sum,html[data
   :root:not([data-theme="light"]) .brand-on-dark{display:block}
 }
 @media(max-width:767px){.mh-word .brand-wordmark{width:143px;height:18px}}
+
+/* Focused Review workspace: retain Chapter C tokens and the guarded save footer. */
+.chapter-review{container-type:inline-size;container-name:review-workspace;min-width:0}
+.rw-filters{display:flex;flex-wrap:wrap;gap:8px}
+.rw-filters [aria-pressed="true"]{background:var(--hover);box-shadow:inset 0 0 0 1px var(--ink)}
+.rw-workspace{display:flex;flex-direction:column;gap:20px;min-width:0}
+.rw-markers{min-width:0;order:2;display:flex;flex-direction:column;gap:8px}
+.rw-decision{min-width:0;order:1;display:flex;flex-direction:column;gap:12px;scroll-margin-top:96px}
+.rw-row{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:var(--radius-input);min-width:0;background:var(--surface)}
+.rw-row.selected{box-shadow:inset 0 0 0 1px var(--ink)}
+.rw-row-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:stretch;text-align:left;height:auto;white-space:normal;padding:8px}
+.rw-row-main .title-comparison{width:100%}
+.rw-fold .btn{width:100%;height:auto;min-height:44px;white-space:normal;text-align:left}
+.rw-continue{display:flex;flex-direction:column;gap:8px}
+.rw-decision .cr-card{margin:0}
+.rw-decision .cr-option{min-height:44px}
+.rw-decision .cr-option[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--ink)}
+@container review-workspace (min-width:1040px){
+  .rw-workspace{display:grid;grid-template-columns:minmax(0,1fr) 440px;align-items:start}
+  .rw-markers{order:1}.rw-decision{order:2;position:sticky;top:96px}
+}
+@media(min-width:1200px){
+  .revgrid.docked{grid-template-columns:320px minmax(0,1fr)}
+  .revgrid.docked .revlist-panel{width:320px;position:relative}
+}
+
+.rw-paths{display:flex;gap:8px;flex-wrap:wrap}.rw-paths .btn{white-space:normal;height:auto;min-height:44px}.rw-paths [aria-pressed="true"]{background:var(--hover);border-color:var(--ink)}.rw-path{padding:16px;min-width:0}
+.revlist-panel>[data-act="review-dock"]{font-size:11px;white-space:normal;height:auto;min-height:44px;max-width:100%}
