@@ -11,10 +11,10 @@ test('draft comparisons render and recommendations remain unselected',()=>{
   assert.match(html,/Not selected/);assert.match(html,/aria-pressed="false"/);
   assert.doesNotMatch(html, /class="cr-option[^>]+aria-pressed="true"/);
 });
-test('selected decision stays open with Continue and exactly one pressed option',()=>{
+test('last decision stays open with completion note and exactly one pressed option',()=>{
   const html=String(chapterReviewView(p,{focus:'m1',decisions:{1:{index:1,action:'published',section_id:'0'}}}));
   assert.equal((html.match(/class="cr-option[^>]+aria-pressed="true"/g)||[]).length,1);
-  assert.match(html,/Continue to next open decision/);
+  assert.match(html,/That was the last one. Check the list, then save./);
   assert.match(html,/data-key="editor-m1"/);
   assert.doesNotMatch(html,/class="cr-card decided"/);
 });

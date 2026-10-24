@@ -484,3 +484,15 @@ export function cycleItem(rows, id, delta = 1) {
   const at = rows.findIndex(r => r.id === id);
   return rows[(at + delta + rows.length) % rows.length];
 }
+
+/** Real duration only: a final marker is a start, never the book's ending. */
+export function reviewTimeline(p, f, fallback) {
+  const m = workspaceModel(p, f);
+  const duration = Number(p.duration_seconds) > 0 ? Number(p.duration_seconds) : Number(fallback) > 0 ? Number(fallback) : null;
+  if (!duration) return null;
+  const position = seconds => Math.max(0, Math.min(100, seconds / duration * 100));
+  const missing = new Map(m.rows.filter(r => r.type === 'missing').map(r => [r.sectionId || r.id.slice(1), r]));
+  return {duration, rows:m.rows.map(r=>({...r, position:position(r.seconds)})),
+    sections:sectionsOf(p).map(s=>({id:s.id,position:position(publishedSeconds(s)),missing:missing.get(s.id)})),
+    desktopPins:clusterPins(m.rows,duration,2.5), phonePins:clusterPins(m.rows,duration,8)};
+}

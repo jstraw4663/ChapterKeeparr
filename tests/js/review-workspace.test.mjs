@@ -35,3 +35,12 @@ test('empty preview is safe',()=>{
  const m=workspaceModel({...p,markers:[],sections:[],published_sections:[],supported:0,total:0,supported_percent:0},{});
  assert.equal(m.focused,undefined);assert.equal(m.canSave,false);
 });
+
+test('reference timeline uses real duration and keeps unmatched sections distinct',async()=>{
+ const {reviewTimeline}=await import('../../app/static/js/chapter-review.js');
+ assert.equal(reviewTimeline(p,{}),null);
+ const t=reviewTimeline({...p,duration_seconds:240},{focus:'m2'});
+ assert.equal(t.duration,240);assert.equal(t.rows.find(r=>r.id==='m2').position,25);
+ assert.equal(t.sections.find(s=>s.id==='180').missing.pending,true);
+ assert.equal(reviewTimeline(p,{},300).duration,300);
+});

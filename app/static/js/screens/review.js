@@ -15,7 +15,7 @@ import { acceptanceState, draftApproval } from '../review-state.js';
 import { readLog } from '../prefs.js';
 import { loadDraft, saveDraft, clearDraft, acceptedDraft } from '../review-drafts.js';
 import { confirmSheet } from '../overlay.js';
-import { markerDecisions, remainingSections } from '../chapter-review.js';
+import { markerDecisions, remainingSections, workspaceModel } from '../chapter-review.js';
 import { chapterReviewView, chapterSaveBar, chapterController } from '../chapter-review-view.js';
 import { glideTo, glideToTop } from '../scroll.js';
 import { checksOf, checkTimeline, checkRows, playCheck, durationOf, gatesDetail, technical, alignmentPlot, bestDiagnostics } from './evidence.js';
@@ -83,6 +83,7 @@ function formFor(book) {
     forms.set(book.id, {
       title: answer.title || book.title, author: answer.author || book.author, narrator: answer.narrator || book.narrators,
       asin: answer.asin || book.asin, region: (answer.region || report.selected_recording?.region || 'us').toLowerCase(),
+      baseline: {title:answer.title || book.title,author:answer.author || book.author,narrator:answer.narrator || book.narrators,asin:answer.asin || book.asin,region:(answer.region || report.selected_recording?.region || 'us').toLowerCase()},
       query: '', results: null, searching: false, message: '', note: '', selected: null, busy: false,
       ...(loadDraft(book.id)?.fields || {}),
     });
@@ -125,11 +126,11 @@ function header(book, list, idx, ctx) {
     ${iconButton({ icon: 'chevronDown', label: 'Next book', act: 'next', disabled: idx >= list.length - 1, cls: ctx.phone ? 'picon' : 'icb' })}`;
   if (ctx.phone) {
     return html`<div class="back-head"><a class="textlink" href="#/review" style="color:var(--ink);font-size:16px">${icon('chevronLeft', 22)}Review</a><div class="row" style="gap:0">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'phone-cancel', cls: 'picon', disabled: offline(), disabledReason: OFFLINE_REASON })}</div></div>
-      <div class="row gap14 page-pad review-mobile-head">${cover(book, { size: 84, radius: 12, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
+      <div class="row gap14 page-pad review-mobile-head">${cover(book, { size: 56, radius: 8, cls: 'shadow' })}<div class="col gap4"><span class="eyebrow" style="font-size:11px">${eyebrow}</span><h1 class="h1" style="font-size:22px;line-height:1.1;letter-spacing:-.02em" tabindex="-1" data-vt-title="${book.id}">${book.title}</h1><span class="meta">${book.author || 'Author unknown'}</span></div></div>`;
   }
   const confirming = ctx.ui.confirm === `cancel:${book.id}`;
-  return html`<div class="revnav row wrap gap8"><span class="meta grow">Selected book</span>${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div>
-    <div class="revhead">${cover(book, { size: 112, radius: 14, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 tabindex="-1" data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div></div>
+  return html`<div class="rw-book-top"><div class="revnav row wrap gap8">${nav}${iconButton({ icon: 'trash', label: 'Cancel job', act: 'desk-cancel', disabled: offline(), disabledReason: OFFLINE_REASON })}</div>
+    <div class="revhead">${cover(book, { size: 92, radius: 10, cls: 'shadow' })}<div class="col gap8 grow"><span class="eyebrow">${eyebrow}</span><h2 tabindex="-1" data-vt-title="${book.id}">${book.title}</h2><p class="lede" style="font-size:15px">${book.author || 'Author unknown'}${book.narrators ? ` · Narrated by ${book.narrators}` : ''}</p></div></div></div>
     ${confirming ? confirmRow({ question: 'Cancel this job? Source files stay put.', keepAct: 'confirm-keep', confirmAct: 'confirm-cancel', confirmLabel: 'Cancel job', arg: book.id }) : ''}`;
 }
 
@@ -188,7 +189,7 @@ function nextSteps(book, form, sit, ctx) {
     const [only] = options;
     return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="panel col gap12" style="padding:18px"><span class="meta" style="font-size:14px">${only.desc}</span>${only.body}</div></section>`;
   }
-  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="rw-paths" role="group" aria-label="Recovery path">${options.map(option=>button({label:option.title,act:'choose',arg:option.id,extra:{'aria-pressed':bool(open===option.id)}}))}</div><div class="panel col gap12 rw-path" data-key="path-${open}"><p class="meta">${options.find(o=>o.id===open).desc}</p>${options.find(o=>o.id===open).body}</div></section>`;
+  return html`<section class="col gap8 ${ctx.phone ? 'page-inset' : ''}" aria-label="What to do next">${heading}<div class="rw-paths" role="tablist" aria-label="Recovery path">${options.map(option=>button({label:ctx.phone?({finalize:'Review draft',draft:'Draft again',edition:'Edition',resume:'Run again'}[option.id]):option.title,act:'choose',arg:option.id,extra:{role:'tab','aria-selected':bool(open===option.id)}}))}</div><div class="panel col gap12 rw-path" data-key="path-${open}"><p class="meta">${options.find(o=>o.id===open).desc}</p>${options.find(o=>o.id===open).body}</div></section>`;
 }
 
 function draftBody(book, form) {
@@ -200,13 +201,18 @@ function draftBody(book, form) {
     <div>${serverButton({ label: form.busy ? 'Starting…' : 'Draft chapters', kind: 'primary', act: 'markers', size: 'md', disabled: form.busy, disabledReason: 'Working…' })}</div>`;
 }
 
-function editionResults(form) {
+function editionChanged(form) {
+  const asin=(form.asin || '').trim();
+  return (!asin || /^[A-Z0-9]{10}$/i.test(asin)) && Object.entries(form.baseline).some(([key,value])=>String(form[key] || '').trim()!==String(value || '').trim());
+}
+
+function editionResults(form, seconds) {
   if (form.searching) return html`<p class="meta" role="status">Searching editions…</p>`;
   if (!form.results) return '';
   if (!form.results.length) return html`<p class="meta" role="status">No editions found. Try another title, ASIN or region.</p>`;
   return html`<div class="edresults" role="group" aria-label="Edition results">${form.results.map((e, i) => html`<button type="button" class="edrow" data-act="pick-edition" data-arg="${i}" aria-pressed="${bool(form.selected === i)}">
     ${e.cover_url ? html`<img alt="" loading="lazy" referrerpolicy="no-referrer" src="${e.cover_url}">` : html`<span class="cover" style="width:52px;height:52px;border-radius:8px"></span>`}
-    <span class="col gap4"><span style="font-weight:700" class="clamp2">${e.title || 'Untitled edition'}</span><span class="meta ell">${(e.authors || []).map(a => a.name).join(', ') || 'Author unknown'}${e.narrators?.length ? ` · ${e.narrators.map(n => n.name).join(', ')}` : ''}</span><span class="meta">${[e.runtime_length_min ? `${Math.round(e.runtime_length_min).toLocaleString()} min` : '', e.publisher_name, e.language].filter(Boolean).join(' · ')}</span></span>
+    <span class="col gap4"><span style="font-weight:700" class="clamp2">${e.title || 'Untitled edition'}</span><span class="meta ell">${(e.authors || []).map(a => a.name).join(', ') || 'Author unknown'}${e.narrators?.length ? ` · ${e.narrators.map(n => n.name).join(', ')}` : ''}</span><span class="meta">${[e.runtime_length_min ? `${Math.round(e.runtime_length_min).toLocaleString()} min${seconds ? ` · ${Math.abs(e.runtime_length_min-seconds/60).toFixed(1)} min ${e.runtime_length_min>=seconds/60?'longer':'shorter'} than your file` : ''}` : '', e.publisher_name, e.language].filter(Boolean).join(' · ')}</span></span>
     <span class="mono meta">${e.asin}</span></button>`)}</div>`;
 }
 
@@ -226,7 +232,7 @@ function editionBody(book, form, ctx) {
         ? iconButton({ icon: 'search', label: 'Search editions', act: 'find', cls: 'icb solid', disabled: form.searching })
         : button({ label: form.searching ? 'Searching…' : 'Search', icon: 'search', act: 'find', disabled: form.searching, extra: { style: 'height:44px' } })}
     </div>
-    ${editionResults(form)}
+    ${editionResults(form, seconds)}
     <div class="row gap16 wrap"><button type="button" class="textlink" data-act="next-region">Try the ${regionName(nextRegion(form.region))} store</button>${embedded ? html`<button type="button" class="textlink" data-act="use-embedded">Use the ID in the file (${embedded})</button>` : ''}</div>
     ${form.note ? html`<p class="note opened" role="status">${form.note}</p>` : ''}
     <details class="tech plain" ${form.selected == null && !form.asin ? 'open' : ''}><summary>Edition details${form.asin ? `: ${form.asin} · ${regionName(form.region)}` : ''}</summary>
@@ -237,7 +243,7 @@ function editionBody(book, form, ctx) {
         ${selectField({ id: 'rv-region', label: 'Region', options: REGIONS, value: form.region })}
       </div>${field({ id: 'rv-narrator', label: 'Narrators', value: form.narrator })}</div></details>
     ${form.message ? html`<p class="alert-bad" role="alert">${form.message}</p>` : ''}
-    <div class="col gap8"><div>${serverButton({ label: form.busy ? 'Saving…' : 'Save and re-verify', kind: 'primary', size: 'md', act: 'save', disabled: form.busy, disabledReason: 'Working…' })}</div><span class="meta">The checks run again against this edition. Nothing is saved unless they pass.</span></div>
+    <div class="col gap8"><div>${serverButton({ label: form.busy ? 'Saving…' : 'Save and re-verify', kind: 'primary', size: 'md', act: 'save', disabled: form.busy || !editionChanged(form), disabledReason: form.busy ? 'Working…' : 'Change the edition, region or book details first.' })}</div><span class="meta">The checks run again against this edition. Nothing is saved unless they pass.</span></div>
   </form>`;
 }
 
@@ -293,7 +299,9 @@ function detail(book, list, idx, ctx) {
 }
 
 function listItem(book, current, ctx) {
-  const reason = reviewTitle(book.job);
+  const preview=details.get(book.id)?.recovery_acceptance_preview;
+  const model=preview?.ready ? workspaceModel(preview,ctx.ui.accept?.[book.id] || acceptedDraft(book.id,preview.token)) : null;
+  const reason = model ? model.attention ? `${model.attention} need attention` : 'Decisions complete · confirm to save' : reviewTitle(book.job);
   if (ctx.phone) return html`<a class="mrow" href="#/review/${encodeURIComponent(book.id)}">${cover(book, { size: 56, radius: 10 })}<span class="col gap4 grow"><span class="ell" style="font-size:16px;font-weight:700" data-vt-title="${book.id}">${book.title}</span><span class="meta ell">${reason} · ${relative(book.updatedAt)}</span></span><span class="muted icon">${icon('chevronRight', 18)}</span></a>`;
   const label = `${book.title} · ${book.author || 'Author unknown'} · ${reason}`;
   return html`<a class="irow review-book" data-key="review-${book.id}" data-review-label="${label}" aria-label="${label}" href="#/review/${encodeURIComponent(book.id)}" ${current ? 'aria-current="page"' : ''}>${cover(book, { size: 52, radius: 9 })}<span class="col gap4 grow review-book-copy"><span class="ell" style="font-size:15px;font-weight:700">${book.title}</span><span class="meta ell">${reason}</span></span><span class="meta tabular review-book-time">${relative(book.updatedAt)}</span></a>`;
@@ -301,11 +309,11 @@ function listItem(book, current, ctx) {
 
 
 function reviewRail(list, book, ctx) {
-  const expanded = Boolean(ctx.ui.reviewListExpanded || railDocked);
+  const expanded = Boolean(ctx.ui.reviewListExpanded);
   return html`<aside class="revlist-shell ${expanded ? 'expanded' : ''}" aria-label="Review book navigation">
     <div class="revlist-panel">
-      ${iconButton({ icon: expanded ? 'chevronLeft' : 'list', label: expanded ? 'Collapse book list' : 'Expand book list', act: 'review-list', extra: { id: 'review-list-toggle', 'aria-expanded': bool(expanded), 'aria-controls': 'review-books' } })}
-      ${button({label:railDocked?'Undock queue':'Dock queue',act:'review-dock',size:'sm',extra:{'aria-pressed':bool(railDocked)}})}
+      <div class="rw-rail-heading">${iconButton({ icon: expanded ? 'chevronLeft' : 'list', label: expanded ? 'Collapse book list' : 'Expand book list', act: 'review-list', extra: { id: 'review-list-toggle', 'aria-expanded': bool(expanded), 'aria-controls': 'review-books' } })}
+      <strong class="rw-rail-text">Waiting for you · ${list.length}</strong>${button({label:railDocked?'Undock queue':'Dock queue',act:'review-dock',size:'sm',extra:{'aria-pressed':bool(railDocked)}})}</div>
       <nav id="review-books" class="revlist" aria-label="Books waiting for review">${list.map(b => listItem(b, b.id === book.id, ctx))}</nav>
     </div><span class="rail-preview" id="review-title-preview" role="tooltip" hidden></span>
   </aside>`;
@@ -359,7 +367,7 @@ async function sentToQueue(book, body, ctx) {
 
 async function submit(book, ctx, recovery) {
   const form = readForm(book);
-  if (form.busy || offline() || state.authNeeded) return;
+  if (form.busy || offline() || state.authNeeded || (recovery==='verify' && !editionChanged(form))) return;
   form.message = '';
   const asin = form.asin.trim().toUpperCase();
   if (asin && !/^[A-Z0-9]{10}$/.test(asin)) { form.message = 'ASIN must be 10 letters or digits.'; ctx.rerender(); return; }
@@ -410,7 +418,7 @@ export default {
   signature(ctx) {
     const { book } = current(ctx);
     const audioKey = book ? JSON.stringify([ctx.ui, detailRevisions.get(book.id) || 0, sources.get(book.id)]) : '';
-    const list = waiting().map(b => `${b.id}:${b.updatedAt}`).join(',');
+    const list = waiting().map(b => `${b.id}:${b.updatedAt}:${detailRevisions.get(b.id) || 0}`).join(',');
     return [state.loaded, state.connected, state.authNeeded, list, book?.updatedAt, ctx.route.id, audioKey, book && JSON.stringify(forms.get(book.id) || {})].join('|');
   },
 
@@ -440,13 +448,13 @@ export default {
     if (!list.length) return html`${heading}${allClear(ctx)}`;
     const resumed = !ctx.route.id && ctx.route.query.get('resumed');
     if (!ctx.route.id) return html`${heading}${resumed ? resumedPanel(bookById(resumed), list, ctx) : ''}<nav class="review-overview col gap8" aria-label="Books waiting for review">${list.map(b => listItem(b, false, ctx))}</nav>`;
-    return html`${heading}<div class="revgrid ${railDocked ? 'docked' : ''}">${reviewRail(list, book, ctx)}${detail(book, list, idx, ctx)}</div>`;
+    return html`<h1 class="sr-only">Needs review</h1><div class="revgrid ${railDocked ? 'docked' : ''}">${reviewRail(list, book, ctx)}${detail(book, list, idx, ctx)}</div>`;
   },
 
   onInput(el, ev, ctx) {
     const { book } = current(ctx); if (!book) return;
     if (chapters.onInput(el, ev, ctx)) return;
-    readForm(book); persist(book, ctx);
+    readForm(book); persist(book, ctx); ctx.rerender();
   },
 
   onSubmit(form, ev, ctx) {
@@ -458,6 +466,12 @@ export default {
   },
 
   onKeyDown(event, ctx) {
+    const tab=event.target.closest?.('.rw-paths [role=tab]');
+    if(tab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+      event.preventDefault(); const tabs=[...tab.parentElement.querySelectorAll('[role=tab]')], i=tabs.indexOf(tab);
+      const target=tabs[event.key==='Home'?0:event.key==='End'?tabs.length-1:(i+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length];
+      target.click(); document.querySelector(`.rw-paths [data-arg="${target.dataset.arg}"]`)?.focus(); return;
+    }
     if (event.key !== 'Escape') return;
     const preview = document.getElementById('review-title-preview');
     if (preview && !preview.hidden) { preview.hidden = true; ctx.ui.previewDismissed = document.activeElement?.closest?.('.review-book')?.href; event.preventDefault(); }
@@ -469,10 +483,15 @@ export default {
 
   mount(root, ctx) {
     const unmountChapters = chapters.mount(root, ctx);
+    // Hydrate queue summaries with at most two requests in flight; each completion rerenders.
+    for(const book of waiting().slice(0,20)){
+      if(detailLoads.size>=2) break;
+      if(!details.has(book.id) && !detailErrors.has(book.id)) loadDetail(book);
+    }
     const preview = root.querySelector('#review-title-preview');
     const show = event => {
       const link = event.target.closest?.('.review-book');
-      if (!preview || !link || ctx.ui.reviewListExpanded || ctx.ui.previewDismissed === link.href) return;
+      if (!preview || !link || innerWidth>=768 || ctx.ui.reviewListExpanded || ctx.ui.previewDismissed === link.href) return;
       preview.textContent = link.dataset.reviewLabel;
       preview.hidden = false;
       const r = link.getBoundingClientRect();

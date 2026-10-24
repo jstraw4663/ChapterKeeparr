@@ -409,3 +409,6 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - Deployed screenshots confirmed matching frontend/server revision 1aa1d25: this was a presentation issue, not stale assets. The reconciliation retained the old expanded Changes at a glance before the workspace, making the phone look unchanged.
 - Put marker filters and the focused decision workspace before the below-minimum explanation and change previews. Keep Changes at a glance in a default-collapsed shared disclosure below the workspace, retaining its counts, comparisons and links. Preserve scoring, consent, confirmed restoration and explicit Continue. Shell cache v19.
 - This corrects the content priority; it is not a claim of pixel-for-pixel reproduction of the supplied mockups.
+
+## G-057 — Claude Review visual fidelity (2026-10-24)
+Restored real-duration two-lane brief, responsive attention pins, compact before/after/evidence rows, filter strips, folded summaries, distinct card states, overlay/docked cover rail and horizontally scrolling recovery tabs. Current branding, exact scoring, consent and publication safeguards remain authoritative. MAPPING.md records retained product differences and missing-data fallbacks. Queue count hydration is bounded to the first 20 books, at two concurrent reads; other rows show review reasons.
