@@ -1,4 +1,4 @@
-const CACHE = 'chapterkeeparr-shell-v17';
+const CACHE = 'chapterkeeparr-shell-v18';
 // Keep in sync with app/static (tests/test_frontend.py checks this list).
 const SHELL = [
   '/static/brand/mark-dark.svg',
@@ -42,6 +42,8 @@ const SHELL = [
   '/static/js/screens/common.js',
   '/static/js/screens/evidence.js',
   '/static/js/screens/library.js',
+  '/static/js/screens/inventory.js',
+  '/static/js/library-health.js',
   '/static/js/screens/newjob.js',
   '/static/js/screens/queue.js',
   '/static/js/screens/review.js',

@@ -82,6 +82,25 @@ class Store:
                     ON jobs(status, created_at);
                 """
             )
+            columns = {r['name'] for r in db.execute('PRAGMA table_info(library_scans)')}
+            for name, declaration in {
+                'status': "TEXT NOT NULL DEFAULT 'completed'",
+                'updated_at': 'REAL NOT NULL DEFAULT 0',
+                'error': 'TEXT',
+                'cancel_requested': 'INTEGER NOT NULL DEFAULT 0',
+                'processed_files': 'INTEGER NOT NULL DEFAULT 0',
+            }.items():
+                if name not in columns:
+                    db.execute(f'ALTER TABLE library_scans ADD COLUMN {name} {declaration}')
+            db.executescript('''
+                CREATE TABLE IF NOT EXISTS library_finding_reviews (
+                    root TEXT NOT NULL, folder TEXT NOT NULL, finding TEXT NOT NULL,
+                    fingerprint TEXT NOT NULL, note TEXT NOT NULL,
+                    PRIMARY KEY(root, folder, finding)
+                );
+                CREATE UNIQUE INDEX IF NOT EXISTS one_inventory_scan_active
+                ON library_scans((1)) WHERE status IN ('queued', 'running');
+            ''')
 
     @staticmethod
     def _dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
@@ -101,16 +120,78 @@ class Store:
     def save_library_scan(self, report: dict[str, Any]) -> dict[str, Any]:
         scan_id, created_at = str(uuid.uuid4()), time.time()
         with self._connect() as db:
-            db.execute("INSERT INTO library_scans VALUES (?, ?, ?, ?)",
+            db.execute("INSERT INTO library_scans (id, created_at, root, report) VALUES (?, ?, ?, ?)",
                        (scan_id, created_at, report["root"], json.dumps(report)))
-        return {"id": scan_id, "created_at": created_at, **report}
+        return self.library_scan(scan_id)
 
     def library_scan(self, scan_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
             row = db.execute("SELECT * FROM library_scans WHERE id=?", (scan_id,)).fetchone()
         if row is None:
             return None
-        return {"id": row["id"], "created_at": row["created_at"], **json.loads(row["report"])}
+        return {**json.loads(row['report']), **{key: row[key] for key in
+                ('id', 'created_at', 'root', 'status', 'updated_at', 'error', 'processed_files')},
+                'cancel_requested': bool(row['cancel_requested'])}
+
+    def queue_library_scan(self, root: str) -> dict:
+        now, scan_id = time.time(), str(uuid.uuid4())
+        with self._connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            if db.execute("SELECT id FROM library_scans WHERE status IN ('queued','running')").fetchone():
+                raise ValueError('A library scan is already active')
+            db.execute("INSERT INTO library_scans (id,created_at,updated_at,root,report,status) VALUES (?,?,?,?,?,'queued')",
+                       (scan_id, now, now, root, '{}'))
+        return self.library_scan(scan_id)
+
+    def list_library_scans(self, limit: int = 30) -> list[dict]:
+        with self._connect() as db:
+            rows = db.execute('''SELECT id,created_at,root,status,updated_at,error,cancel_requested,processed_files,
+                              json_extract(report,'$.summary') AS summary,
+                              json_extract(report,'$.complete') AS complete
+                              FROM library_scans ORDER BY created_at DESC LIMIT ?''', (limit,)).fetchall()
+        return [{**dict(r), 'summary': json.loads(r['summary']) if r['summary'] else None,
+                 'complete': bool(r['complete']), 'cancel_requested': bool(r['cancel_requested'])} for r in rows]
+
+    def recover_library_scans(self):
+        with self._connect() as db:
+            db.execute("UPDATE library_scans SET status='failed', error='Scan interrupted by server restart; start a new scan', updated_at=? WHERE status='running'", (time.time(),))
+
+    def claim_library_scan(self) -> dict | None:
+        with self._connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            row = db.execute("SELECT id FROM library_scans WHERE status='queued' ORDER BY created_at LIMIT 1").fetchone()
+            if not row:
+                return None
+            db.execute("UPDATE library_scans SET status='running', updated_at=? WHERE id=?", (time.time(), row['id']))
+        return self.library_scan(row['id'])
+
+    def update_library_scan(self, scan_id: str, *, processed: int | None = None,
+                            status: str | None = None, report: dict | None = None, error: str | None = None):
+        with self._connect() as db:
+            db.execute('''UPDATE library_scans SET updated_at=?, processed_files=COALESCE(?,processed_files),
+                       status=COALESCE(?,status), report=COALESCE(?,report), error=? WHERE id=?''',
+                       (time.time(), processed, status, json.dumps(report) if report is not None else None, error, scan_id))
+
+    def cancel_library_scan(self, scan_id: str):
+        with self._connect() as db:
+            db.execute("UPDATE library_scans SET cancel_requested=1, status=CASE WHEN status='queued' THEN 'cancelled' ELSE status END, updated_at=? WHERE id=? AND status IN ('queued','running')", (time.time(), scan_id))
+
+    def library_scan_cancelled(self, scan_id: str) -> bool:
+        with self._connect() as db:
+            row = db.execute('SELECT cancel_requested FROM library_scans WHERE id=?', (scan_id,)).fetchone()
+        return bool(row and row['cancel_requested'])
+
+    def review_library_finding(self, root: str, folder: str, finding: str, fingerprint: str, note: str | None):
+        with self._connect() as db:
+            if note is None:
+                db.execute('DELETE FROM library_finding_reviews WHERE root=? AND folder=? AND finding=?', (root, folder, finding))
+            else:
+                db.execute('INSERT OR REPLACE INTO library_finding_reviews VALUES (?,?,?,?,?)',
+                           (root, folder, finding, fingerprint, note))
+
+    def library_finding_reviews(self, root: str) -> list[dict]:
+        with self._connect() as db:
+            return [dict(r) for r in db.execute('SELECT * FROM library_finding_reviews WHERE root=?', (root,))]
 
     def enqueue(self, path: str | Path, options: dict[str, Any] | None = None) -> tuple[dict[str, Any], bool]:
         """Insert a job, or return the active job for this canonical source path."""

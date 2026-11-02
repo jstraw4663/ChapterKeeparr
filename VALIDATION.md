@@ -326,3 +326,33 @@ Theme fade update (2026-10-02): removed cascading inherited text transitions; bo
   Runtime initially lacked requests; supplying it from a temporary dependency
   directory and granting the test process network access resolved TestClient
   stalls. All 9 API tests passed. No production media/container was accessed.
+
+## Library scan/review UI milestone — 2026-11-02
+
+- API: 10 tests passed, including authentication, configured-root restrictions,
+  background completion, history, stale review fingerprints, cancellation and
+  exclusion from the repair queue.
+- Inventory: 2 tests passed. Structural inspection/worker/migration: 6 passed,
+  including malformed EPUB spine references, generated AAC probing with an
+  external hardlink, seed bytes/inode/mtime preservation, review invalidation,
+  single-active-scan enforcement, restart recovery, cancellation and special files.
+- Database: 4 tests passed. Frontend/design: 7 checks passed, including all
+  JavaScript unit tests and module syntax checks; the new pure library-health
+  tests cover filtering, format pairing, review counts, sorting, unknown size and
+  a delayed review response after changing the selected scan.
+- Real synthetic-media browser workflow passed at 390, 768, 1024 and 1440 px in
+  both themes, with WCAG 2.2 AA checks using pinned axe-core 4.10.3. Covered real
+  scan submission/completion, review/reopen persistence, reload, filters/search,
+  history selection, failure handling, no horizontal overflow and unique IDs.
+  Disposable fixture and workflow are wired into CI. Local output:
+  /tmp/chapterkeeparr-health-results (screenshots, axe reports, observations).
+- Existing chapter-review interaction checks passed in both themes, and the real
+  PWA control/update/explicit reload/offline-shell lifecycle passed. No production
+  library, seeding payload, Unraid configuration or published image was accessed.
+
+Known limits: scan reports are bounded whole snapshots; folder groups are only
+book candidates. Exact content duplicates and edition matching are not verified.
+FFprobe checks the container and embedded chapters, not a full audio decode.
+Unsupported/oversize formats remain explicitly uninspected. Native mobile Safari,
+real NAS scale/performance and the owner-run test-container rollout remain field
+checks. File mutation/conversion/publishing are later phases.

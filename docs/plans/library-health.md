@@ -16,14 +16,14 @@ mapping during development. `/config` maps to
 
 ## Phases and acceptance
 
-1. **Inventory foundation (started):** authenticated, persistent, read-only folder
+1. **Inventory foundation (implemented):** authenticated, persistent, read-only folder
    scans independent of repair jobs. Record formats, size, modification time,
    inode/device/link count; identify missing target formats, multiple candidates,
    mismatched pair names, sidecars and empty media. Skip symlinks and special
    files, report incomplete scans, enforce configured root boundaries. Folder
    groups are candidates, not verified work/edition identities. No corruption or
    physical-space claims from inventory alone.
-2. **Review workspace and deeper inspection:** reuse Library, Suggestions, Book,
+2. **Review workspace and deeper inspection (initial milestone implemented):** reuse Library, Suggestions, Book,
    Queue and Settings patterns in both themes at 390px and desktop. Add scan
    history/listing, paginated findings, background scan jobs with cancellation,
    stable file identities and incremental rescans. Inspect EPUB ZIP/CRC,
@@ -55,13 +55,25 @@ mapping during development. `/config` maps to
 
 ## Interfaces and current slice
 
-`POST /api/library/scans` accepts `{ "path": "/library" }`; it currently runs a
-bounded synchronous metadata-only scan and returns a saved report with ID/time.
-`GET /api/library/scans/{id}` returns that report after authentication and root
-validation. Additive `library_scans` table preserves existing queue state.
-This slice has no UI or BookOrbit calls and does not enqueue repair jobs.
-Scan completion means traversal completed, not media integrity verified.
-All files, including sidecars outside candidate book folders, remain in inventory.
+`POST /api/library/scans` accepts `{ "path": "/library" }`, returns HTTP 202,
+and queues one structural inventory scan at a time. `GET /api/library/scans`
+returns bounded history/summary records; `GET /api/library/scans/{id}` returns
+saved evidence, status, progress and fingerprint-bound review choices. Cancel via
+`POST /api/library/scans/{id}/cancel`; record/reopen an intentional exception via
+`PUT /api/library/scans/{id}/review` with folder, finding key, fingerprint and
+note (null reopens). Restart-interrupted scans fail visibly; queued scans resume.
+The inventory worker is independent of ENABLE_WORKERS and the repair queue.
+
+The Library home now presents scan controls/history, summary rows, filters,
+search/sort, paged folder lists and responsive file/finding review. Existing
+repair jobs remain at `#/repairs`. EPUB structure/CRC and bounded local audio
+probing run during scans; unsupported/oversize files remain explicitly uninspected.
+Review choices never authorize a file mutation and reopen when evidence changes.
+Additive SQLite migrations preserve earlier reports and repair state. No media
+writes, conversion, BookOrbit calls, deep audio decoding or edition verification
+are included in this review milestone. Exact duplicate hashing, library-wide
+edition grouping, incremental scanning and server-side result pagination remain
+future phase-2 work; multiple same-format files are only comparison candidates.
 
 ## Validation and rollout
 

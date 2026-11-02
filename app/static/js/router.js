@@ -30,6 +30,7 @@ export function parse(hash) {
   const [head, arg] = parts;
   switch (head) {
     case undefined: return { name: 'library', query };
+    case 'repairs': return { name: 'repairs', query };
     case 'suggestions': return { name: 'suggestions', query };
     case 'queue': return { name: 'queue', query };
     case 'review': return arg ? { name: 'review', id: arg, query } : { name: 'review', query };
@@ -60,4 +61,4 @@ export const NAV = [
 ];
 
 /** Which nav item is current for a route (Book belongs to Library). */
-export const navFor = route => (route.name === 'book' ? 'library' : route.name);
+export const navFor = route => (['book', 'repairs'].includes(route.name) ? 'library' : route.name);

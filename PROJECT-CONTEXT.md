@@ -1,5 +1,19 @@
 # ChapterKeeparr project context
 
+## Library scan and review milestone — 2026-11-02
+
+Jeremy authorized the initial scan/review UI using the existing design language.
+Library home is now a filesystem inventory; the repair-job library remains at
+`#/repairs`. One independent worker persists progress, cancellation and history;
+restart-interrupted scans fail visibly. Structural EPUB CRC/spine checks and
+bounded audio probes distinguish checked structure from unverified completeness.
+Folder/file review supports filters, search/sort and Keep as is/Reopen choices
+bound to scanned evidence. No library writes, BookOrbit calls, image publication
+or production mapping changes occur. Schema migrations preserve existing state;
+PWA shell v18 includes the new modules. See docs/plans/library-health.md and
+VALIDATION.md for scope and fixture checks.
+
+
 ## Stable navigation, reads and PWA shell — 2026-10-20
 
 Jeremy reports most screens briefly opening and then appearing to reload, especially in the installed PWA. Reproduced an actual native-transition race: a skipped old update callback can still overwrite the latest screen. Added navigation generations, route-bound async rendering/focus/handoffs and frame-coalesced background patches. Relevant per-book signatures keep unrelated progress from remounting a selected book/review. The same canonical draft retains browser choices/consent; a real evidence change still resets approval.

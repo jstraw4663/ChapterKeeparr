@@ -17,6 +17,26 @@ This alpha has no BookOrbit adapter. It does not watch download folders, consume
 
 The web UI follows the redesign in [`docs/design/`](docs/design/): start with [RULES.md](docs/design/RULES.md), then [DESIGN.md](docs/design/DESIGN.md) and [SCREENS.md](docs/design/SCREENS.md). Screens: Library, Suggestions, Queue, Needs review, Book, New job and Settings, on desktop and on a 390px phone, light and dark. Features the server can't support yet are shown disabled with a reason and tracked in [GAPS.md](docs/design/GAPS.md); remaining work is in [FOLLOW_UPS.md](docs/design/FOLLOW_UPS.md). The frontend is plain ES modules in `app/static/js/` with no build step. Theme, reduced motion, notifications and New job defaults are saved per browser.
 
+## Library health (development branch)
+
+Library home now supports persistent read-only folder scans, EPUB structure/CRC
+checks, audio container/chapter inspection, format and naming findings, scan
+history and responsive folder/file review. Enter the server path (`/library` in
+the ChapterKeeparr container), then choose **Scan library**. Scan progress and
+cancellation work even when chapter-repair workers are paused. **Keep as is**
+records an intentional exception; **Reopen** restores it for review. Changed
+scan evidence reopens earlier exceptions automatically.
+
+Inspection does not prove complete books, matching editions or accurate chapters.
+Multiple same-format files are comparison candidates, not proven duplicates.
+Hardlink counts and logical sizes are reported; physical reclaimable space is
+unknown. This milestone does not convert, rename, retag or remove library files.
+Existing chapter-repair jobs remain under **Chapter repair jobs**.
+
+The current test mapping is `/library` → `/mnt/user/Media/chapterkeeparr-test/`.
+Production remains disconnected. The approved phased build is documented in
+[the library health plan](docs/plans/library-health.md).
+
 ## Build and run
 
 Install Docker Engine or Docker Desktop with Compose, then from this directory run:

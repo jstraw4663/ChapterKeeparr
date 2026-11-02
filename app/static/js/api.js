@@ -43,6 +43,11 @@ const id = value => encodeURIComponent(value);
 export const api = {
   health: () => request('/api/health'),
   settings: () => request('/api/settings'),
+  libraryScans: () => request('/api/library/scans'),
+  libraryScan: scanId => request(`/api/library/scans/${id(scanId)}`),
+  startLibraryScan: path => request('/api/library/scans', { method: 'POST', body: { path } }),
+  cancelLibraryScan: scanId => request(`/api/library/scans/${id(scanId)}/cancel`, { method: 'POST' }),
+  reviewLibraryFinding: (scanId, body) => request(`/api/library/scans/${id(scanId)}/review`, { method: 'PUT', body }),
   updates: () => request('/api/updates'),
   setRecoveryMinimum: percent => request('/api/settings/recovery', { method: 'PUT', body: { recovery_minimum_percent: percent } }),
 

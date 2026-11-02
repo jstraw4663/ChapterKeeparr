@@ -31,6 +31,13 @@ class LibraryScanSubmission(BaseModel):
     path: str
 
 
+class LibraryFindingReview(BaseModel):
+    folder: str
+    finding: str
+    fingerprint: str
+    note: str | None = Field(default=None, max_length=500)
+
+
 class ReviewAnswer(BaseModel):
     action: str | None = None
     asin: str | None = None
@@ -96,10 +103,13 @@ def create_app(store: Store | None = None) -> FastAPI:
     store.initialize()
     security = HTTPBearer(auto_error=False)
     media = MediaService(store, roots, Path(settings["config_dir"]) / "media-cache")
+    from .library_scans import LibraryScanner
+    inventory_worker = LibraryScanner(store, roots)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         coordinator = None
+        inventory_worker.start()
         if os.getenv("ENABLE_WORKERS", "1") != "0":
             from .runner import Coordinator
 
@@ -108,12 +118,14 @@ def create_app(store: Store | None = None) -> FastAPI:
         try:
             yield
         finally:
+            inventory_worker.stop()
             if coordinator is not None:
                 coordinator.stop()
 
     app = FastAPI(title="ChapterKeeparr", lifespan=lifespan)
     app.state.store = store
     app.state.settings = settings
+    app.state.inventory_worker = inventory_worker
     installed = build_info()
     update_checker = UpdateChecker(installed)
 
@@ -127,27 +139,53 @@ def create_app(store: Store | None = None) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.post("/api/library/scans", dependencies=[Depends(auth)])
+    @app.post("/api/library/scans", status_code=202, dependencies=[Depends(auth)])
     def scan_inventory(payload: LibraryScanSubmission):
-        from .inventory import scan_library
         target = _allowed_path(payload.path, roots)
         if not target.is_dir():
             raise HTTPException(400, "Choose a library folder")
+        inventory_worker.start()
         try:
-            report = scan_library(target)
+            task = store.queue_library_scan(str(target))
         except ValueError as exc:
-            raise HTTPException(422, str(exc)) from exc
-        except OSError as exc:
-            raise HTTPException(503, "Library storage is unavailable") from exc
-        return store.save_library_scan(report)
+            raise HTTPException(409, str(exc)) from exc
+        inventory_worker.wake.set()
+        return task
+
+    @app.get('/api/library/scans', dependencies=[Depends(auth)])
+    def list_inventory(limit: int = 30):
+        allowed = []
+        for scan in store.list_library_scans(max(1, min(limit, 100))):
+            if _within(Path(scan['root']).resolve(), roots):
+                allowed.append(scan)
+        return {'scans': allowed}
 
     @app.get("/api/library/scans/{scan_id}", dependencies=[Depends(auth)])
     def get_inventory(scan_id: str):
+        from .inventory import with_reviews
         report = store.library_scan(scan_id)
         if report is None:
             raise HTTPException(404, "Scan not found")
         _allowed_path(report["root"], roots, must_exist=False)
-        return report
+        return with_reviews(report, store.library_finding_reviews(report['root']))
+
+    @app.post('/api/library/scans/{scan_id}/cancel', dependencies=[Depends(auth)])
+    def cancel_inventory(scan_id: str):
+        get_inventory(scan_id)
+        store.cancel_library_scan(scan_id)
+        return get_inventory(scan_id)
+
+    @app.put('/api/library/scans/{scan_id}/review', dependencies=[Depends(auth)])
+    def review_inventory(scan_id: str, payload: LibraryFindingReview):
+        report = get_inventory(scan_id)
+        book = next((b for b in report.get('books', []) if b['path'] == payload.folder), None)
+        if not book or book['fingerprint'] != payload.fingerprint:
+            raise HTTPException(409, 'Folder evidence changed; reload the scan')
+        if not any(f['key'] == payload.finding for f in book['findings']):
+            raise HTTPException(404, 'Finding not found')
+        store.review_library_finding(report['root'], book['path'], payload.finding,
+                                    book['fingerprint'], payload.note.strip() if payload.note else None)
+        return get_inventory(scan_id)
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:
