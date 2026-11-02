@@ -399,3 +399,8 @@ User-authorized frontend/backend change. Recovery preview now includes `markers`
 - PWA navigation uses HTML and modules from the same installed shell; API requests remain network-only. A waiting update never reloads the document automatically. Update readiness is shared state so Settings cannot miss a worker that finishes installing after its initial check; notices are deduplicated. The explicit Settings confirmation is still required, and its deferred callback is route-bound.
 - Fix the branding regression where favicon.ico was precached but rejected by the static MIME allowlist. Only the icon extension is added; traversal/unknown types remain denied. New API coverage fetches every shell asset, and a real-worker browser case covers installation/control, waiting updates, explicit activation/reload and offline navigation. Shell cache v17.
 - Status: implemented. No speech/model/worker/conversion algorithm, approval-token policy or media/publication behavior changes. Physical installed Safari/OS memory eviction remains a field check, not a diagnosed cause.
+
+### G-055 · Library health inventory foundation
+- Build: authenticated `POST /api/library/scans` and `GET /api/library/scans/{id}` persist metadata-only filesystem reports independently of repair jobs. Reports include candidate folders, findings, hardlink identity and uninspected integrity. No media changes, BookOrbit integration or physical reclaim estimate.
+- Proposed home: Library for inventory/findings, Suggestions for candidate actions, Book for file comparison, Settings for scan roots. Background scan/list/pagination and the review UI belong to phase 2 of `docs/plans/library-health.md`.
+- Owner: backend/frontend · Status: backend foundation only; UI not implemented.

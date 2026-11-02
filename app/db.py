@@ -47,6 +47,12 @@ class Store:
             db.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS library_scans (
+                    id TEXT PRIMARY KEY,
+                    created_at REAL NOT NULL,
+                    root TEXT NOT NULL,
+                    report TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS jobs (
                     id TEXT PRIMARY KEY,
                     path TEXT NOT NULL,
@@ -91,6 +97,20 @@ class Store:
     @staticmethod
     def _canonical(path: str | Path) -> str:
         return str(Path(path).expanduser().resolve())
+
+    def save_library_scan(self, report: dict[str, Any]) -> dict[str, Any]:
+        scan_id, created_at = str(uuid.uuid4()), time.time()
+        with self._connect() as db:
+            db.execute("INSERT INTO library_scans VALUES (?, ?, ?, ?)",
+                       (scan_id, created_at, report["root"], json.dumps(report)))
+        return {"id": scan_id, "created_at": created_at, **report}
+
+    def library_scan(self, scan_id: str) -> dict[str, Any] | None:
+        with self._connect() as db:
+            row = db.execute("SELECT * FROM library_scans WHERE id=?", (scan_id,)).fetchone()
+        if row is None:
+            return None
+        return {"id": row["id"], "created_at": row["created_at"], **json.loads(row["report"])}
 
     def enqueue(self, path: str | Path, options: dict[str, Any] | None = None) -> tuple[dict[str, Any], bool]:
         """Insert a job, or return the active job for this canonical source path."""

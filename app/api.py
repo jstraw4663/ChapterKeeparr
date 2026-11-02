@@ -27,6 +27,10 @@ class JobSubmission(BaseModel):
     selected_paths: list[str] | None = Field(default=None, max_length=1000)
 
 
+class LibraryScanSubmission(BaseModel):
+    path: str
+
+
 class ReviewAnswer(BaseModel):
     action: str | None = None
     asin: str | None = None
@@ -122,6 +126,28 @@ def create_app(store: Store | None = None) -> FastAPI:
     @app.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.post("/api/library/scans", dependencies=[Depends(auth)])
+    def scan_inventory(payload: LibraryScanSubmission):
+        from .inventory import scan_library
+        target = _allowed_path(payload.path, roots)
+        if not target.is_dir():
+            raise HTTPException(400, "Choose a library folder")
+        try:
+            report = scan_library(target)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(503, "Library storage is unavailable") from exc
+        return store.save_library_scan(report)
+
+    @app.get("/api/library/scans/{scan_id}", dependencies=[Depends(auth)])
+    def get_inventory(scan_id: str):
+        report = store.library_scan(scan_id)
+        if report is None:
+            raise HTTPException(404, "Scan not found")
+        _allowed_path(report["root"], roots, must_exist=False)
+        return report
 
     @app.get("/api/settings", dependencies=[Depends(auth)])
     def get_settings() -> dict[str, Any]:

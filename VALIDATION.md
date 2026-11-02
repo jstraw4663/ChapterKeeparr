@@ -316,3 +316,13 @@ Seven frontend tests pass. New unit cases cover close matches, preserving edits,
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+## Library inventory foundation — 2026-11-02
+
+- Inventory tests: 2 passed, including persistence/reopen, hardlink seed
+  preservation, symlink skipping, naming/empty-file findings and scan limits.
+- Existing database suite: 4 passed. Frontend/design/JS checks: 7 passed.
+- API tests added for scan authentication, persistence and path boundaries.
+  Runtime initially lacked requests; supplying it from a temporary dependency
+  directory and granting the test process network access resolved TestClient
+  stalls. All 9 API tests passed. No production media/container was accessed.

@@ -272,3 +272,12 @@ Picker search is collapsed behind the Out of chapter order search icon and filte
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+## Library health redirection — 2026-11-02
+
+Jeremy approved phased library maintenance: audit, review, staged conversions,
+then hardlink-safe publication/quarantine. See docs/plans/library-health.md for
+policy and deployment mappings. Initial backend adds persistent authenticated
+metadata-only scans; no UI, media writes or BookOrbit integration. Existing
+alignment jobs remain available but inventory scans never enqueue them. Keep the
+current test-library mount; production has not been connected or changed.

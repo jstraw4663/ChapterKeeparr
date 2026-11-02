@@ -57,6 +57,20 @@ class ApiTests(unittest.TestCase):
         submitted = self.client.post("/api/jobs", json={"path": str(self.outside)}, headers=self.headers)
         self.assertEqual(submitted.status_code, 403)
 
+    def test_inventory_auth_persistence_and_boundaries(self):
+        endpoint = '/api/library/scans'
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.root)}).status_code, 401)
+        response = self.client.post(endpoint, json={'path': str(self.root)}, headers=self.headers)
+        self.assertEqual(response.status_code, 200)
+        report = response.json()
+        self.assertEqual(report['inspection_level'], 'inventory_only')
+        self.assertEqual(self.client.get(endpoint + '/' + report['id'], headers=self.headers).json(), report)
+        self.assertEqual(self.client.get(endpoint + '/' + report['id']).status_code, 401)
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.root.parent)}, headers=self.headers).status_code, 403)
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.book)}, headers=self.headers).status_code, 400)
+        self.assertEqual(self.client.get(endpoint + '/missing', headers=self.headers).status_code, 404)
+        self.assertEqual(self.app.state.store.list_jobs(), [])
+
     def test_build_identity_and_manual_updates_require_auth(self):
         self.assertEqual(self.client.get('/api/settings').status_code, 401)
         self.assertEqual(self.client.get('/api/updates').status_code, 401)
