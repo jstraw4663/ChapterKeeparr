@@ -25,6 +25,11 @@ export function iconButton({ icon: ic, label, act, arg, cls = 'icb', disabled = 
   return html`<button type="button"${attrs({ class: cls, 'aria-label': label, title: disabled && disabledReason ? disabledReason : label, 'data-act': act, 'data-arg': arg, disabled, ...extra })}>${icon(ic, size)}</button>`;
 }
 
+/** Multi-select control: a 44px button with a circular checkbox indicator. */
+export function selectionBubble({ label, checked = false, mixed = false, act, arg, disabled = false }) {
+  return html`<button type="button" class="selection-bubble" role="checkbox" aria-label="${label}" aria-checked="${mixed ? 'mixed' : bool(checked)}" data-act="${act}" data-arg="${arg || ''}" ${disabled ? raw('disabled') : ''}><span aria-hidden="true">${checked || mixed ? icon(mixed ? 'more' : 'check', 14) : ''}</span></button>`;
+}
+
 /** Shared two-column chapter comparison, including narrow phone panels. */
 export function titleComparison({ existing, proposed, note = '' }) {
   return html`<span class="title-pair"><span class="pair-cell"><span class="meta">Existing</span><strong>${existing}</strong></span><span class="pair-cell"><span class="meta">Proposed</span><strong data-check-proposed>${proposed}</strong>${note ? html`<span class="meta pair-note">${note}</span>` : ''}</span></span>`;

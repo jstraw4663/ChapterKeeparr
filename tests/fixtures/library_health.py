@@ -5,11 +5,14 @@ import zipfile
 from pathlib import Path
 
 
-def write_epub(path, title):
+def write_epub(path, title, art=None):
     with zipfile.ZipFile(path, 'w') as z:
         z.writestr('mimetype', 'application/epub+zip')
         z.writestr('META-INF/container.xml', '<container><rootfiles><rootfile full-path="content.opf"/></rootfiles></container>')
-        z.writestr('content.opf', f'<package><metadata><title>{title}</title><creator>Fixture author</creator></metadata><manifest><item id="c" href="chapter.xhtml"/></manifest><spine><itemref idref="c"/></spine></package>')
+        cover = '<item id="cover" properties="cover-image" media-type="image/png" href="cover.png"/>' if art else ''
+        z.writestr('content.opf', f'<package><metadata><title>{title}</title><creator>Fixture author</creator></metadata><manifest>{cover}<item id="c" href="chapter.xhtml"/></manifest><spine><itemref idref="c"/></spine></package>')
+        if art:
+            z.writestr('cover.png', art.read_bytes())
         z.writestr('chapter.xhtml', '<html><body>Generated fixture text.</body></html>')
 
 
@@ -29,11 +32,16 @@ def seed(base):
         ('Ursula Le Guin/A Wizard of Earthsea (1968)', [], None),
         ('Unknown/Incomplete book', [], None),
     ]
-    for folder, ebooks, audiobook in samples:
+    for index, (folder, ebooks, audiobook) in enumerate(samples):
         book = root / folder
         book.mkdir(parents=True, exist_ok=True)
+        art = base / f'fixture-cover-{index}.png'
+        colors = ['0x5A3A36', '0x3D4F3A', '0x6B5238', '0x4A405D', '0x3E4B57', '0x6A493E']
+        subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', f'color=c={colors[index]}:s=128x192',
+                        '-vf', 'drawbox=x=14:y=24:w=100:h=8:color=white@0.8:t=fill,drawbox=x=14:y=44:w=72:h=6:color=white@0.5:t=fill,drawbox=x=14:y=154:w=80:h=4:color=white@0.5:t=fill',
+                        '-frames:v', '1', '-threads', '1', str(art)], check=True)
         for ebook in ebooks:
-            write_epub(book / ebook, book.name)
+            write_epub(book / ebook, book.name, art)
         if audiobook:
             target = book / audiobook
             if not target.exists():

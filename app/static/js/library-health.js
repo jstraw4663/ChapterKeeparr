@@ -21,6 +21,16 @@ export const INTEGRITY = {
 export const openFindings = book => book.findings.filter(f => !f.review_note);
 export const isPaired = book => ['epub', 'm4b'].every(format => book.files.filter(f => f.format === format).length === 1);
 export const bookBytes = book => book.files.reduce((sum, file) => sum + file.size_bytes, 0);
+export const selectedBooks = (books, selection = []) => books.filter(b => selection.includes(b.path));
+export const bookAuthor = book => [...new Set(book.files.map(f => f.author).filter(Boolean))].join(' · ') || 'Author unknown';
+export function selectionState(books, selection = []) {
+  const count = selectedBooks(books, selection).length;
+  return { count, checked: books.length > 0 && count === books.length, mixed: count > 0 && count < books.length };
+}
+export function reviewItems(books, mode) {
+  return books.flatMap(book => book.findings.filter(f => mode === 'keep' ? !f.review_note : Boolean(f.review_note))
+    .map(f => ({ folder: book.path, finding: f.key, fingerprint: book.fingerprint, note: mode === 'keep' ? 'Intentional library exception' : null })));
+}
 export function bytes(value) {
   if (value == null || !Number.isFinite(value)) return '—';
   if (value < 1024) return `${value} B`;

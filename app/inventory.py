@@ -123,10 +123,12 @@ class ScanCancelled(Exception):
 def with_reviews(report: dict, reviews: list[dict]) -> dict:
     decisions = {(r['folder'], r['finding'], r['fingerprint']): r['note'] for r in reviews}
     for book in report.get('books', []):
+        book.setdefault('id', hashlib.sha256(book['path'].encode()).hexdigest()[:24])
         # The first inventory slice saved reports before review identities existed.
         book.setdefault('title', Path(book['path']).name)
         book.setdefault('relative_path', os.path.relpath(book['path'], report['root']))
-        book.setdefault('fingerprint', hashlib.sha256(json.dumps(book['files'], sort_keys=True).encode()).hexdigest())
+        if 'fingerprint' not in book:
+            book['fingerprint'] = hashlib.sha256(json.dumps(book['files'], sort_keys=True).encode()).hexdigest()
         for finding in book['findings']:
             if 'key' not in finding:
                 finding['key'] = hashlib.sha256(json.dumps(finding, sort_keys=True).encode()).hexdigest()[:24]

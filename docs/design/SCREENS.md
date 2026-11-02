@@ -24,6 +24,19 @@ Every screen exists on desktop and phone with the same capabilities. For each on
 
 ## Library (home)
 
+**Library health update — 2026-11-02:** Jeremy approved a cover-first table for
+filesystem inventory. Columns are Cover, circular multi-selection, Book
+(title/embedded author/path), Files and audio (formats/count/size/runtime/chapters/
+hardlinks), Findings, and a trailing Review/Close action. Rows expand independently
+into Suggestions and Files and inspection. Selection actions include expand,
+collapse, confirmed Keep as is, Reopen and clear; selection outside the current
+filter is counted explicitly. Scan options/history collapse after completed scans,
+and Scan library remains in the page heading. Compact phone rows preserve all
+fields and actions. Reuse existing tokens/components; missing covers use the
+existing placeholder. See G-056 for the API and review constraints.
+
+The earlier chapter-job library specification below now applies to `#/repairs`.
+
 **Purpose:** see every book and its state; jump to anything that needs you.
 **Primary action:** Start reviewing (only when something needs review). Otherwise none; covers are the content.
 

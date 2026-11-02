@@ -193,6 +193,18 @@ class Store:
         with self._connect() as db:
             return [dict(r) for r in db.execute('SELECT * FROM library_finding_reviews WHERE root=?', (root,))]
 
+    def review_library_findings(self, root: str, items: list[dict]):
+        with self._connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            for item in items:
+                note = (item.get('note') or '').strip()
+                if not note:
+                    db.execute('DELETE FROM library_finding_reviews WHERE root=? AND folder=? AND finding=?',
+                               (root, item['folder'], item['finding']))
+                else:
+                    db.execute('INSERT OR REPLACE INTO library_finding_reviews VALUES (?,?,?,?,?)',
+                               (root, item['folder'], item['finding'], item['fingerprint'], note))
+
     def enqueue(self, path: str | Path, options: dict[str, Any] | None = None) -> tuple[dict[str, Any], bool]:
         """Insert a job, or return the active job for this canonical source path."""
         canonical = self._canonical(path)

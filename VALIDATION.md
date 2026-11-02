@@ -356,3 +356,36 @@ FFprobe checks the container and embedded chapters, not a full audio decode.
 Unsupported/oversize formats remain explicitly uninspected. Native mobile Safari,
 real NAS scale/performance and the owner-run test-container rollout remain field
 checks. File mutation/conversion/publishing are later phases.
+
+## Cover-first table and bulk review — 2026-11-02
+
+- User-requested table replaces the split view. Covers precede circular selection;
+  rows show title/embedded author/path, formats/count/logical size, M4B duration
+  and chapters, hardlinks, findings and trailing Review/Close. Multiple rows can
+  expand together. Scan options/history collapse after completion.
+- API suite: 11 tests pass, including all-or-nothing batch validation, batch
+  reopen, stale evidence/auth checks and authenticated artwork routing.
+- Artwork: 2 generated-media tests pass for local/EPUB thumbnail extraction,
+  caching, hardlinked image byte/mtime preservation, changed sources and final/
+  intermediate symlink rejection. Existing inventory (2), inspection/worker (6),
+  database (4) and frontend/design checks (7) pass.
+- JavaScript coverage includes mixed/all/empty matching selection, selection
+  retention across filters, batch payload scope, independent row expansion and
+  stale async review responses. Selection is cleared on scan/history changes.
+- Real browser checks pass in both themes at 390/768/1024/1440px, including
+  real local EPUB artwork, multiple expanded rows, explicit bulk confirmation,
+  batch keep/reopen, hidden-selection counts, keyboard Space selection, reload,
+  filtering, saved history and request failure handling. Pinned axe-core 4.10.3
+  WCAG checks passed on the table/expanded state in all eight theme/size cases.
+  Output: /tmp/chapterkeeparr-table-results and /tmp/chapterkeeparr-table-final.
+- Thumbnail writes are confined to the config cache; media remains read-only.
+  Covers without supported local artwork keep the existing generated placeholder.
+  PWA shell v19 contains the changed shared components. No Unraid, production
+  media, release workflow or published image was changed.
+
+CI follow-up: the previous scan UI commit's run 41469387085 passed the existing
+suites but sampled the sidebar Activity card during its 1024→1440 resize fade in
+the new library browser test. The table workflow now waits for the actual
+media-query collapse/inert state and final expanded opacity before auditing.
+All WCAG/color-contrast rules remain enabled; no app colors or motion were
+changed to hide the failure. The updated CI run remains to be observed.

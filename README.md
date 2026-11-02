@@ -21,10 +21,14 @@ The web UI follows the redesign in [`docs/design/`](docs/design/): start with [R
 
 Library home now supports persistent read-only folder scans, EPUB structure/CRC
 checks, audio container/chapter inspection, format and naming findings, scan
-history and responsive folder/file review. Enter the server path (`/library` in
+history and a cover-first library table with inline file review. Enter the server path (`/library` in
 the ChapterKeeparr container), then choose **Scan library**. Scan progress and
 cancellation work even when chapter-repair workers are paused. **Keep as is**
-records an intentional exception; **Reopen** restores it for review. Changed
+records an intentional exception; **Reopen** restores it for review. Select books
+with the circular controls to expand/collapse rows or review selected findings
+together. The heading selection control selects all matching books, including
+additional pages; selections hidden by filters are counted explicitly. Covers
+come from local images, EPUBs or embedded audiobook art. Changed
 scan evidence reopens earlier exceptions automatically.
 
 Inspection does not prove complete books, matching editions or accurate chapters.

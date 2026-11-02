@@ -48,6 +48,7 @@ export const api = {
   startLibraryScan: path => request('/api/library/scans', { method: 'POST', body: { path } }),
   cancelLibraryScan: scanId => request(`/api/library/scans/${id(scanId)}/cancel`, { method: 'POST' }),
   reviewLibraryFinding: (scanId, body) => request(`/api/library/scans/${id(scanId)}/review`, { method: 'PUT', body }),
+  reviewLibraryFindings: (scanId, items) => request(`/api/library/scans/${id(scanId)}/reviews`, { method: 'PUT', body: { items } }),
   updates: () => request('/api/updates'),
   setRecoveryMinimum: percent => request('/api/settings/recovery', { method: 'PUT', body: { recovery_minimum_percent: percent } }),
 
@@ -73,7 +74,11 @@ export const api = {
   report: jobId => request(`/api/jobs/${id(jobId)}/report`),
 
   async coverBlob(jobId) {
-    const response = await request(`/api/jobs/${id(jobId)}/cover`, { raw: true });
+    const parts = String(jobId).split(':');
+    const path = parts[0] === 'inventory' && parts.length === 3
+      ? `/api/library/scans/${id(parts[1])}/covers/${id(parts[2])}`
+      : `/api/jobs/${id(jobId)}/cover`;
+    const response = await request(path, { raw: true });
     return response.blob();
   },
   /** Evidence files (check excerpts) live under the job's report folder. */

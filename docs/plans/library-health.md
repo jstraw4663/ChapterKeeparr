@@ -86,3 +86,19 @@ crash recovery, quarantine restore, API incompatibility and active-book tests.
 Run relevant Python suites and JS syntax/frontend checks. Validate on the test
 mapping before a production read-only audit; enable writes only after publication
 and restore tests pass. Jeremy controls image publication, merging and releases.
+
+## Table review iteration
+
+User-approved presentation replaces the split workspace with a cover-first table.
+Each row carries selection, title/author/path, format and size/audio information,
+findings and a trailing Review/Close action. Inline expansion is independent per
+book and supports several open rows. Selection persists across filters with a
+hidden-selection count and resets on scan changes. Bulk actions expand/collapse
+selected rows or record/reopen evidence-bound exceptions; bulk Keep as is has an
+explicit count/confirmation. No file operation is authorized by selection.
+
+Authenticated `GET /api/library/scans/{id}/covers/{book_id}` serves config-cached
+local thumbnails. `PUT /api/library/scans/{id}/reviews` accepts a nonempty bounded
+`items` array using the existing single-review fields; all items validate before
+one transaction. Sources remain read-only and confined to fingerprinted regular
+files under the configured root, including checks against intermediate symlinks.

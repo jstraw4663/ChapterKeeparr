@@ -295,3 +295,18 @@ policy and deployment mappings. Initial backend adds persistent authenticated
 metadata-only scans; no UI, media writes or BookOrbit integration. Existing
 alignment jobs remain available but inventory scans never enqueue them. Keep the
 current test-library mount; production has not been connected or changed.
+
+## Cover-first inventory table — 2026-11-02
+
+Jeremy requested a readable list/table with covers, multi-selection, trailing row
+actions and expandable details. Library now uses that layout instead of a split
+view. Multiple rows can expand together; circular checkbox buttons expose mixed
+selection, select all matching books, hidden selection counts and bulk review
+controls. Bulk Keep as is asks for confirmation and validates all findings before
+one database transaction; Reopen reverses review choices. Neither modifies media.
+Artwork uses authenticated cached thumbnails from scanned cover images, EPUB
+cover references or embedded audiobook art, with the existing generated fallback.
+Fingerprint-bound no-symlink descriptors protect source access. Scan controls and
+history collapse after completion, with Scan library available in the heading.
+PWA shell v19; shared tokens/components remain authoritative. See G-056 and the
+validation notes. No production library, image publication or Unraid change.

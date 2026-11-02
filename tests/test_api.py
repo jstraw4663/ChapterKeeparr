@@ -26,6 +26,7 @@ class ApiTests(unittest.TestCase):
         self.outside.touch()
         self.env = patch.dict(os.environ, {
             "LIBRARY_ROOTS": str(self.root),
+            "CONFIG_DIR": str(Path(self.temp.name) / 'config'),
             "CHAPTERKEEPER_API_TOKEN": "test-token",
             "ENABLE_WORKERS": "0",
         })
@@ -113,6 +114,28 @@ class ApiTests(unittest.TestCase):
             cancelled = self.client.post(endpoint + '/' + first.json()['id'] + '/cancel', headers=self.headers)
             self.assertEqual(cancelled.json()['status'], 'cancelled')
         self.assertEqual(self.app.state.store.list_jobs(), [])
+
+    def test_inventory_batch_review_validates_all_items_before_writing(self):
+        from app.inventory import scan_library
+        endpoint = '/api/library/scans'
+        saved = self.app.state.store.save_library_scan(scan_library(self.root))
+        report = self.client.get(endpoint + '/' + saved['id'], headers=self.headers).json()
+        book = report['books'][0]
+        items = [{'folder': book['path'], 'finding': f['key'], 'fingerprint': book['fingerprint'], 'note': 'Keep intentionally'} for f in book['findings']]
+        target = endpoint + '/' + saved['id'] + '/reviews'
+        self.assertEqual(self.client.put(target, json={'items': items}).status_code, 401)
+        invalid = [*items, {**items[0], 'finding': 'absent'}]
+        self.assertEqual(self.client.put(target, json={'items': invalid}, headers=self.headers).status_code, 404)
+        self.assertEqual(self.app.state.store.library_finding_reviews(str(self.root)), [])
+        self.assertEqual(self.client.put(target, json={'items': items}, headers=self.headers).status_code, 200)
+        self.assertEqual(len(self.app.state.store.library_finding_reviews(str(self.root))), len(items))
+        for item in items:
+            item['note'] = None
+        self.assertEqual(self.client.put(target, json={'items': items}, headers=self.headers).status_code, 200)
+        self.assertEqual(self.app.state.store.library_finding_reviews(str(self.root)), [])
+        art = endpoint + '/' + saved['id'] + '/covers/' + book['id']
+        self.assertEqual(self.client.get(art).status_code, 401)
+        self.assertEqual(self.client.get(art, headers=self.headers).status_code, 404)
 
     def test_submission_dedup_and_job_actions(self):
         with patch("app.engine.discover_jobs", return_value=([self.book], [])):

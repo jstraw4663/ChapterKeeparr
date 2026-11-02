@@ -38,6 +38,10 @@ class LibraryFindingReview(BaseModel):
     note: str | None = Field(default=None, max_length=500)
 
 
+class LibraryFindingReviews(BaseModel):
+    items: list[LibraryFindingReview] = Field(min_length=1, max_length=10000)
+
+
 class ReviewAnswer(BaseModel):
     action: str | None = None
     asin: str | None = None
@@ -175,6 +179,18 @@ def create_app(store: Store | None = None) -> FastAPI:
         store.cancel_library_scan(scan_id)
         return get_inventory(scan_id)
 
+    @app.get('/api/library/scans/{scan_id}/covers/{book_id}', dependencies=[Depends(auth)])
+    def inventory_cover(scan_id: str, book_id: str):
+        from .library_artwork import library_cover
+        report = get_inventory(scan_id)
+        book = next((b for b in report.get('books', []) if b['id'] == book_id), None)
+        if not book:
+            raise HTTPException(404, 'Book folder not found')
+        cover = library_cover(report['root'], book, Path(settings['config_dir']) / 'media-cache' / 'library-covers')
+        if cover is None:
+            raise HTTPException(404, 'Local cover unavailable')
+        return FileResponse(cover, media_type='image/jpeg', headers={'Cache-Control': 'private, no-store'})
+
     @app.put('/api/library/scans/{scan_id}/review', dependencies=[Depends(auth)])
     def review_inventory(scan_id: str, payload: LibraryFindingReview):
         report = get_inventory(scan_id)
@@ -185,6 +201,19 @@ def create_app(store: Store | None = None) -> FastAPI:
             raise HTTPException(404, 'Finding not found')
         store.review_library_finding(report['root'], book['path'], payload.finding,
                                     book['fingerprint'], payload.note.strip() if payload.note else None)
+        return get_inventory(scan_id)
+
+    @app.put('/api/library/scans/{scan_id}/reviews', dependencies=[Depends(auth)])
+    def review_inventory_batch(scan_id: str, payload: LibraryFindingReviews):
+        report = get_inventory(scan_id)
+        books = {b['path']: b for b in report.get('books', [])}
+        for item in payload.items:
+            book = books.get(item.folder)
+            if not book or book['fingerprint'] != item.fingerprint:
+                raise HTTPException(409, 'Folder evidence changed; reload the scan')
+            if not any(f['key'] == item.finding for f in book['findings']):
+                raise HTTPException(404, 'Finding not found')
+        store.review_library_findings(report['root'], [item.model_dump() for item in payload.items])
         return get_inventory(scan_id)
 
     @app.get("/api/settings", dependencies=[Depends(auth)])

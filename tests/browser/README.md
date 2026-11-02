@@ -76,3 +76,9 @@ never target production. It checks both themes at 390/768/1024/1440 px, persiste
 reviews, filters, saved history, errors and accessibility. CI runs it against a
 separate fixture server and includes its reports/screenshots in the existing
 artifact. The legacy repair library is still reachable at `#/repairs`.
+
+The library workflow now exercises the cover-first table: generated EPUB artwork,
+independent row disclosures, circular mixed/all matching selection, keyboard Space,
+hidden selections, confirmed bulk exceptions and batch reopen. The saved-history
+check waits for scan completion before opening options. Resize audits wait for
+sidebar collapse/inert state and final opacity, retaining all contrast rules.
