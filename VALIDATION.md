@@ -316,3 +316,76 @@ Seven frontend tests pass. New unit cases cover close matches, preserving edits,
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+## Library inventory foundation — 2026-11-02
+
+- Inventory tests: 2 passed, including persistence/reopen, hardlink seed
+  preservation, symlink skipping, naming/empty-file findings and scan limits.
+- Existing database suite: 4 passed. Frontend/design/JS checks: 7 passed.
+- API tests added for scan authentication, persistence and path boundaries.
+  Runtime initially lacked requests; supplying it from a temporary dependency
+  directory and granting the test process network access resolved TestClient
+  stalls. All 9 API tests passed. No production media/container was accessed.
+
+## Library scan/review UI milestone — 2026-11-02
+
+- API: 10 tests passed, including authentication, configured-root restrictions,
+  background completion, history, stale review fingerprints, cancellation and
+  exclusion from the repair queue.
+- Inventory: 2 tests passed. Structural inspection/worker/migration: 6 passed,
+  including malformed EPUB spine references, generated AAC probing with an
+  external hardlink, seed bytes/inode/mtime preservation, review invalidation,
+  single-active-scan enforcement, restart recovery, cancellation and special files.
+- Database: 4 tests passed. Frontend/design: 7 checks passed, including all
+  JavaScript unit tests and module syntax checks; the new pure library-health
+  tests cover filtering, format pairing, review counts, sorting, unknown size and
+  a delayed review response after changing the selected scan.
+- Real synthetic-media browser workflow passed at 390, 768, 1024 and 1440 px in
+  both themes, with WCAG 2.2 AA checks using pinned axe-core 4.10.3. Covered real
+  scan submission/completion, review/reopen persistence, reload, filters/search,
+  history selection, failure handling, no horizontal overflow and unique IDs.
+  Disposable fixture and workflow are wired into CI. Local output:
+  /tmp/chapterkeeparr-health-results (screenshots, axe reports, observations).
+- Existing chapter-review interaction checks passed in both themes, and the real
+  PWA control/update/explicit reload/offline-shell lifecycle passed. No production
+  library, seeding payload, Unraid configuration or published image was accessed.
+
+Known limits: scan reports are bounded whole snapshots; folder groups are only
+book candidates. Exact content duplicates and edition matching are not verified.
+FFprobe checks the container and embedded chapters, not a full audio decode.
+Unsupported/oversize formats remain explicitly uninspected. Native mobile Safari,
+real NAS scale/performance and the owner-run test-container rollout remain field
+checks. File mutation/conversion/publishing are later phases.
+
+## Cover-first table and bulk review — 2026-11-02
+
+- User-requested table replaces the split view. Covers precede circular selection;
+  rows show title/embedded author/path, formats/count/logical size, M4B duration
+  and chapters, hardlinks, findings and trailing Review/Close. Multiple rows can
+  expand together. Scan options/history collapse after completion.
+- API suite: 11 tests pass, including all-or-nothing batch validation, batch
+  reopen, stale evidence/auth checks and authenticated artwork routing.
+- Artwork: 2 generated-media tests pass for local/EPUB thumbnail extraction,
+  caching, hardlinked image byte/mtime preservation, changed sources and final/
+  intermediate symlink rejection. Existing inventory (2), inspection/worker (6),
+  database (4) and frontend/design checks (7) pass.
+- JavaScript coverage includes mixed/all/empty matching selection, selection
+  retention across filters, batch payload scope, independent row expansion and
+  stale async review responses. Selection is cleared on scan/history changes.
+- Real browser checks pass in both themes at 390/768/1024/1440px, including
+  real local EPUB artwork, multiple expanded rows, explicit bulk confirmation,
+  batch keep/reopen, hidden-selection counts, keyboard Space selection, reload,
+  filtering, saved history and request failure handling. Pinned axe-core 4.10.3
+  WCAG checks passed on the table/expanded state in all eight theme/size cases.
+  Output: /tmp/chapterkeeparr-table-results and /tmp/chapterkeeparr-table-final.
+- Thumbnail writes are confined to the config cache; media remains read-only.
+  Covers without supported local artwork keep the existing generated placeholder.
+  PWA shell v19 contains the changed shared components. No Unraid, production
+  media, release workflow or published image was changed.
+
+CI follow-up: the previous scan UI commit's run 41469387085 passed the existing
+suites but sampled the sidebar Activity card during its 1024→1440 resize fade in
+the new library browser test. The table workflow now waits for the actual
+media-query collapse/inert state and final expanded opacity before auditing.
+All WCAG/color-contrast rules remain enabled; no app colors or motion were
+changed to hide the failure. The updated CI run remains to be observed.

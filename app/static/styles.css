@@ -1061,3 +1061,82 @@ html[data-motion="reduce"] .cr-body,html[data-motion="reduce"] .cr-sum,html[data
   :root:not([data-theme="light"]) .brand-on-dark{display:block}
 }
 @media(max-width:767px){.mh-word .brand-wordmark{width:143px;height:18px}}
+
+/* Library health: cover-first table with inline review and circular selection. */
+.selection-bubble{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:var(--primary-ink);flex-shrink:0;cursor:pointer}
+.selection-bubble>span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:var(--radius-pill);border:2px solid var(--muted)}
+.selection-bubble[aria-checked="true"]>span,.selection-bubble[aria-checked="mixed"]>span{background:var(--primary);border-color:var(--primary)}
+.selection-bubble:hover>span{outline:3px solid var(--raised)}
+.selection-bubble:disabled{opacity:.4;cursor:default}
+.health-page{padding-block:24px;min-width:0}
+.health-page .tab{height:44px}
+.health-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.health-heading .meta{margin-top:8px}
+.health-scan-form{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+.health-wrap{flex-wrap:wrap}
+.health-path{overflow-wrap:anywhere;word-break:normal;min-width:0}
+.health-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:18px;margin:0}
+.health-summary dt{font-size:13px;color:var(--muted)}
+.health-summary dd{margin:4px 0 0;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.health-filter-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,240px);gap:16px}
+.health-selection-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:44px}
+.health-bulk-confirm{display:flex;flex-direction:column;gap:16px}
+.health-table-panel{overflow:hidden}
+.health-table{width:100%;table-layout:fixed;border-collapse:collapse;text-align:left}
+.health-table th,.health-table td{padding:16px 12px;vertical-align:top;border-bottom:1px solid var(--line)}
+.health-table thead th{font-size:12px;font-weight:600;color:var(--muted);vertical-align:middle;background:var(--raised);padding-block:8px}
+.health-table .health-art-cell{width:76px;padding-right:0}
+.health-table .health-select-cell{width:52px;padding:12px 4px}
+.health-table .health-format-cell{width:22%}
+.health-table .health-findings-cell{width:27%}
+.health-table .health-action-cell{width:112px;text-align:right}
+.health-action-cell .btn{padding-inline:10px;gap:4px;font-size:13px}
+.health-book-cell>strong,.health-book-cell>span,.health-format-cell>span,.health-findings-cell>span{display:block;margin-top:6px}
+.health-book-cell>strong{margin-top:0;font-size:15px;font-weight:800}
+.health-book-cell>span{font-weight:500}
+.health-folder-path{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.health-book-row.is-selected{background:var(--raised)}
+.health-book-row:hover{background:var(--hover)}
+.health-findings-cell>.pill{display:inline-flex;margin-top:0}
+.health-findings-cell>span:empty{display:none}
+.health-table .health-expanded-row>td{padding:20px;background:var(--raised)}
+.health-expanded-row[hidden]{display:none}
+.health-row-panels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.health-row-panels>*{min-width:0}
+.health-findings,.health-files{display:flex;flex-direction:column}
+.health-finding{display:flex;align-items:start;gap:12px;padding:16px 0;border-top:1px solid var(--line)}
+.health-finding:first-child,.health-file:first-child{border-top:0}
+.health-file{display:flex;flex-direction:column;gap:10px;padding:18px 0;border-top:1px solid var(--line)}
+.health-issues{padding:0;list-style:none;max-height:360px;overflow:auto}
+.health-issues li{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.health-error{border-color:var(--bad)}
+@media(max-width:1199px){
+  .health-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .health-table,.health-table thead,.health-table tbody{display:block}
+  .health-table thead tr,.health-book-row{display:grid;grid-template-columns:64px 44px minmax(0,1fr) 112px;padding:12px;gap:6px 0;border-bottom:1px solid var(--line)}
+  .health-table thead tr{padding-block:0;background:var(--raised);align-items:center}
+  .health-table thead .health-art-cell,.health-table thead .health-format-cell,.health-table thead .health-findings-cell{display:none}
+  .health-table th,.health-table td{width:auto!important;border:0;padding:0}
+  .health-table .health-art-cell{grid-column:1;grid-row:1 / span 3;padding:0}
+  .health-table .health-select-cell{grid-column:2;grid-row:1;padding:0}
+  .health-table .health-book-cell{grid-column:3;grid-row:1}
+  .health-table .health-action-cell{grid-column:4;grid-row:1}
+  .health-table .health-format-cell{grid-column:3 / -1;grid-row:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .health-table .health-findings-cell{grid-column:3 / -1;grid-row:3}
+  .health-table .health-expanded-row{display:block}
+  .health-table .health-expanded-row[hidden]{display:none}
+  .health-table .health-expanded-row>td{display:block;padding:16px}
+  .health-row-panels{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:767px){
+  .health-page{padding-block:12px}
+  .health-heading{align-items:start;flex-direction:column}
+  .health-filter-fields{grid-template-columns:minmax(0,1fr)}
+  .health-summary{gap:16px 10px}
+  .health-summary dt{font-size:12px}
+  .health-summary dd{font-size:18px}
+  .health-table thead tr,.health-book-row{grid-template-columns:56px 44px minmax(0,1fr) 80px;padding-inline:10px}
+  .health-table .health-action-cell .btn{padding-inline:10px;gap:4px;font-size:13px}
+  .health-table .health-format-cell,.health-table .health-findings-cell{grid-column:1 / -1}
+  .health-finding{flex-direction:column}
+}

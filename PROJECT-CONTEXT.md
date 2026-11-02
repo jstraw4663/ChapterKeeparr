@@ -1,5 +1,19 @@
 # ChapterKeeparr project context
 
+## Library scan and review milestone — 2026-11-02
+
+Jeremy authorized the initial scan/review UI using the existing design language.
+Library home is now a filesystem inventory; the repair-job library remains at
+`#/repairs`. One independent worker persists progress, cancellation and history;
+restart-interrupted scans fail visibly. Structural EPUB CRC/spine checks and
+bounded audio probes distinguish checked structure from unverified completeness.
+Folder/file review supports filters, search/sort and Keep as is/Reopen choices
+bound to scanned evidence. No library writes, BookOrbit calls, image publication
+or production mapping changes occur. Schema migrations preserve existing state;
+PWA shell v18 includes the new modules. See docs/plans/library-health.md and
+VALIDATION.md for scope and fixture checks.
+
+
 ## Stable navigation, reads and PWA shell — 2026-10-20
 
 Jeremy reports most screens briefly opening and then appearing to reload, especially in the installed PWA. Reproduced an actual native-transition race: a skipped old update callback can still overwrite the latest screen. Added navigation generations, route-bound async rendering/focus/handoffs and frame-coalesced background patches. Relevant per-book signatures keep unrelated progress from remounting a selected book/review. The same canonical draft retains browser choices/consent; a real evidence change still resets approval.
@@ -272,3 +286,27 @@ Picker search is collapsed behind the Out of chapter order search icon and filte
 
 
 Theme fade update (2026-10-02): removed cascading inherited text transitions; body text and default surfaces fade in 180ms. Frontend suite (7 tests), JS syntax and whitespace checks pass. Headless Chrome dark/light label colors stable by 600ms.
+
+## Library health redirection — 2026-11-02
+
+Jeremy approved phased library maintenance: audit, review, staged conversions,
+then hardlink-safe publication/quarantine. See docs/plans/library-health.md for
+policy and deployment mappings. Initial backend adds persistent authenticated
+metadata-only scans; no UI, media writes or BookOrbit integration. Existing
+alignment jobs remain available but inventory scans never enqueue them. Keep the
+current test-library mount; production has not been connected or changed.
+
+## Cover-first inventory table — 2026-11-02
+
+Jeremy requested a readable list/table with covers, multi-selection, trailing row
+actions and expandable details. Library now uses that layout instead of a split
+view. Multiple rows can expand together; circular checkbox buttons expose mixed
+selection, select all matching books, hidden selection counts and bulk review
+controls. Bulk Keep as is asks for confirmation and validates all findings before
+one database transaction; Reopen reverses review choices. Neither modifies media.
+Artwork uses authenticated cached thumbnails from scanned cover images, EPUB
+cover references or embedded audiobook art, with the existing generated fallback.
+Fingerprint-bound no-symlink descriptors protect source access. Scan controls and
+history collapse after completion, with Scan library available in the heading.
+PWA shell v19; shared tokens/components remain authoritative. See G-056 and the
+validation notes. No production library, image publication or Unraid change.

@@ -1,4 +1,5 @@
 import os
+import time
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,6 +26,7 @@ class ApiTests(unittest.TestCase):
         self.outside.touch()
         self.env = patch.dict(os.environ, {
             "LIBRARY_ROOTS": str(self.root),
+            "CONFIG_DIR": str(Path(self.temp.name) / 'config'),
             "CHAPTERKEEPER_API_TOKEN": "test-token",
             "ENABLE_WORKERS": "0",
         })
@@ -32,6 +34,7 @@ class ApiTests(unittest.TestCase):
         self.addCleanup(self.env.stop)
         self.app = create_app(Store(Path(self.temp.name) / "queue.sqlite3"))
         self.client = TestClient(self.app)
+        self.addCleanup(self.app.state.inventory_worker.stop)
         self.headers = {"Authorization": "Bearer test-token"}
 
     def test_installed_pwa_can_fetch_every_precached_shell_asset(self):
@@ -57,6 +60,26 @@ class ApiTests(unittest.TestCase):
         submitted = self.client.post("/api/jobs", json={"path": str(self.outside)}, headers=self.headers)
         self.assertEqual(submitted.status_code, 403)
 
+    def test_inventory_auth_persistence_and_boundaries(self):
+        endpoint = '/api/library/scans'
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.root)}).status_code, 401)
+        response = self.client.post(endpoint, json={'path': str(self.root)}, headers=self.headers)
+        self.assertEqual(response.status_code, 202)
+        task = response.json()
+        for _ in range(100):
+            report = self.client.get(endpoint + '/' + task['id'], headers=self.headers).json()
+            if report['status'] not in ('queued', 'running'):
+                break
+            time.sleep(0.02)
+        self.assertEqual(report['status'], 'completed')
+        self.assertEqual(report['inspection_level'], 'structural')
+        self.assertEqual(self.client.get(endpoint + '/' + report['id'], headers=self.headers).json(), report)
+        self.assertEqual(self.client.get(endpoint + '/' + report['id']).status_code, 401)
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.root.parent)}, headers=self.headers).status_code, 403)
+        self.assertEqual(self.client.post(endpoint, json={'path': str(self.book)}, headers=self.headers).status_code, 400)
+        self.assertEqual(self.client.get(endpoint + '/missing', headers=self.headers).status_code, 404)
+        self.assertEqual(self.app.state.store.list_jobs(), [])
+
     def test_build_identity_and_manual_updates_require_auth(self):
         self.assertEqual(self.client.get('/api/settings').status_code, 401)
         self.assertEqual(self.client.get('/api/updates').status_code, 401)
@@ -68,6 +91,51 @@ class ApiTests(unittest.TestCase):
             result = self.client.get('/api/updates', headers=self.headers)
         self.assertEqual(result.status_code, 200)
         self.assertEqual(result.json()['state'], 'unknown')
+
+    def test_inventory_reviews_and_cancellation_are_separate_from_repairs(self):
+        from app.inventory import scan_library
+        endpoint = '/api/library/scans'
+        saved = self.app.state.store.save_library_scan(scan_library(self.root))
+        book = saved['books'][0]
+        finding = book['findings'][0]
+        payload = {'folder': book['path'], 'finding': finding['key'],
+                   'fingerprint': book['fingerprint'], 'note': 'Intentional exception'}
+        reviewed = self.client.put(endpoint + '/' + saved['id'] + '/review', json=payload, headers=self.headers)
+        self.assertEqual(reviewed.status_code, 200)
+        self.assertEqual(reviewed.json()['books'][0]['findings'][0]['review_note'], 'Intentional exception')
+        payload['fingerprint'] = 'stale'
+        self.assertEqual(self.client.put(endpoint + '/' + saved['id'] + '/review', json=payload, headers=self.headers).status_code, 409)
+        self.assertEqual(self.client.get(endpoint).status_code, 401)
+        self.assertEqual(len(self.client.get(endpoint, headers=self.headers).json()['scans']), 1)
+        with patch.object(self.app.state.inventory_worker, 'start'):
+            first = self.client.post(endpoint, json={'path': str(self.root)}, headers=self.headers)
+            self.assertEqual(first.status_code, 202)
+            self.assertEqual(self.client.post(endpoint, json={'path': str(self.root)}, headers=self.headers).status_code, 409)
+            cancelled = self.client.post(endpoint + '/' + first.json()['id'] + '/cancel', headers=self.headers)
+            self.assertEqual(cancelled.json()['status'], 'cancelled')
+        self.assertEqual(self.app.state.store.list_jobs(), [])
+
+    def test_inventory_batch_review_validates_all_items_before_writing(self):
+        from app.inventory import scan_library
+        endpoint = '/api/library/scans'
+        saved = self.app.state.store.save_library_scan(scan_library(self.root))
+        report = self.client.get(endpoint + '/' + saved['id'], headers=self.headers).json()
+        book = report['books'][0]
+        items = [{'folder': book['path'], 'finding': f['key'], 'fingerprint': book['fingerprint'], 'note': 'Keep intentionally'} for f in book['findings']]
+        target = endpoint + '/' + saved['id'] + '/reviews'
+        self.assertEqual(self.client.put(target, json={'items': items}).status_code, 401)
+        invalid = [*items, {**items[0], 'finding': 'absent'}]
+        self.assertEqual(self.client.put(target, json={'items': invalid}, headers=self.headers).status_code, 404)
+        self.assertEqual(self.app.state.store.library_finding_reviews(str(self.root)), [])
+        self.assertEqual(self.client.put(target, json={'items': items}, headers=self.headers).status_code, 200)
+        self.assertEqual(len(self.app.state.store.library_finding_reviews(str(self.root))), len(items))
+        for item in items:
+            item['note'] = None
+        self.assertEqual(self.client.put(target, json={'items': items}, headers=self.headers).status_code, 200)
+        self.assertEqual(self.app.state.store.library_finding_reviews(str(self.root)), [])
+        art = endpoint + '/' + saved['id'] + '/covers/' + book['id']
+        self.assertEqual(self.client.get(art).status_code, 401)
+        self.assertEqual(self.client.get(art, headers=self.headers).status_code, 404)
 
     def test_submission_dedup_and_job_actions(self):
         with patch("app.engine.discover_jobs", return_value=([self.book], [])):

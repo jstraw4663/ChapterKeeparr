@@ -58,3 +58,27 @@ The synthetic match-quality workflow runs both themes at 320/390/820/1440 px wit
 Run `python tests/browser/flow_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/flow` against the disposable server (or `--pwa-only` while checking worker lifecycle). Eight theme/390px/1024px/reduced/live-motion contexts hold actual read responses, progress another job, and verify zero selected-view DOM mutations for unrelated progress; focused input/caret/scroll retention; retained chapter evidence with save blocked during refresh; unchanged-token consent retention versus changed-token reset; single shared reads; chapter refresh failure/retry; late completion after leaving; latest rapid navigation; and one document boot through all hash navigation/polls. API mutations are blocked.
 
 A separate real-service-worker context installs/controls the app, queues a waiting update via a different worker script URL, changes tabs with no document reload, explicitly confirms Settings activation/reload, and reloads offline from the cached installed shell. SessionStorage boot counters prove which operations create a new document. This catches failures that a mocked worker or worker-blocked layout test cannot, including missing precache assets. API tests also fetch the entire shell list over the real static route and retain traversal/type-denial checks. Physical Safari/iOS or OS memory-pressure reloads are not simulated.
+
+## Library health scans
+
+`tests/fixtures/library_health.py /tmp/ck-health-check` creates six synthetic book
+folders, valid/broken EPUBs, generated audio and library links to an outside seed
+fixture. Run the app with `ENABLE_WORKERS=0`, `LIBRARY_ROOTS` set to that fixture's
+`library`, and a dedicated config folder. Then run:
+
+```sh
+python tests/browser/library_health.py --base-url http://127.0.0.1:8768 --axe /tmp/axe.min.js
+```
+
+Pass `--chromium /usr/bin/chromium` for a system browser. This test submits real
+read-only scans and writes review choices to the disposable database; it must
+never target production. It checks both themes at 390/768/1024/1440 px, persisted
+reviews, filters, saved history, errors and accessibility. CI runs it against a
+separate fixture server and includes its reports/screenshots in the existing
+artifact. The legacy repair library is still reachable at `#/repairs`.
+
+The library workflow now exercises the cover-first table: generated EPUB artwork,
+independent row disclosures, circular mixed/all matching selection, keyboard Space,
+hidden selections, confirmed bulk exceptions and batch reopen. The saved-history
+check waits for scan completion before opening options. Resize audits wait for
+sidebar collapse/inert state and final opacity, retaining all contrast rules.

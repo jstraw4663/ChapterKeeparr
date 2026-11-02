@@ -68,6 +68,22 @@ jobs:
           python tests/browser/match_quality.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/quality
           python tests/browser/branding.py --output /tmp/ck-ui-results/branding
           python tests/browser/flow_stability.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/flow
+      - name: Run library health browser checks
+        run: |
+          python tests/fixtures/library_health.py /tmp/ck-health-check
+          ENABLE_WORKERS=0 CONFIG_DIR=/tmp/ck-health-check/config LIBRARY_ROOTS=/tmp/ck-health-check/library python -m uvicorn app.api:create_app --factory --port 8768 > /tmp/ck-health-server.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8768/api/health', timeout=1)
+                  break
+              except OSError:
+                  time.sleep(.25)
+          else:
+              raise RuntimeError('Library health fixture server did not start')
+          PY
+          python tests/browser/library_health.py --axe /tmp/axe.min.js --output /tmp/ck-ui-results/library-health
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
@@ -75,6 +91,7 @@ jobs:
           path: |
             /tmp/ck-ui-results
             /tmp/ck-ui-server.log
+            /tmp/ck-health-server.log
 
   image:
     needs: test

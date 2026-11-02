@@ -14,7 +14,8 @@ import { emptyState } from './ui.js';
 import { morphInto } from './morph.js';
 import { transition, kindOf, stripEntrance, syncInks, syncTabbarInk } from './transitions.js';
 
-import library from './screens/library.js';
+import repairs from './screens/library.js';
+import library from './screens/inventory.js';
 import queue from './screens/queue.js';
 import review from './screens/review.js';
 import book from './screens/book.js';
@@ -22,7 +23,7 @@ import newjob from './screens/newjob.js';
 import suggestions from './screens/suggestions.js';
 import settings from './screens/settings.js';
 
-const SCREENS = { library, queue, review, book, newjob, suggestions, settings };
+const SCREENS = { library, repairs, queue, review, book, newjob, suggestions, settings };
 const phoneQuery = window.matchMedia('(max-width: 767px)');
 
 let route = null;
@@ -155,7 +156,7 @@ function go() {
     ui.menu = null;
     route = next;
     screen = SCREENS[route.name];
-    setScreenChrome({ topbar: screen.topbar !== false, detail: typeof screen.detail === 'function' ? screen.detail(ctx()) : Boolean(screen.detail && phone) });
+    setScreenChrome({ topbar: screen.topbar !== false, search: screen.search !== false, detail: typeof screen.detail === 'function' ? screen.detail(ctx()) : Boolean(screen.detail && phone) });
     document.title = `${typeof screen.title === 'function' ? screen.title(ctx()) : screen.title} · ChapterKeeparr`;
     updateShell(route);
     lastSig = '';

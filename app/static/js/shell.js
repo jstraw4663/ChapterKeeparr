@@ -161,8 +161,9 @@ export function updateShell(route) {
   document.querySelector('[data-moffline]')?.classList.toggle('hidden', !offline);
 }
 
-export function setScreenChrome({ topbar = true, detail = false } = {}) {
+export function setScreenChrome({ topbar = true, detail = false, search = true } = {}) {
   document.querySelector('[data-topbar]')?.classList.toggle('hidden', !topbar);
+  document.querySelector('[data-mh] .mh-search')?.classList.toggle('hidden', !search);
   document.documentElement.classList.toggle('detail-screen', detail);
 }
 
